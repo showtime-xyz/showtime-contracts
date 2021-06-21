@@ -4,8 +4,9 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./utils/AccessProtected.sol";
+import "./utils/BaseRelayRecipient.sol";
 
-contract ShowtimeMT is ERC1155(""), AccessProtected {
+contract ShowtimeMT is ERC1155(""), AccessProtected, BaseRelayRecipient {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     string public baseURI = "https://gateway.pinata.cloud/ipfs/";
@@ -43,5 +44,17 @@ contract ShowtimeMT is ERC1155(""), AccessProtected {
         returns (string memory)
     {
         return string(abi.encodePacked(baseURI, hashes[tokenId]));
+    }
+
+    /**
+     * returns the message sender
+     */
+    function _msgSender()
+        internal
+        view
+        override(Context, BaseRelayRecipient)
+        returns (address payable)
+    {
+        return BaseRelayRecipient._msgSender();
     }
 }
