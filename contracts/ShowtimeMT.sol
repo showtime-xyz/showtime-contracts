@@ -24,7 +24,7 @@ contract ShowtimeMT is ERC1155(""), AccessProtected, BaseRelayRecipient {
         uint256 amount,
         string memory hash,
         bytes memory data
-    ) public onlyOwner returns (uint256) {
+    ) public onlyAdmin returns (uint256) {
         _tokenIds.increment();
         uint256 newTokenId = _tokenIds.current();
         hashes[newTokenId] = hash;
