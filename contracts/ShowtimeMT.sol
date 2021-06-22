@@ -33,6 +33,15 @@ contract ShowtimeMT is ERC1155(""), AccessProtected, BaseRelayRecipient {
     }
 
     /**
+     * Set Base URI
+     *
+     * @param _baseURI - Base URI
+     */
+    function setBaseURI(string calldata _baseURI) external onlyOwner {
+        baseURI = _baseURI;
+    }
+
+    /**
      * Get Token URI
      *
      * @param tokenId - Token ID
