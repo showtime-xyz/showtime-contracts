@@ -14,18 +14,11 @@ contract("ShowtimeMT", async (accounts) => {
             const recepient = accounts[1];
             const amount = 10;
             const hash = "some-hash";
-            const data = "some-data";
-            try {
-                var result = await this.mt.issueToken(recepient, amount, hash, JSON.stringify(data), { from: accounts[2] });
-            }
-            catch (err) {
-                if (err.reason == "AccessProtected: caller is not admin")
-                    return;
-                else
-                    return false;
-            }
-            truffleAssert.eventNotEmitted(result, 'Transfer');
-            return false;
+            const data = "0x00";
+            await truffleAssert.reverts(
+                this.mt.issueToken(recepient, amount, hash, data, { from: accounts[2] }),
+                "AccessProtected: caller is not admin"
+            );
         });
         it("owner should be able to set admin", async () => {
             const result = await this.mt.setAdmin(accounts[2], true);
@@ -34,17 +27,10 @@ contract("ShowtimeMT", async (accounts) => {
             assert.equal(isAdmin, true);
         });
         it("non-owner should not be able to set admin", async () => {
-            try {
-                var result = await this.mt.setAdmin(accounts[1], true, { from: accounts[1] });
-            }
-            catch (err) {
-                if (err.reason == "AccessProtected: caller is not admin")
-                    return;
-                else
-                    return false;
-            }
-            truffleAssert.eventNotEmitted(result, 'AdminAccessSet');
-            return false;
+            await truffleAssert.reverts(
+                this.mt.setAdmin(accounts[1], true, { from: accounts[1] }),
+                "Ownable: caller is not the owner"
+            );
         });
         it("owner should be able to revoke admin", async () => {
             const result = await this.mt.setAdmin(accounts[1], false);
