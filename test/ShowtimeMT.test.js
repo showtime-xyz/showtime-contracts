@@ -38,5 +38,32 @@ contract("ShowtimeMT", async (accounts) => {
             const isAdmin = await this.mt.isAdmin(accounts[1]);
             assert.equal(isAdmin, false);
         });
-    })
+    });
+    describe("URI Tests", async () => {
+        beforeEach(async () => {
+            // Deploy MultiToken
+            await MT.new();
+            this.mt = await MT.deployed();
+            // Issue MT
+            const recipient = accounts[1];
+            const amount = 10;
+            const hash = "some-hash";
+            const data = "0x00";
+            await this.mt.issueToken(recipient, amount, hash, data);
+        });
+        it("should be able to get baseURI", async () => {
+            const baseURI = await this.mt.baseURI();
+            assert.equal(baseURI, "https://gateway.pinata.cloud/ipfs/");
+        });
+        it("owner should be able to set baseURI", async () => {
+            const _baseURI = "https://gateway.test.com/ipfs/";
+            await this.mt.setBaseURI(_baseURI);
+            const baseURI = await this.mt.baseURI();
+            assert.equal(baseURI, _baseURI);
+        });
+        it("should be able to get token URI", async () => {
+            const URI = await this.mt.uri(1);
+            assert.equal(URI, "https://gateway.test.com/ipfs/some-hash");
+        });
+    });
 })
