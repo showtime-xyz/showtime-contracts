@@ -36,7 +36,7 @@ abstract contract AccessProtected is Context, Ownable {
     modifier onlyAdmin() {
         require(
             _admins[_msgSender()] || _msgSender() == owner(),
-            "Caller does not have Admin Access"
+            "AccessProtected: caller is not admin"
         );
         _;
     }
