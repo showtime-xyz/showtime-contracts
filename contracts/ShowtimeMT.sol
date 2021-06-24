@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -10,26 +11,56 @@ contract ShowtimeMT is ERC1155(""), AccessProtected, BaseRelayRecipient {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     string public baseURI = "https://gateway.pinata.cloud/ipfs/";
-    mapping(uint256 => string) private hashes;
+    mapping(uint256 => string) private _hashes;
 
     /**
      * Mint + Issue Token
      *
      * @param recipient - Token will be issued to recipient
      * @param amount - amount of tokens to mint
-     * @param data - token Metadata URI/Data
+     * @param hash - IPFS hash
+     * @param data - additional data
      */
     function issueToken(
         address recipient,
         uint256 amount,
         string memory hash,
         bytes memory data
-    ) public onlyAdmin returns (uint256) {
+    ) public onlyMinter returns (uint256) {
         _tokenIds.increment();
         uint256 newTokenId = _tokenIds.current();
-        hashes[newTokenId] = hash;
+        _hashes[newTokenId] = hash;
         _mint(recipient, newTokenId, amount, data);
         return newTokenId;
+    }
+
+    /**
+     * Mint + Issue Token Batch
+     *
+     * @param recipient - Token will be issued to recipient
+     * @param amounts - amounts of each token to mint
+     * @param hashes - IPFS hashes
+     * @param data - additional data
+     */
+    function issueTokenBatch(
+        address recipient,
+        uint256[] memory amounts,
+        string[] memory hashes,
+        bytes memory data
+    ) public onlyMinter returns (uint256[] memory) {
+        require(
+            amounts.length == hashes.length,
+            "amounts & hashes length mismatch"
+        );
+        uint256[] memory ids = new uint256[](amounts.length);
+        for (uint256 i = 0; i < amounts.length; i++) {
+            _tokenIds.increment();
+            uint256 newTokenId = _tokenIds.current();
+            _hashes[newTokenId] = hashes[i];
+            ids[i] = newTokenId;
+        }
+        _mintBatch(recipient, ids, amounts, data);
+        return ids;
     }
 
     /**
@@ -52,7 +83,7 @@ contract ShowtimeMT is ERC1155(""), AccessProtected, BaseRelayRecipient {
         override
         returns (string memory)
     {
-        return string(abi.encodePacked(baseURI, hashes[tokenId]));
+        return string(abi.encodePacked(baseURI, _hashes[tokenId]));
     }
 
     /**
