@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/utils/Context.sol";
 
 abstract contract AccessProtected is Context, Ownable {
     mapping(address => bool) private _admins; // user address => admin? mapping
+    mapping(address => bool) private _minters; // user address => minter? mapping
 
-    event AdminAccessSet(address _admin, bool _enabled);
+    event UserAccessSet(address _user, string _access, bool _enabled);
 
     /**
      * @notice Set Admin Access
@@ -17,7 +18,18 @@ abstract contract AccessProtected is Context, Ownable {
      */
     function setAdmin(address admin, bool enabled) external onlyOwner {
         _admins[admin] = enabled;
-        emit AdminAccessSet(admin, enabled);
+        emit UserAccessSet(admin, "ADMIN", enabled);
+    }
+
+    /**
+     * @notice Set Minter Access
+     *
+     * @param minter - Address of Minter
+     * @param enabled - Enable/Disable Admin Access
+     */
+    function setMinter(address minter, bool enabled) external onlyAdmin {
+        _minters[minter] = enabled;
+        emit UserAccessSet(minter, "MINTER", enabled);
     }
 
     /**
@@ -31,12 +43,35 @@ abstract contract AccessProtected is Context, Ownable {
     }
 
     /**
-     * Throws if called by any account other than the Admin.
+     * @notice Check Minter Access
+     *
+     * @param minter - Address of minter
+     * @return whether minter has access
+     */
+    function isMinter(address minter) public view returns (bool) {
+        return _minters[minter];
+    }
+
+    /**
+     * Throws if called by any account other than the Admin/Owner.
      */
     modifier onlyAdmin() {
         require(
             _admins[_msgSender()] || _msgSender() == owner(),
             "AccessProtected: caller is not admin"
+        );
+        _;
+    }
+
+    /**
+     * Throws if called by any account other than the Minter/Admin/Owner.
+     */
+    modifier onlyMinter() {
+        require(
+            _minters[_msgSender()] ||
+                _admins[_msgSender()] ||
+                _msgSender() == owner(),
+            "AccessProtected: caller is not minter"
         );
         _;
     }
