@@ -17,7 +17,7 @@ module.exports = {
       provider: () =>
         new HDWalletProvider({
           privateKeys: [process.env.PRIVATE_KEY],
-          providerOrUrl: `https://rpc-mumbai.matic.today`,
+          providerOrUrl: `https://rpc-mumbai.maticvigil.com`,
           addressIndex: 0
         }),
       network_id: "80001",
@@ -26,7 +26,7 @@ module.exports = {
       provider: () =>
         new HDWalletProvider({
           privateKeys: [process.env.PRIVATE_KEY],
-          providerOrUrl: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+          providerOrUrl: `https://rpc-mainnet.maticvigil.com/v1/${process.env.MATIC_VIGIL_APP_ID}`,
           addressIndex: 0
         }),
       network_id: "137",
