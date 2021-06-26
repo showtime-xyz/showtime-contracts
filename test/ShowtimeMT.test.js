@@ -8,11 +8,11 @@ contract("ShowtimeMT", async (accounts) => {
             // Deploy MultiToken
             mt = await MT.new()
             // Set Admin
-            mt.setAdmin(accounts[1], true);
+            await mt.setAdmin(accounts[1], true);
             // Set Minter
-            mt.setAdmin(accounts[2], true);
+            await mt.setMinter(accounts[2], true);
         });
-        it("non-admin should not be able to mint", async () => {
+        it("non-minter should not be able to mint", async () => {
             const recepient = accounts[1];
             const amount = 10;
             const hash = "some-hash";
@@ -34,11 +34,31 @@ contract("ShowtimeMT", async (accounts) => {
             const isMinter = await mt.isMinter(accounts[3]);
             assert.equal(isMinter, true);
         });
+        it("admin should be able to set batch of minters", async () => {
+            const minters = accounts.slice(3, 8);
+            const result = await mt.setMinters(minters, true, { from: accounts[1] });
+            truffleAssert.eventEmitted(result, 'UserAccessSet');
+            for (var i = 0; i < minters.length; i++) {
+                const minter = minters[i];
+                const isMinter = await mt.isMinter(minter);
+                assert.equal(isMinter, true);
+            }
+        });
         it("admin should be able to revoke minter", async () => {
             const result = await mt.setMinter(accounts[2], false, { from: accounts[1] });
             truffleAssert.eventEmitted(result, 'UserAccessSet');
             const isMinter = await mt.isMinter(accounts[2]);
             assert.equal(isMinter, false);
+        });
+        it("admin should be able to revoke batch of minters", async () => {
+            const minters = accounts.slice(3, 8);
+            const result = await mt.setMinters(minters, false, { from: accounts[1] });
+            truffleAssert.eventEmitted(result, 'UserAccessSet');
+            for (var i = 0; i < minters.length; i++) {
+                const minter = minters[i];
+                const isMinter = await mt.isMinter(minter);
+                assert.equal(isMinter, false);
+            }
         });
         it("non-owner should not be able to set admin", async () => {
             await truffleAssert.reverts(
@@ -52,11 +72,23 @@ contract("ShowtimeMT", async (accounts) => {
             const isAdmin = await mt.isAdmin(accounts[1]);
             assert.equal(isAdmin, false);
         });
+        it("admin should be able to enable/disable minting for all", async () => {
+            const enable_result = await mt.setPublicMinting(true, { from: accounts[1] });
+            truffleAssert.eventEmitted(enable_result, 'UserAccessSet');
+            const enable_publicMinting = await mt.publicMinting();
+            assert.equal(enable_publicMinting, true);
+            const disable_result = await mt.setPublicMinting(false, { from: accounts[1] });
+            truffleAssert.eventEmitted(disable_result, 'UserAccessSet');
+            const disable_publicMinting = await mt.publicMinting();
+            assert.equal(disable_publicMinting, false);
+        });
     });
     describe("Minting Tests", async () => {
         beforeEach(async () => {
             // Deploy MultiToken
             mt = await MT.new();
+            // Set Admin
+            await mt.setAdmin(accounts[1], true);
         });
         it("minter should be able to mint", async () => {
             const recipient = accounts[1];
@@ -88,6 +120,18 @@ contract("ShowtimeMT", async (accounts) => {
                 const URI = await mt.uri(tokenIds[i]);
                 assert.equal(URI, "https://gateway.pinata.cloud/ipfs/some-hash-" + i);
             }
+        });
+        it("should be able to mint if public minting is enabled", async () => {
+            await mt.setPublicMinting(true, { from: accounts[1] });
+            const recipient = accounts[1];
+            const amount = 10;
+            const hash = "some-hash";
+            const data = "0x00";
+            await mt.issueToken(recipient, amount, hash, data, { from: accounts[4] });
+            const balance = await mt.balanceOf(recipient, 1);
+            assert.equal(balance, amount);
+            const URI = await mt.uri(1);
+            assert.equal(URI, "https://gateway.pinata.cloud/ipfs/some-hash");
         });
     });
     describe("URI Tests", async () => {
