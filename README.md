@@ -28,7 +28,7 @@ npm install
 ```sh
 cp .example.env .env
 ```
-- Add the infura project id & deployer private key to the `.env`
+- Add the matic vigil app ID & deployer private key to the `.env`
 
 ## Run tests
 - Start ganache
