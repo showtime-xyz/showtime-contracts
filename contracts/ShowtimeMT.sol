@@ -87,6 +87,15 @@ contract ShowtimeMT is ERC1155(""), AccessProtected, BaseRelayRecipient {
     }
 
     /**
+     * Set Trusted Forwarder
+     *
+     * @param _trustedForwarder - Trusted Forwarder address
+     */
+    function setTrustedForwarder(address _trustedForwarder) external onlyAdmin {
+        trustedForwarder = _trustedForwarder;
+    }
+
+    /**
      * returns the message sender
      */
     function _msgSender()
