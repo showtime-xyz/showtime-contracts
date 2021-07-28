@@ -32,6 +32,8 @@ contract ShowtimeMT is
      * @param amount - amount of tokens to mint
      * @param hash - IPFS hash
      * @param data - additional data
+     * @param royaltyRecipient - royalty receiver address
+     * @param royaltyPercent - percentage of royalty
      */
     function issueToken(
         address recipient,
@@ -58,6 +60,8 @@ contract ShowtimeMT is
      * @param amounts - amounts of each token to mint
      * @param hashes - IPFS hashes
      * @param data - additional data
+     * @param royaltyRecipients - royalty receiver addresses
+     * @param royaltyPercents - percentages of royalty
      */
     function issueTokenBatch(
         address recipient,
@@ -68,8 +72,10 @@ contract ShowtimeMT is
         uint256[] memory royaltyPercents
     ) public onlyMinter returns (uint256[] memory) {
         require(
-            amounts.length == hashes.length,
-            "amounts & hashes length mismatch"
+            amounts.length == hashes.length &&
+                royaltyRecipients.length == royaltyPercents.length &&
+                amounts.length == royaltyRecipients.length,
+            "array length mismatch"
         );
         uint256[] memory ids = new uint256[](amounts.length);
         for (uint256 i = 0; i < amounts.length; i++) {

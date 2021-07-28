@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 import "./IERC2981.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract ERC2981Royalties is IERC2981 {
+    using SafeMath for uint256;
+
     struct Royalty {
         address recipient;
         uint256 value; // as a % unit, from 0 - 10000 (2 extra 0s) for eg 25% is 2500
@@ -26,6 +29,6 @@ contract ERC2981Royalties is IERC2981 {
         returns (address receiver, uint256 royaltyAmount)
     {
         Royalty memory royalty = _royalties[_tokenId];
-        return (royalty.recipient, (_salePrice * royalty.value) / 10000);
+        return (royalty.recipient, (_salePrice.mul(royalty.value)).div(10000));
     }
 }
