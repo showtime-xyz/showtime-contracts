@@ -216,6 +216,71 @@ contract("ShowtimeMT", async (accounts) => {
             assert.equal(URI, "https://gateway.pinata.cloud/ipfs/some-hash");
         });
     });
+    describe("Burning tests", () => {
+        beforeEach(async () => {
+            // Deploy MultiToken
+            mt = await MT.new();
+        });
+        it("holder should be able to burn", async () => {
+            const recipient = accounts[1];
+            const amount = 10;
+            const hash = "some-hash";
+            const data = "0x00";
+            const royaltyRecipient = "0x".padEnd(42, "0"); // "0x0000..."
+            const royaltyPercent = 0; // 0 % means no royalty being set
+            await mt.issueToken(
+                recipient,
+                amount,
+                hash,
+                data,
+                royaltyRecipient,
+                royaltyPercent
+            );
+            let balance = await mt.balanceOf(recipient, 1);
+            assert.equal(balance, amount);
+            await mt.burn(recipient, 1, amount, { from: recipient });
+            // burning
+            balance = await mt.balanceOf(recipient, 1);
+            // no balance after burning
+            assert.equal(balance.toString(), 0);
+        });
+        it("holder should be able to batch burn", async () => {
+            const recipient = accounts[1];
+            const amounts = [];
+            const hashes = [];
+            const data = "0x00";
+            const royaltyRecipients = [];
+            const royaltyPercents = [];
+            const iterations = 3;
+            for (var i = 0; i < iterations; i++) {
+                amounts.push(Math.floor(Math.random() * 10));
+                royaltyRecipients.push("0x".padEnd(42, "0"));
+                royaltyPercents.push(0);
+                hashes.push("some-hash-" + i);
+            }
+            const result = await mt.issueTokenBatch(
+                recipient,
+                amounts,
+                hashes,
+                data,
+                royaltyRecipients,
+                royaltyPercents
+            );
+            const tokenIds = result.receipt.logs[0].args.ids;
+            const tokenAmounts = result.receipt.logs[0].args.values;
+            for (let i = 0; i < iterations; i++) {
+                const balance = await mt.balanceOf(recipient, tokenIds[i]);
+                assert.equal(balance.toString(), tokenAmounts[i]);
+            }
+            await mt.burnBatch(recipient, tokenIds, tokenAmounts, {
+                from: recipient,
+            });
+            for (let i = 0; i < iterations; i++) {
+                const balance = await mt.balanceOf(recipient, tokenIds[i]);
+                assert.equal(balance.toString(), 0);
+            }
+        });
+    });
     describe("URI Tests", async () => {
         beforeEach(async () => {
             // Deploy MultiToken
