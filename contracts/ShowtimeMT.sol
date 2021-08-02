@@ -4,12 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155Burnable.sol";
 import "./utils/AccessProtected.sol";
 import "./utils/BaseRelayRecipient.sol";
 import "./ERC2981Royalties.sol";
 
 contract ShowtimeMT is
-    ERC1155,
+    ERC1155Burnable,
     ERC2981Royalties,
     AccessProtected,
     BaseRelayRecipient
