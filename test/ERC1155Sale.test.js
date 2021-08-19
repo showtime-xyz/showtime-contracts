@@ -2,7 +2,9 @@ const MT = artifacts.require("ShowtimeMT")
 const Token = artifacts.require("Token")
 const ERC1155Sale = artifacts.require("ERC1155Sale")
 const truffleAsserts = require("truffle-assertions")
-const expect = require("chai").expect
+
+// address(0)
+const ZERO_ADDRESS = "0x".padEnd(42, "0")
 
 contract("ERC1155 Sale Contract Tests", (accounts) => {
     let mt, token, sale, admin, alice, bob
@@ -10,63 +12,86 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         admin = accounts[0]
         alice = accounts[1]
         bob = accounts[2]
-        // mint 10
+        // mint 10 tokens to alice
         mt = await MT.new()
         await mt.issueToken(alice, 10, "some-hash", "0x0", "0x".padEnd(42, "0"), 0)
-        // mint erc20s
+        // mint erc20s to bob
         token = await Token.new()
         await token.mint(500, { from: bob })
-        // approve the sale contract
+        // approvals
         sale = await ERC1155Sale.new(mt.address, token.address)
         await mt.setApprovalForAll(sale.address, true, { from: alice })
         await token.approve(sale.address, 500, { from: bob })
     })
-    it("deploys correctly", async () => {
-        // should revert on non contract address
+
+    it("doesn't allow to deploy with incorrect constructor arguments", async () => {
         await truffleAsserts.reverts(ERC1155Sale.new(alice, bob), "must be contract address")
-        expect(await sale.nft()).eq(mt.address)
-        expect(await sale.quoteToken()).eq(token.address)
+        await truffleAsserts.reverts(ERC1155Sale.new(ZERO_ADDRESS, bob), "must be contract address")
+        await truffleAsserts.reverts(ERC1155Sale.new(alice, ZERO_ADDRESS), "must be contract address")
+    })
+    it("deploys with correct constructor arguments", async () => {
+        assert.equal(await sale.nft(), mt.address)
+        assert.equal(await sale.quoteToken(), token.address)
     })
     it("creates a new sale", async () => {
         // alice creates a sale
+        // `New` is the event emitted when creating a new sale
         const { args: New } = (await sale.createSale(1, 5, 500, { from: alice })).logs[0]
-        expect(New.saleId.toString()).eq("0")
-        expect(New.seller).eq(alice)
-        expect(New.tokenId.toString()).eq("1")
-        expect((await mt.balanceOf(alice, 1)).toString()).eq("5") // 10 - 5
-        const res = await sale.sales(New.saleId.toString())
-        expect(res.tokenId.toString()).eq("1")
-        expect(res.amount.toString()).eq("5")
-        expect(res.price.toString()).eq("500")
-        expect(res.seller).eq(alice)
-        expect(res.isActive).to.be.true
+        assert.equal(New.saleId, 0)
+        assert.equal(New.seller, alice)
+        assert.equal(New.tokenId, 1)
+        assert.equal(await mt.balanceOf(alice, 1), 5) // 10 - 5
+        const _sale = await sale.sales(New.saleId)
+        assert.equal(_sale.tokenId, 1)
+        assert.equal(_sale.amount, 5)
+        assert.equal(_sale.price, 500)
+        assert.equal(_sale.seller, alice)
+        assert.equal(_sale.isActive, true)
     })
-    it("cancels a sale", async () => {
-        // alice creates and cancels a sale
+    it("cannot cancel other seller's sale", async () => {
+        const tx = await sale.createSale(1, 5, 500, { from: alice })
+        const { saleId } = tx.logs[0].args
+        // bob cannot cancel
+        await truffleAsserts.reverts(sale.cancelSale(saleId), "caller not seller")
+    })
+    it("cannot cancel not existent sale", async () => {
+        await truffleAsserts.reverts(sale.cancelSale(42), "sale doesn't exist")
+    })
+    it("allows seller to cancel their sale", async () => {
+        // alice cancels a sale
         const { args: New } = (await sale.createSale(1, 5, 500, { from: alice })).logs[0]
-        const { args: Cancel } = (await sale.cancelSale(New.saleId.toString(), { from: alice })).logs[0]
-        expect(Cancel.saleId.toString()).eq("0")
-        expect(Cancel.seller).eq(alice)
-        const res = await sale.sales(0)
-        expect(res.isActive).to.be.false
+        // alice cancels her sale
+        const { args: Cancel } = (await sale.cancelSale(New.saleId, { from: alice })).logs[0]
+        assert.equal(Cancel.saleId, 0)
+        assert.equal(Cancel.seller, alice)
+        const _sale = await sale.sales(Cancel.saleId)
+        assert.equal(_sale.isActive, false)
     })
-    it("buys a sale", async () => {
-        // alice creates a sale and bob buys the sale
+    it("cannot buy a cancelled sale", async () => {
+        const tx = await sale.createSale(1, 5, 500, { from: alice }) // alice create
+        const { saleId } = tx.logs[0].args
+        await sale.cancelSale(saleId, { from: alice }) // alice cancel
+        await truffleAsserts.reverts(sale.buy(saleId), "sale already cancelled or bought")
+    })
+    it("buys a valid sale", async () => {
+        // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, { from: alice })).logs[0]
-        const { args: Buy } = (await sale.buy(New.saleId.toString(), { from: bob })).logs[0]
-        expect(Buy.saleId.toString()).eq("0")
-        expect(Buy.seller).eq(alice)
-        expect(Buy.buyer).eq(bob)
-        const res = await sale.sales(Buy.saleId.toString())
-        expect(res.isActive).to.be.false
-        expect((await mt.balanceOf(bob, 1)).toString()).eq("5")
+        // bob buys the sale
+        const { args: Buy } = (await sale.buy(New.saleId, { from: bob })).logs[0]
+        assert.equal(Buy.saleId, 0)
+        assert.equal(Buy.seller, alice)
+        assert.equal(Buy.buyer, bob)
+        const _sale = await sale.sales(Buy.saleId)
+        assert.equal(_sale.isActive, false)
+        assert.equal(await mt.balanceOf(alice, 1), 5) // 10 - 5
+        assert.equal(await mt.balanceOf(bob, 1), 5) // 0 + 5
     })
-    it("only owner can pause and unpause", async () => {
+    it("permits only owner to pause and unpause the contract", async () => {
         await truffleAsserts.reverts(sale.pause({ from: alice }), "Ownable: caller is not the owner")
         await sale.pause()
         await truffleAsserts.reverts(sale.unpause({ from: alice }), "Ownable: caller is not the owner")
         await sale.unpause()
-        expect(await sale.paused()).to.be.false
+        assert.equal(await sale.paused(), false)
     })
     it("doesnt function when paused", async () => {
         await sale.pause()
