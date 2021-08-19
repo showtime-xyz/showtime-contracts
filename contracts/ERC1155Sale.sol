@@ -7,12 +7,18 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/ERC1155Receiver.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { IERC2981 } from "./IERC2981.sol";
 
 contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
+    using SafeMath for uint256;
     using Address for address;
 
     IERC1155 public nft;
     IERC20 public quoteToken;
+
+    // @yash: should we have a minimum selling price?
+    // uint public constant MINIMUM_SELL_PRICE = 1e15;
 
     struct Sale {
         uint256 tokenId;
@@ -21,6 +27,12 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
         address seller;
         bool isActive;
     }
+
+    enum Royalty {
+        OFF,
+        ON
+    } // making it support non ERC2981 compliant NFTs also
+    Royalty royalty;
 
     Sale[] public sales;
 
@@ -45,8 +57,16 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
 
     constructor(address _nft, address _quoteToken) public {
         require(_nft.isContract() && _quoteToken.isContract(), "must be contract address");
+
         nft = IERC1155(_nft);
         quoteToken = IERC20(_quoteToken);
+
+        // is royalty standard compliant?
+        try nft.supportsInterface(0x2a55205a) returns (bool implementsERC2981) {
+            if (implementsERC2981) {
+                royalty = Royalty.ON;
+            }
+        } catch (bytes memory) {}
     }
 
     /// @notice `setApprovalForAll` before calling
@@ -81,12 +101,30 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
     /// @notice approve for `transferFrom` before buying
     function buy(uint256 _saleId) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
         Sale memory sale = sales[_saleId];
-        // make sale invalid, and swap between buyer and seller
+
+        uint256 amount = sale.price;
+        if (royalty == Royalty.ON) {
+            (address receiver, uint256 royaltyAmount) = _royaltyInfo(sale.tokenId, amount);
+            quoteToken.transfer(receiver, royaltyAmount);
+            amount = amount.sub(royaltyAmount);
+        }
+
         sales[_saleId].isActive = false;
-        require(quoteToken.transferFrom(msg.sender, sale.seller, sale.price), "transferFrom failed");
+        quoteToken.transferFrom(msg.sender, sale.seller, amount);
         nft.safeTransferFrom(address(this), msg.sender, sale.tokenId, sale.amount, "");
 
         emit Buy(_saleId, sale.seller, msg.sender);
+    }
+
+    //
+    // PRIVATE FUNCTIONS
+    //
+    function _royaltyInfo(uint256 _tokenId, uint256 _salePrice)
+        private
+        view
+        returns (address receiver, uint256 royaltyAmount)
+    {
+        (receiver, royaltyAmount) = IERC2981(address(nft)).royaltyInfo(_tokenId, _salePrice);
     }
 
     //
