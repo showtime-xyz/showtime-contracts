@@ -12,15 +12,17 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         admin = accounts[0]
         alice = accounts[1]
         bob = accounts[2]
-        // mint 10 tokens to alice
+        // mint tokens
         mt = await MT.new()
         await mt.issueToken(alice, 10, "some-hash", "0x0", "0x".padEnd(42, "0"), 0)
+        await mt.issueToken(admin, 10, "some-hash", "0x0", alice, 1000) // 10% royalty
         // mint erc20s to bob
         token = await Token.new()
         await token.mint(500, { from: bob })
         // approvals
         sale = await ERC1155Sale.new(mt.address, token.address)
         await mt.setApprovalForAll(sale.address, true, { from: alice })
+        await mt.setApprovalForAll(sale.address, true)
         await token.approve(sale.address, 500, { from: bob })
     })
 
@@ -32,6 +34,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     it("deploys with correct constructor arguments", async () => {
         assert.equal(await sale.nft(), mt.address)
         assert.equal(await sale.quoteToken(), token.address)
+        assert.equal(await sale.royalty(), 1)
     })
     it("creates a new sale", async () => {
         // alice creates a sale
@@ -85,6 +88,31 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(_sale.isActive, false)
         assert.equal(await mt.balanceOf(alice, 1), 5) // 10 - 5
         assert.equal(await mt.balanceOf(bob, 1), 5) // 0 + 5
+    })
+    it("buys a sale which has royalty associated with it", async () => {
+        // admin puts his tokenId on sale which has 10% royalty to alice
+        await sale.createSale(2, 5, 500)
+        assert.equal(await token.balanceOf(alice), 0)
+        const { args: RoyaltyPaid } = (await sale.buy(0, { from: bob })).logs[0]
+        assert.equal(RoyaltyPaid.receiver, alice)
+        assert.equal(RoyaltyPaid.amount, 50)
+        assert.equal(await token.balanceOf(alice), 50) // received her 10%
+        assert.equal(await token.balanceOf(admin), 450) // price - royalty
+    })
+    it("permits only owner to turn off royalty on the contract", async () => {
+        await truffleAsserts.reverts(sale.royaltySwitch(0, { from: alice }))
+        assert.equal(await sale.royalty(), 1)
+        await sale.royaltySwitch(0)
+        assert.equal(await sale.royalty(), 0)
+    })
+    it("pays no royalty when royalty is turned off", async () => {
+        await sale.royaltySwitch(0)
+        await truffleAsserts.reverts(sale.royaltySwitch(0), "royalty already on the desired state")
+        await sale.createSale(2, 5, 500)
+        assert.equal(await token.balanceOf(alice), 0)
+        await sale.buy(0, { from: bob })
+        assert.equal(await token.balanceOf(alice), 0) // received no royalty
+        assert.equal(await token.balanceOf(admin), 500)
     })
     it("permits only owner to pause and unpause the contract", async () => {
         await truffleAsserts.reverts(sale.pause({ from: alice }), "Ownable: caller is not the owner")

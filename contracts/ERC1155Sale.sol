@@ -32,7 +32,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
         OFF,
         ON
     } // making it support non ERC2981 compliant NFTs also
-    Royalty royalty;
+    Royalty public royalty;
 
     Sale[] public sales;
 
@@ -54,6 +54,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
     event New(uint256 indexed saleId, address indexed seller, uint256 indexed tokenId);
     event Cancel(uint256 indexed saleId, address indexed seller);
     event Buy(uint256 indexed saleId, address indexed seller, address indexed buyer);
+    event RoyaltyPaid(address indexed receiver, uint256 amount);
 
     constructor(address _nft, address _quoteToken) public {
         require(_nft.isContract() && _quoteToken.isContract(), "must be contract address");
@@ -103,28 +104,33 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
         Sale memory sale = sales[_saleId];
 
         uint256 amount = sale.price;
+        quoteToken.transferFrom(msg.sender, address(this), amount);
         if (royalty == Royalty.ON) {
             (address receiver, uint256 royaltyAmount) = _royaltyInfo(sale.tokenId, amount);
-            quoteToken.transfer(receiver, royaltyAmount);
-            amount = amount.sub(royaltyAmount);
+            if (royaltyAmount > 0) {
+                quoteToken.transfer(receiver, royaltyAmount);
+                emit RoyaltyPaid(receiver, royaltyAmount);
+                amount = amount.sub(royaltyAmount);
+            }
         }
-
+        quoteToken.transfer(sale.seller, amount);
         sales[_saleId].isActive = false;
-        quoteToken.transferFrom(msg.sender, sale.seller, amount);
         nft.safeTransferFrom(address(this), msg.sender, sale.tokenId, sale.amount, "");
 
         emit Buy(_saleId, sale.seller, msg.sender);
     }
 
-    //
-    // PRIVATE FUNCTIONS
-    //
     function _royaltyInfo(uint256 _tokenId, uint256 _salePrice)
         private
         view
         returns (address receiver, uint256 royaltyAmount)
     {
         (receiver, royaltyAmount) = IERC2981(address(nft)).royaltyInfo(_tokenId, _salePrice);
+    }
+
+    function royaltySwitch(Royalty _royalty) external onlyOwner {
+        require(_royalty != royalty, "royalty already on the desired state");
+        royalty = _royalty;
     }
 
     //
