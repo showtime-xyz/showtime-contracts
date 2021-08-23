@@ -62,7 +62,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
         nft = IERC1155(_nft);
         quoteToken = IERC20(_quoteToken);
 
-        // is royalty standard compliant?
+        // is royalty standard compliant? if so turn royalties on
         try nft.supportsInterface(0x2a55205a) returns (bool implementsERC2981) {
             if (implementsERC2981) {
                 royalty = Royalty.ON;
@@ -71,6 +71,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
     }
 
     /// @notice `setApprovalForAll` before calling
+    /// @notice creates a new sale
     function createSale(
         uint256 _tokenId,
         uint256 _amount,
@@ -90,6 +91,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
         emit New(saleId, msg.sender, _tokenId);
     }
 
+    /// @notice cancel an active sale
     function cancelSale(uint256 _saleId) external saleExists(_saleId) onlySeller(_saleId) isActive(_saleId) {
         Sale memory sale = sales[_saleId];
         // make sale invalid, and send seller his nft back
@@ -100,6 +102,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
     }
 
     /// @notice approve for `transferFrom` before buying
+    /// @notice purchase a sale
     function buy(uint256 _saleId) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
         Sale memory sale = sales[_saleId];
 
@@ -120,6 +123,9 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
         emit Buy(_saleId, sale.seller, msg.sender);
     }
 
+    //
+    // PRIVATE FUNCTIONS
+    //
     function _royaltyInfo(uint256 _tokenId, uint256 _salePrice)
         private
         view
@@ -128,14 +134,14 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
         (receiver, royaltyAmount) = IERC2981(address(nft)).royaltyInfo(_tokenId, _salePrice);
     }
 
+    //
+    // CONTRACT SETTINGS
+    //
     function royaltySwitch(Royalty _royalty) external onlyOwner {
         require(_royalty != royalty, "royalty already on the desired state");
         royalty = _royalty;
     }
 
-    //
-    // IMPLEMENT PAUSABLE FUNCTIONS
-    //
     function pause() external whenNotPaused onlyOwner {
         _pause();
     }
