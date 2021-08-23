@@ -105,6 +105,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
     /// @notice purchase a sale
     function buy(uint256 _saleId) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
         Sale memory sale = sales[_saleId];
+        sales[_saleId].isActive = false;
 
         uint256 amount = sale.price;
         quoteToken.transferFrom(msg.sender, address(this), amount);
@@ -117,7 +118,6 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
             }
         }
         quoteToken.transfer(sale.seller, amount);
-        sales[_saleId].isActive = false;
         nft.safeTransferFrom(address(this), msg.sender, sale.tokenId, sale.amount, "");
 
         emit Buy(_saleId, sale.seller, msg.sender);
