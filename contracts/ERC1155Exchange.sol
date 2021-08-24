@@ -10,12 +10,11 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC2981 } from "./IERC2981.sol";
 
-contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
+contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver {
     using SafeMath for uint256;
     using Address for address;
 
     IERC1155 public nft;
-    IERC20 public quoteToken;
 
     // @yash: should we have a minimum selling price?
     // uint public constant MINIMUM_SELL_PRICE = 1e15;
@@ -24,6 +23,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
         uint256 tokenId;
         uint256 amount;
         uint256 price;
+        address currency;
         address seller;
         bool isActive;
     }
@@ -33,6 +33,8 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
         ON
     } // making it support non ERC2981 compliant NFTs also
     Royalty public royalty;
+
+    mapping(address => bool) public acceptedCurrencies;
 
     Sale[] public sales;
 
@@ -56,11 +58,14 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
     event Buy(uint256 indexed saleId, address indexed seller, address indexed buyer);
     event RoyaltyPaid(address indexed receiver, uint256 amount);
 
-    constructor(address _nft, address _quoteToken) public {
-        require(_nft.isContract() && _quoteToken.isContract(), "must be contract address");
+    constructor(address _nft, address[] memory _initialCurrencies) public {
+        require(_nft.isContract(), "must be contract address");
+        for (uint256 i = 0; i < _initialCurrencies.length; i++) {
+            require(_initialCurrencies[i].isContract(), "_initialCurrencies must contain contract addresses");
+            acceptedCurrencies[_initialCurrencies[i]] = true;
+        }
 
         nft = IERC1155(_nft);
-        quoteToken = IERC20(_quoteToken);
 
         // is royalty standard compliant? if so turn royalties on
         try nft.supportsInterface(0x2a55205a) returns (bool implementsERC2981) {
@@ -75,13 +80,16 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
     function createSale(
         uint256 _tokenId,
         uint256 _amount,
-        uint256 _price
+        uint256 _price,
+        address _currency
     ) external whenNotPaused {
+        require(acceptedCurrencies[_currency], "currency not accepted");
         nft.safeTransferFrom(msg.sender, address(this), _tokenId, _amount, "");
         Sale memory sale = Sale({
             tokenId: _tokenId,
             amount: _amount,
             price: _price,
+            currency: _currency,
             seller: msg.sender,
             isActive: true
         });
@@ -105,9 +113,10 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
     /// @notice purchase a sale
     function buy(uint256 _saleId) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
         Sale memory sale = sales[_saleId];
-        sales[_saleId].isActive = false;
+        sales[_saleId].isActive = false; // prevent possible reentrancy
 
         uint256 amount = sale.price;
+        IERC20 quoteToken = IERC20(sale.currency);
         quoteToken.transferFrom(msg.sender, address(this), amount);
         if (royalty == Royalty.ON) {
             (address receiver, uint256 royaltyAmount) = _royaltyInfo(sale.tokenId, amount);
@@ -140,6 +149,16 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver {
     function royaltySwitch(Royalty _royalty) external onlyOwner {
         require(_royalty != royalty, "royalty already on the desired state");
         royalty = _royalty;
+    }
+
+    function setAcceptedCurrency(address _currency) external onlyOwner {
+        require(_currency.isContract(), "_currency != contract address");
+        acceptedCurrencies[_currency] = true;
+    }
+
+    function removeAcceptedCurrency(address _currency) external onlyOwner {
+        require(acceptedCurrencies[_currency], "currency does not exist");
+        acceptedCurrencies[_currency] = false;
     }
 
     function pause() external whenNotPaused onlyOwner {
