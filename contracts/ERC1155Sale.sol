@@ -16,8 +16,7 @@ contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver {
 
     IERC1155 public nft;
 
-    // @yash: should we have a minimum selling price?
-    // uint public constant MINIMUM_SELL_PRICE = 1e15;
+    uint256 public minSellPrice;
 
     struct Sale {
         uint256 tokenId;
@@ -82,8 +81,9 @@ contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver {
         uint256 _amount,
         uint256 _price,
         address _currency
-    ) external whenNotPaused {
+    ) external {
         require(acceptedCurrencies[_currency], "currency not accepted");
+        require(_price >= minSellPrice, "price must be greater then min sell price");
         nft.safeTransferFrom(msg.sender, address(this), _tokenId, _amount, "");
         Sale memory sale = Sale({
             tokenId: _tokenId,
@@ -135,6 +135,7 @@ contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver {
     //
     // PRIVATE FUNCTIONS
     //
+
     function _royaltyInfo(uint256 _tokenId, uint256 _salePrice)
         private
         view
@@ -146,27 +147,38 @@ contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver {
     //
     // CONTRACT SETTINGS
     //
+
+    /// @notice switch royalty payments on/off
     function royaltySwitch(Royalty _royalty) external onlyOwner {
         require(_royalty != royalty, "royalty already on the desired state");
         royalty = _royalty;
     }
 
+    /// @notice add a currency from the accepted currency list
     function setAcceptedCurrency(address _currency) external onlyOwner {
         require(_currency.isContract(), "_currency != contract address");
         acceptedCurrencies[_currency] = true;
     }
 
+    /// @notice remove a currency from the accepted currency list
     function removeAcceptedCurrency(address _currency) external onlyOwner {
         require(acceptedCurrencies[_currency], "currency does not exist");
         acceptedCurrencies[_currency] = false;
     }
 
+    /// @notice pause the contract
     function pause() external whenNotPaused onlyOwner {
         _pause();
     }
 
+    /// @notice unpause the contract
     function unpause() external whenPaused onlyOwner {
         _unpause();
+    }
+
+    /// @notice set minimum sell price, below which sales won't be created
+    function setMinSellPrice(uint256 _minPrice) external onlyOwner {
+        minSellPrice = _minPrice;
     }
 
     //
