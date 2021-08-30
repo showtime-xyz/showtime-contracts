@@ -123,12 +123,6 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await sale.paused(), false);
     });
     it("doesnt function when paused", async () => {
-        await sale.pause();
-        await truffleAsserts.reverts(
-            sale.createSale(1, 5, 500, token.address, { from: alice }),
-            "Pausable: paused"
-        );
-        await sale.unpause();
         await sale.createSale(1, 5, 500, token.address, { from: alice });
         await sale.pause();
         await truffleAsserts.reverts(sale.buy(0, { from: bob }), "Pausable: paused");
@@ -151,5 +145,20 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
         await sale.removeAcceptedCurrency(mt.address);
         assert.equal(await sale.acceptedCurrencies(mt.address), false);
+    });
+    it("permits only owner to set min sell price", async () => {
+        await truffleAsserts.reverts(
+            sale.setMinSellPrice(500, { from: alice }),
+            "Ownable: caller is not the owner"
+        );
+        await sale.setMinSellPrice(500);
+    });
+    it("does not create sale if price below min sell price", async () => {
+        await sale.setMinSellPrice(500);
+        await truffleAsserts.reverts(
+            sale.createSale(1, 5, 400, token.address, { from: alice }),
+            "price must be greater then min sell price"
+        );
+        await sale.createSale(1, 5, 500, token.address, { from: alice });
     });
 });
