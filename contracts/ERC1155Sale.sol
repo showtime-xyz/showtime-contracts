@@ -6,11 +6,12 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/ERC1155Receiver.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable, Context } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC2981 } from "./IERC2981.sol";
+import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 
-contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver {
+contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     using SafeMath for uint256;
     using Address for address;
 
@@ -74,6 +75,15 @@ contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver {
         } catch (bytes memory) {}
     }
 
+    /**
+     * Set Trusted Forwarder
+     *
+     * @param _trustedForwarder - Trusted Forwarder address
+     */
+    function setTrustedForwarder(address _trustedForwarder) external onlyOwner {
+        trustedForwarder = _trustedForwarder;
+    }
+
     /// @notice `setApprovalForAll` before calling
     /// @notice creates a new sale
     function createSale(
@@ -130,6 +140,13 @@ contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver {
         nft.safeTransferFrom(address(this), msg.sender, sale.tokenId, sale.amount, "");
 
         emit Buy(_saleId, sale.seller, msg.sender);
+    }
+
+    /**
+     * returns the message sender
+     */
+    function _msgSender() internal view override(Context, BaseRelayRecipient) returns (address payable) {
+        return BaseRelayRecipient._msgSender();
     }
 
     //
