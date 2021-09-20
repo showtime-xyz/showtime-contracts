@@ -11,7 +11,7 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC2981 } from "./IERC2981.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 
-contract ERC1155Exchange is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
+contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     using SafeMath for uint256;
     using Address for address;
 
