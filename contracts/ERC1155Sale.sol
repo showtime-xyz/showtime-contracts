@@ -55,7 +55,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     event New(uint256 indexed saleId, address indexed seller, uint256 indexed tokenId);
     event Cancel(uint256 indexed saleId, address indexed seller);
-    event Buy(uint256 indexed saleId, address indexed seller, address indexed buyer);
+    event Buy(uint256 indexed saleId, address indexed seller, address indexed buyer, uint256 amount);
     event RoyaltyPaid(address indexed receiver, uint256 amount);
 
     constructor(address _nft, address[] memory _initialCurrencies) public {
@@ -86,6 +86,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     /// @notice `setApprovalForAll` before calling
     /// @notice creates a new sale
+    /// @param _amount the price for each of the amount in the listing
     function createSale(
         uint256 _tokenId,
         uint256 _amount,
@@ -121,25 +122,29 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     /// @notice approve for `transferFrom` before buying
     /// @notice purchase a sale
-    function buy(uint256 _saleId) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
+    function buy(uint256 _saleId, uint256 _amount) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
         Sale memory sale = sales[_saleId];
-        sales[_saleId].isActive = false; // prevent possible reentrancy
+        require(_amount <= sale.amount, "required amount greater than available amount");
+        sales[_saleId].amount -= _amount;
+        if (sales[_saleId].amount == 0) {
+            sales[_saleId].isActive = false;
+        }
 
-        uint256 amount = sale.price;
+        uint256 price = sale.price.mul(_amount);
         IERC20 quoteToken = IERC20(sale.currency);
-        quoteToken.transferFrom(_msgSender(), address(this), amount);
+        quoteToken.transferFrom(_msgSender(), address(this), price);
         if (royalty == Royalty.ON) {
-            (address receiver, uint256 royaltyAmount) = _royaltyInfo(sale.tokenId, amount);
+            (address receiver, uint256 royaltyAmount) = _royaltyInfo(sale.tokenId, price);
             if (royaltyAmount > 0) {
                 quoteToken.transfer(receiver, royaltyAmount);
                 emit RoyaltyPaid(receiver, royaltyAmount);
-                amount = amount.sub(royaltyAmount);
+                price = price.sub(royaltyAmount);
             }
         }
-        quoteToken.transfer(sale.seller, amount);
-        nft.safeTransferFrom(address(this), _msgSender(), sale.tokenId, sale.amount, "");
+        quoteToken.transfer(sale.seller, price);
+        nft.safeTransferFrom(address(this), _msgSender(), sale.tokenId, _amount, "");
 
-        emit Buy(_saleId, sale.seller, _msgSender());
+        emit Buy(_saleId, sale.seller, _msgSender(), _amount);
     }
 
     /**
