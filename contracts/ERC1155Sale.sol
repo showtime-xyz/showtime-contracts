@@ -122,7 +122,11 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     /// @notice approve for `transferFrom` before buying
     /// @notice purchase a sale
-    function buy(uint256 _saleId, uint256 _amount) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
+    function buyFor(
+        uint256 _saleId,
+        uint256 _amount,
+        address _whom
+    ) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
         Sale memory sale = sales[_saleId];
         require(_amount <= sale.amount, "required amount greater than available amount");
         sales[_saleId].amount -= _amount;
@@ -142,9 +146,9 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
             }
         }
         quoteToken.transfer(sale.seller, price);
-        nft.safeTransferFrom(address(this), _msgSender(), sale.tokenId, _amount, "");
+        nft.safeTransferFrom(address(this), _whom != address(0) ? _whom : _msgSender(), sale.tokenId, _amount, "");
 
-        emit Buy(_saleId, sale.seller, _msgSender(), _amount);
+        emit Buy(_saleId, sale.seller, _whom != address(0) ? _whom : _msgSender(), _amount);
     }
 
     /**
