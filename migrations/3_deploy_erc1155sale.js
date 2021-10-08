@@ -1,3 +1,5 @@
+const { exec } = require("shelljs");
+
 const MT = artifacts.require("ShowtimeMT");
 const ERC1155Sale = artifacts.require("ERC1155Sale");
 
@@ -16,4 +18,17 @@ module.exports = async function (deployer, network) {
         mt: mt.address,
         sale: sale.address,
     });
+    if (network !== "development") {
+        await verify("ShowtimeMT", mt.address, network);
+        await verify("ERC1155Sale", sale.address, network);
+    }
 };
+
+function verify(name, address, network) {
+    return new Promise((resolve, reject) => {
+        exec(`npx truffle run verify ${name}@${address} --network ${network}`, (code, stdout, stderr) => {
+            if (code !== 0) reject(stderr);
+            resolve(stdout);
+        });
+    });
+}

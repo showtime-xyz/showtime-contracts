@@ -40,4 +40,8 @@ module.exports = {
             version: "0.6.12",
         },
     },
+    plugins: ["truffle-plugin-verify"],
+    api_keys: {
+        polygonscan: process.env.EXPLORER_API_KEY || "",
+    },
 };
