@@ -120,8 +120,10 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         emit Cancel(_saleId, _msgSender());
     }
 
-    /// @notice approve for `transferFrom` before buying
-    /// @notice purchase a sale
+    /**
+     * Purhcase a sale
+     * @param _whom if gifting, the recipient address, else address(0)
+     */
     function buyFor(
         uint256 _saleId,
         uint256 _amount,
