@@ -7,7 +7,7 @@
         "test": "test"
     },
     "scripts": {
-        "test": "truffle test --network test",
+        "test": "truffle test",
         "deploy": "truffle migrate",
         "deploy:ganache": "truffle migrate",
         "deploy:mumbai_testnet": "truffle migrate --network mumbai_testnet",
