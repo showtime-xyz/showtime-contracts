@@ -52,6 +52,23 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(_sale.seller, alice);
         assert.equal(_sale.isActive, true);
     });
+
+    it("has enough tokens to buy", async () => {
+        // alice creates the sale
+        const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+
+        // bob burns his tokens
+        await token.transfer("0x000000000000000000000000000000000000dead", await token.balanceOf(bob), {
+            from: bob,
+        });
+
+        // bob has no tokens now
+        assert.equal(await token.balanceOf(bob), 0);
+
+        // bob can no longer buy
+        await truffleAsserts.reverts(sale.buyFor(New.saleId, 5, bob, { from: bob }));
+    });
+
     it("cannot cancel other seller's sale", async () => {
         const tx = await sale.createSale(1, 5, 500, token.address, { from: alice });
         const { saleId } = tx.logs[0].args;
@@ -179,20 +196,5 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
         await sale.removeAcceptedCurrency(mt.address);
         assert.equal(await sale.acceptedCurrencies(mt.address), false);
-    });
-    it("permits only owner to set min sell price", async () => {
-        await truffleAsserts.reverts(
-            sale.setMinSellPrice(500, { from: alice }),
-            "Ownable: caller is not the owner"
-        );
-        await sale.setMinSellPrice(500);
-    });
-    it("does not create sale if price below min sell price", async () => {
-        await sale.setMinSellPrice(500);
-        await truffleAsserts.reverts(
-            sale.createSale(1, 5, 400, token.address, { from: alice }),
-            "price must be greater then min sell price"
-        );
-        await sale.createSale(1, 5, 500, token.address, { from: alice });
     });
 });

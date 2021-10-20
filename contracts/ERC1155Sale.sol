@@ -17,8 +17,6 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     IERC1155 public nft;
 
-    uint256 public minSellPrice;
-
     struct Sale {
         uint256 tokenId;
         uint256 amount;
@@ -94,7 +92,6 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         address _currency
     ) external {
         require(acceptedCurrencies[_currency], "currency not accepted");
-        require(_price >= minSellPrice, "price must be greater then min sell price");
         nft.safeTransferFrom(_msgSender(), address(this), _tokenId, _amount, "");
         Sale memory sale = Sale({
             tokenId: _tokenId,
@@ -122,6 +119,8 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     /**
      * Purhcase a sale
+     * // TODO(karmacoma): based on this comment _whom=0x0 should send to _msgSender()
+       // but it will actually attempt to transfer to 0x0 and fail
      * @param _whom if gifting, the recipient address, else address(0)
      */
     function buyFor(
@@ -140,6 +139,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         IERC20 quoteToken = IERC20(sale.currency);
         quoteToken.transferFrom(_msgSender(), address(this), price);
         if (royalty == Royalty.ON) {
+            // TODO(karmacoma): check that royaltyAmount < price?
             (address receiver, uint256 royaltyAmount) = _royaltyInfo(sale.tokenId, price);
             if (royaltyAmount > 0) {
                 quoteToken.transfer(receiver, royaltyAmount);
@@ -202,11 +202,6 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     /// @notice unpause the contract
     function unpause() external whenPaused onlyOwner {
         _unpause();
-    }
-
-    /// @notice set minimum sell price, below which sales won't be created
-    function setMinSellPrice(uint256 _minPrice) external onlyOwner {
-        minSellPrice = _minPrice;
     }
 
     //
