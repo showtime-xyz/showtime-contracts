@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/ERC1155Receiver.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { Ownable, Context } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -12,6 +13,7 @@ import { IERC2981 } from "./IERC2981.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 
 contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using Address for address;
 
@@ -137,17 +139,16 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
         uint256 price = sale.price.mul(_amount);
         IERC20 quoteToken = IERC20(sale.currency);
-        quoteToken.transferFrom(_msgSender(), address(this), price);
         if (royalty == Royalty.ON) {
             // TODO(karmacoma): check that royaltyAmount < price?
             (address receiver, uint256 royaltyAmount) = _royaltyInfo(sale.tokenId, price);
             if (royaltyAmount > 0) {
-                quoteToken.transfer(receiver, royaltyAmount);
+                quoteToken.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
                 emit RoyaltyPaid(receiver, royaltyAmount);
                 price = price.sub(royaltyAmount);
             }
         }
-        quoteToken.transfer(sale.seller, price);
+        quoteToken.safeTransferFrom(_msgSender(), sale.seller, price);
         nft.safeTransferFrom(address(this), _whom, sale.tokenId, _amount, "");
 
         emit Buy(_saleId, sale.seller, _whom, _amount);
