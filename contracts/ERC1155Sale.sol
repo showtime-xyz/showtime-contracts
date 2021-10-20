@@ -119,17 +119,14 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         emit Cancel(_saleId, _msgSender());
     }
 
-    /**
-     * Purhcase a sale
-     * // TODO(karmacoma): based on this comment _whom=0x0 should send to _msgSender()
-       // but it will actually attempt to transfer to 0x0 and fail
-     * @param _whom if gifting, the recipient address, else address(0)
-     */
+    /// @notice Complete a sale
+    /// @param _whom the recipient address
     function buyFor(
         uint256 _saleId,
         uint256 _amount,
         address _whom
     ) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
+        require(_whom != address(0), "invalid _whom address");
         Sale memory sale = sales[_saleId];
         require(_amount <= sale.amount, "required amount greater than available amount");
         sales[_saleId].amount -= _amount;

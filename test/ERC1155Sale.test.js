@@ -108,6 +108,17 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await mt.balanceOf(alice, 1), 5); // 10 - 5
         assert.equal(await mt.balanceOf(bob, 1), 5); // 0 + 5
     });
+
+    it("can not buy for address 0", async () => {
+        // alice creates a sale
+        const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+        // bob attempts to buy
+        await truffleAsserts.reverts(
+            sale.buyFor(New.saleId, 5, ZERO_ADDRESS, { from: bob }),
+            "invalid _whom address"
+        );
+    });
+
     it("buys for another user", async () => {
         // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
