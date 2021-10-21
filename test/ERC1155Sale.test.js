@@ -25,6 +25,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await mt.setApprovalForAll(sale.address, true);
         await token.approve(sale.address, 2500, { from: bob });
     });
+
     it("doesn't allow to deploy with incorrect constructor arguments", async () => {
         await truffleAsserts.reverts(ERC1155Sale.new(alice, [token.address]), "must be contract address");
         await truffleAsserts.reverts(
@@ -32,11 +33,13 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
             "_initialCurrencies must contain contract addresses"
         );
     });
+
     it("deploys with correct constructor arguments", async () => {
         assert.equal(await sale.nft(), mt.address);
         assert.equal(await sale.acceptedCurrencies(token.address), true);
         assert.equal(await sale.royalty(), 1);
     });
+
     it("creates a new sale", async () => {
         // alice creates a sale
         // `New` is the event emitted when creating a new sale
@@ -45,12 +48,11 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(New.seller, alice);
         assert.equal(New.tokenId, 1);
         assert.equal(await mt.balanceOf(alice, 1), 5); // 10 - 5
-        const _sale = await sale.sales(New.saleId);
+        const _sale = await sale.listings(New.saleId);
         assert.equal(_sale.tokenId, 1);
         assert.equal(_sale.amount, 5);
         assert.equal(_sale.price, 500);
         assert.equal(_sale.seller, alice);
-        assert.equal(_sale.isActive, true);
     });
 
     it("has enough tokens to buy", async () => {
@@ -75,26 +77,35 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         // bob cannot cancel
         await truffleAsserts.reverts(sale.cancelSale(saleId), "caller not seller");
     });
+
     it("cannot cancel not existent sale", async () => {
-        await truffleAsserts.reverts(sale.cancelSale(42), "sale doesn't exist");
+        await truffleAsserts.reverts(sale.cancelSale(42), "listing doesn't exist");
     });
+
     it("allows seller to cancel their sale", async () => {
-        // alice cancels a sale
+        // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
         // alice cancels her sale
         const { args: Cancel } = (await sale.cancelSale(New.saleId, { from: alice })).logs[0];
         assert.equal(Cancel.saleId, 0);
         assert.equal(Cancel.seller, alice);
-        const _sale = await sale.sales(Cancel.saleId);
-        assert.equal(_sale.isActive, false);
+
+        const _sale = await sale.listings(Cancel.saleId);
+        assert.equal(_sale.seller, ZERO_ADDRESS);
+        assert.equal(_sale.tokenId, 0);
+        assert.equal(_sale.amount, 0);
+        assert.equal(_sale.price, 0);
+        assert.equal(_sale.currency, ZERO_ADDRESS);
     });
+
     it("cannot buy a cancelled sale", async () => {
         const tx = await sale.createSale(1, 5, 500, token.address, { from: alice }); // alice create
         const { saleId } = tx.logs[0].args;
         await sale.cancelSale(saleId, { from: alice }); // alice cancel
-        await truffleAsserts.reverts(sale.buyFor(saleId, 5, admin), "sale already cancelled or bought");
+        await truffleAsserts.reverts(sale.buyFor(saleId, 5, admin), "listing doesn't exist");
     });
-    it("buys a valid sale", async () => {
+
+    it("completes a valid buy", async () => {
         // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
         // bob buys the sale
@@ -103,8 +114,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(Buy.seller, alice);
         assert.equal(Buy.buyer, bob);
         assert.equal(Buy.amount, 5);
-        const _sale = await sale.sales(Buy.saleId);
-        assert.equal(_sale.isActive, false);
+        const _sale = await sale.listings(Buy.saleId);
+        assert.equal(_sale.seller, ZERO_ADDRESS);
         assert.equal(await mt.balanceOf(alice, 1), 5); // 10 - 5
         assert.equal(await mt.balanceOf(bob, 1), 5); // 0 + 5
     });
@@ -128,12 +139,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(Buy.seller, alice);
         assert.equal(Buy.buyer, admin);
         assert.equal(Buy.amount, 5);
-        const _sale = await sale.sales(Buy.saleId);
-        assert.equal(_sale.isActive, false);
+
+        const _sale = await sale.listings(Buy.saleId);
+        assert.equal(_sale.seller, ZERO_ADDRESS);
+
         assert.equal(await mt.balanceOf(alice, 1), 5); // 10 - 5
         assert.equal(await mt.balanceOf(admin, 1), 5); // 0 + 5
     });
-    it("buys specific amount of tokenIds from the sale", async () => {
+
+    it("buys specific amount of tokenIds", async () => {
         // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
         // bob buys the sale: 2 tokens only out of 5
@@ -143,6 +157,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const { args: Buy2 } = (await sale.buyFor(New.saleId, 3, bob, { from: bob })).logs[0];
         assert.equal(Buy2.amount, 3);
     });
+
     it("throws on attempting to buy more than available amount", async () => {
         // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
@@ -152,7 +167,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
             "required amount greater than available amount"
         );
     });
-    it("buys a sale which has royalty associated with it", async () => {
+
+    it("completes a sale which has royalty associated with it", async () => {
         // admin puts his tokenId on sale which has 10% royalty to alice
         await sale.createSale(2, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
@@ -162,12 +178,14 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(alice), 250); // received her 10%
         assert.equal(await token.balanceOf(admin), 2250); // price - royalty
     });
+
     it("permits only owner to turn off royalty on the contract", async () => {
         await truffleAsserts.reverts(sale.royaltySwitch(0, { from: alice }));
         assert.equal(await sale.royalty(), 1);
         await sale.royaltySwitch(0);
         assert.equal(await sale.royalty(), 0);
     });
+
     it("pays no royalty when royalty is turned off", async () => {
         await sale.royaltySwitch(0);
         await truffleAsserts.reverts(sale.royaltySwitch(0), "royalty already on the desired state");
@@ -177,6 +195,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(alice), 0); // received no royalty
         assert.equal(await token.balanceOf(admin), 2500);
     });
+
     it("permits only owner to pause and unpause the contract", async () => {
         await truffleAsserts.reverts(sale.pause({ from: alice }), "Ownable: caller is not the owner");
         await sale.pause();
@@ -184,6 +203,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await sale.unpause();
         assert.equal(await sale.paused(), false);
     });
+
     it("doesnt function when paused", async () => {
         await sale.createSale(1, 5, 500, token.address, { from: alice });
         await sale.pause();
@@ -191,6 +211,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await sale.unpause();
         await sale.buyFor(0, 5, bob, { from: bob });
     });
+
     it("permits only owner to add accepted currencies", async () => {
         await truffleAsserts.reverts(
             sale.setAcceptedCurrency(mt.address, { from: alice }),
@@ -199,6 +220,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await sale.setAcceptedCurrency(mt.address);
         assert.equal(await sale.acceptedCurrencies(mt.address), true);
     });
+
     it("permits only owner to remove accepted currency", async () => {
         await sale.setAcceptedCurrency(mt.address);
         await truffleAsserts.reverts(

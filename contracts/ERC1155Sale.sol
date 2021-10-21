@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/utils/Counters.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -13,21 +14,22 @@ import { IERC2981 } from "./IERC2981.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 
 contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
+    using Counters for Counters.Counter;
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using Address for address;
 
     IERC1155 public nft;
 
-    struct Sale {
+    struct Listing {
         uint256 tokenId;
         uint256 amount;
         uint256 price;
         address currency;
         address seller;
-        bool isActive;
     }
 
+    // TODO: this really wants to be a boolean
     enum Royalty {
         OFF,
         ON
@@ -36,20 +38,18 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     mapping(address => bool) public acceptedCurrencies;
 
-    Sale[] public sales;
+    /// @dev maps a listing id to the corresponding listing
+    mapping(uint256 => Listing) public listings;
 
-    modifier onlySeller(uint256 _saleId) {
-        require(sales[_saleId].seller == _msgSender(), "caller not seller");
+    Counters.Counter counter;
+
+    modifier onlySeller(uint256 _id) {
+        require(listings[_id].seller == _msgSender(), "caller not seller");
         _;
     }
 
-    modifier isActive(uint256 _saleId) {
-        require(sales[_saleId].isActive, "sale already cancelled or bought");
-        _;
-    }
-
-    modifier saleExists(uint256 _saleId) {
-        require(sales.length > _saleId, "sale doesn't exist");
+    modifier listingExists(uint256 _id) {
+        require(listings[_id].seller != address(0), "listing doesn't exist");
         _;
     }
 
@@ -85,70 +85,77 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     }
 
     /// @notice `setApprovalForAll` before calling
-    /// @notice creates a new sale
+    /// @notice creates a new Listing
     /// @param _amount the price for each of the amount in the listing
     function createSale(
         uint256 _tokenId,
         uint256 _amount,
         uint256 _price,
         address _currency
-    ) external {
+    ) external returns (uint256 listingId) {
         require(acceptedCurrencies[_currency], "currency not accepted");
+
         nft.safeTransferFrom(_msgSender(), address(this), _tokenId, _amount, "");
-        Sale memory sale = Sale({
+
+        Listing memory listing = Listing({
             tokenId: _tokenId,
             amount: _amount,
             price: _price,
             currency: _currency,
-            seller: _msgSender(),
-            isActive: true
+            seller: _msgSender()
         });
-        uint256 saleId = sales.length;
-        sales.push(sale);
 
-        emit New(saleId, _msgSender(), _tokenId);
+        listingId = counter.current();
+        listings[listingId] = listing;
+
+        counter.increment();
+
+        emit New(listingId, _msgSender(), _tokenId);
     }
 
     /// @notice cancel an active sale
-    function cancelSale(uint256 _saleId) external saleExists(_saleId) onlySeller(_saleId) isActive(_saleId) {
-        Sale memory sale = sales[_saleId];
-        // make sale invalid, and send seller his nft back
-        sales[_saleId].isActive = false;
-        nft.safeTransferFrom(address(this), sale.seller, sale.tokenId, sale.amount, "");
+    function cancelSale(uint256 _listingId) external listingExists(_listingId) onlySeller(_listingId) {
+        Listing memory listing = listings[_listingId];
 
-        emit Cancel(_saleId, _msgSender());
+        delete listings[_listingId];
+
+        nft.safeTransferFrom(address(this), listing.seller, listing.tokenId, listing.amount, "");
+
+        emit Cancel(_listingId, _msgSender());
     }
 
     /// @notice Complete a sale
     /// @param _whom the recipient address
     function buyFor(
-        uint256 _saleId,
+        uint256 _listingId,
         uint256 _amount,
         address _whom
-    ) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
+    ) external listingExists(_listingId) whenNotPaused {
         require(_whom != address(0), "invalid _whom address");
-        Sale memory sale = sales[_saleId];
-        require(_amount <= sale.amount, "required amount greater than available amount");
-        sales[_saleId].amount -= _amount;
-        if (sales[_saleId].amount == 0) {
-            sales[_saleId].isActive = false;
+
+        Listing memory listing = listings[_listingId];
+        require(_amount <= listing.amount, "required amount greater than available amount");
+
+        listings[_listingId].amount -= _amount;
+        if (listings[_listingId].amount == 0) {
+            delete listings[_listingId];
         }
 
-        uint256 price = sale.price.mul(_amount);
-        IERC20 quoteToken = IERC20(sale.currency);
+        uint256 price = listing.price.mul(_amount);
+        IERC20 quoteToken = IERC20(listing.currency);
         if (royalty == Royalty.ON) {
             // TODO(karmacoma): check that royaltyAmount < price?
-            (address receiver, uint256 royaltyAmount) = _royaltyInfo(sale.tokenId, price);
+            (address receiver, uint256 royaltyAmount) = _royaltyInfo(listing.tokenId, price);
             if (royaltyAmount > 0) {
                 quoteToken.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
                 emit RoyaltyPaid(receiver, royaltyAmount);
                 price = price.sub(royaltyAmount);
             }
         }
-        quoteToken.safeTransferFrom(_msgSender(), sale.seller, price);
-        nft.safeTransferFrom(address(this), _whom, sale.tokenId, _amount, "");
+        quoteToken.safeTransferFrom(_msgSender(), listing.seller, price);
+        nft.safeTransferFrom(address(this), _whom, listing.tokenId, _amount, "");
 
-        emit Buy(_saleId, sale.seller, _whom, _amount);
+        emit Buy(_listingId, listing.seller, _whom, _amount);
     }
 
     /**
