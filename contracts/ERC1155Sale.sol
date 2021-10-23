@@ -29,12 +29,8 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         address seller;
     }
 
-    // TODO: this really wants to be a boolean
-    enum Royalty {
-        OFF,
-        ON
-    } // making it support non ERC2981 compliant NFTs also
-    Royalty public royalty;
+    // making it support non ERC2981 compliant NFTs also
+    bool public royaltiesEnabled;
 
     mapping(address => bool) public acceptedCurrencies;
 
@@ -69,9 +65,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
         // is royalty standard compliant? if so turn royalties on
         try nft.supportsInterface(0x2a55205a) returns (bool implementsERC2981) {
-            if (implementsERC2981) {
-                royalty = Royalty.ON;
-            }
+            royaltiesEnabled = implementsERC2981;
         } catch (bytes memory) {}
     }
 
@@ -143,7 +137,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
         uint256 price = listing.price.mul(_amount);
         IERC20 quoteToken = IERC20(listing.currency);
-        if (royalty == Royalty.ON) {
+        if (royaltiesEnabled) {
             // TODO(karmacoma): check that royaltyAmount < price?
             (address receiver, uint256 royaltyAmount) = _royaltyInfo(listing.tokenId, price);
             if (royaltyAmount > 0) {
@@ -182,9 +176,9 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     //
 
     /// @notice switch royalty payments on/off
-    function royaltySwitch(Royalty _royalty) external onlyOwner {
-        require(_royalty != royalty, "royalty already on the desired state");
-        royalty = _royalty;
+    function royaltySwitch(bool enabled) external onlyOwner {
+        require(royaltiesEnabled != enabled, "royalty already on the desired state");
+        royaltiesEnabled = enabled;
     }
 
     /// @notice add a currency from the accepted currency list

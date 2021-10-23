@@ -37,7 +37,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     it("deploys with correct constructor arguments", async () => {
         assert.equal(await sale.nft(), mt.address);
         assert.equal(await sale.acceptedCurrencies(token.address), true);
-        assert.equal(await sale.royalty(), 1);
+        assert.equal(await sale.royaltiesEnabled(), true);
     });
 
     it("creates a new sale", async () => {
@@ -168,7 +168,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
     });
 
-    it("completes a sale which has royalty associated with it", async () => {
+    it("completes a sale which has royalties associated with it", async () => {
         // admin puts his tokenId on sale which has 10% royalty to alice
         await sale.createSale(2, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
@@ -180,15 +180,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     });
 
     it("permits only owner to turn off royalty on the contract", async () => {
-        await truffleAsserts.reverts(sale.royaltySwitch(0, { from: alice }));
-        assert.equal(await sale.royalty(), 1);
-        await sale.royaltySwitch(0);
-        assert.equal(await sale.royalty(), 0);
+        await truffleAsserts.reverts(sale.royaltySwitch(false, { from: alice }));
+        assert.equal(await sale.royaltiesEnabled(), true);
+        await sale.royaltySwitch(false);
+        assert.equal(await sale.royaltiesEnabled(), false);
     });
 
     it("pays no royalty when royalty is turned off", async () => {
-        await sale.royaltySwitch(0);
-        await truffleAsserts.reverts(sale.royaltySwitch(0), "royalty already on the desired state");
+        await sale.royaltySwitch(false);
+        await truffleAsserts.reverts(sale.royaltySwitch(false), "royalty already on the desired state");
         await sale.createSale(2, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
         await sale.buyFor(0, 5, bob, { from: bob });
