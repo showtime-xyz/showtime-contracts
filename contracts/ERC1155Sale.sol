@@ -130,24 +130,29 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         Listing memory listing = listings[_listingId];
         require(_amount <= listing.amount, "required amount greater than available amount");
 
-        listings[_listingId].amount -= _amount;
-        if (listings[_listingId].amount == 0) {
-            delete listings[_listingId];
-        }
-
         uint256 price = listing.price.mul(_amount);
         IERC20 quoteToken = IERC20(listing.currency);
         if (royaltiesEnabled) {
-            // TODO(karmacoma): check that royaltyAmount < price?
             (address receiver, uint256 royaltyAmount) = _royaltyInfo(listing.tokenId, price);
             if (royaltyAmount > 0) {
+                require(royaltyAmount <= price, "");
+
                 quoteToken.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
                 emit RoyaltyPaid(receiver, royaltyAmount);
                 price = price.sub(royaltyAmount);
             }
         }
+
+        // perform the exchange
         quoteToken.safeTransferFrom(_msgSender(), listing.seller, price);
         nft.safeTransferFrom(address(this), _whom, listing.tokenId, _amount, "");
+
+        // update the amount in the listing or delete it if everything has been sold
+        if (_amount == listing.amount) {
+            delete listings[_listingId];
+        } else {
+            listings[_listingId].amount -= _amount;
+        }
 
         emit Buy(_listingId, listing.seller, _whom, _amount);
     }
