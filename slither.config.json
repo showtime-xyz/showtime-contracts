@@ -1,0 +1,4 @@
+{
+    "exclude_informational": true,
+    "filter_paths": "node_modules"
+}

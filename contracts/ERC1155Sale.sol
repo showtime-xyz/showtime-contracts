@@ -19,6 +19,8 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     using SafeMath for uint256;
     using Address for address;
 
+    bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
+
     IERC1155 public nft;
 
     struct Listing {
@@ -64,9 +66,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         nft = IERC1155(_nft);
 
         // is royalty standard compliant? if so turn royalties on
-        try nft.supportsInterface(0x2a55205a) returns (bool implementsERC2981) {
-            royaltiesEnabled = implementsERC2981;
-        } catch (bytes memory) {}
+        bool royaltiesEnabled = nft.supportsInterface(_INTERFACE_ID_ERC2981);
     }
 
     /**
@@ -113,9 +113,9 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
         delete listings[_listingId];
 
-        nft.safeTransferFrom(address(this), listing.seller, listing.tokenId, listing.amount, "");
-
         emit Cancel(_listingId, _msgSender());
+
+        nft.safeTransferFrom(address(this), listing.seller, listing.tokenId, listing.amount, "");
     }
 
     /// @notice Complete a sale
@@ -137,15 +137,12 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
             if (royaltyAmount > 0) {
                 require(royaltyAmount <= price, "");
 
-                quoteToken.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
                 emit RoyaltyPaid(receiver, royaltyAmount);
                 price = price.sub(royaltyAmount);
+
+                quoteToken.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
             }
         }
-
-        // perform the exchange
-        quoteToken.safeTransferFrom(_msgSender(), listing.seller, price);
-        nft.safeTransferFrom(address(this), _whom, listing.tokenId, _amount, "");
 
         // update the amount in the listing or delete it if everything has been sold
         if (_amount == listing.amount) {
@@ -155,6 +152,10 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         }
 
         emit Buy(_listingId, listing.seller, _whom, _amount);
+
+        // perform the exchange
+        quoteToken.safeTransferFrom(_msgSender(), listing.seller, price);
+        nft.safeTransferFrom(address(this), _whom, listing.tokenId, _amount, "");
     }
 
     /**

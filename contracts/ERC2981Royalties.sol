@@ -18,7 +18,7 @@ contract ERC2981Royalties is IERC2981 {
         address recipient,
         uint256 value
     ) internal {
-        require(value <= 10000, "ERC2981Royalties: value too high");
+        require(value <= 100_00, "ERC2981Royalties: value too high");
         _royalties[id] = Royalty(recipient, value);
     }
 
@@ -29,6 +29,6 @@ contract ERC2981Royalties is IERC2981 {
         returns (address receiver, uint256 royaltyAmount)
     {
         Royalty memory royalty = _royalties[_tokenId];
-        return (royalty.recipient, (_salePrice.mul(royalty.value)).div(10000));
+        return (royalty.recipient, (_salePrice.mul(royalty.value)).div(100_00));
     }
 }
