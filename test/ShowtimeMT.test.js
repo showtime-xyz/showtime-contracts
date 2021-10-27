@@ -1,6 +1,7 @@
 const MT = artifacts.require("ShowtimeMT");
 const truffleAssert = require("truffle-assertions");
 
+// TODO: test that we reject royalties to the 0 address
 contract("ShowtimeMT", async (accounts) => {
     let mt;
     describe("Access Tests", async () => {
@@ -20,24 +21,20 @@ contract("ShowtimeMT", async (accounts) => {
             const royaltyRecipient = "0x".padEnd(42, "0");
             const royaltyPercent = 0; // 0 % means no royalty being set
             await truffleAssert.reverts(
-                mt.issueToken(
-                    recepient,
-                    amount,
-                    hash,
-                    data,
-                    royaltyRecipient,
-                    royaltyPercent,
-                    { from: accounts[3] }
-                ),
+                mt.issueToken(recepient, amount, hash, data, royaltyRecipient, royaltyPercent, {
+                    from: accounts[3],
+                }),
                 "AccessProtected: caller is not minter"
             );
         });
+
         it("owner should be able to set admin", async () => {
             const result = await mt.setAdmin(accounts[3], true);
             truffleAssert.eventEmitted(result, "UserAccessSet");
             const isAdmin = await mt.isAdmin(accounts[3]);
             assert.equal(isAdmin, true);
         });
+
         it("admin should be able to set minter", async () => {
             const result = await mt.setMinter(accounts[3], true, {
                 from: accounts[1],
@@ -46,6 +43,7 @@ contract("ShowtimeMT", async (accounts) => {
             const isMinter = await mt.isMinter(accounts[3]);
             assert.equal(isMinter, true);
         });
+
         it("admin should be able to set batch of minters", async () => {
             const minters = accounts.slice(3, 8);
             const result = await mt.setMinters(minters, true, {
@@ -58,6 +56,7 @@ contract("ShowtimeMT", async (accounts) => {
                 assert.equal(isMinter, true);
             }
         });
+
         it("admin should be able to revoke minter", async () => {
             const result = await mt.setMinter(accounts[2], false, {
                 from: accounts[1],
@@ -66,6 +65,7 @@ contract("ShowtimeMT", async (accounts) => {
             const isMinter = await mt.isMinter(accounts[2]);
             assert.equal(isMinter, false);
         });
+
         it("admin should be able to revoke batch of minters", async () => {
             const minters = accounts.slice(3, 8);
             const result = await mt.setMinters(minters, false, {
@@ -78,18 +78,21 @@ contract("ShowtimeMT", async (accounts) => {
                 assert.equal(isMinter, false);
             }
         });
+
         it("non-owner should not be able to set admin", async () => {
             await truffleAssert.reverts(
                 mt.setAdmin(accounts[1], true, { from: accounts[1] }),
                 "Ownable: caller is not the owner"
             );
         });
+
         it("owner should be able to revoke admin", async () => {
             const result = await mt.setAdmin(accounts[1], false);
             truffleAssert.eventEmitted(result, "UserAccessSet");
             const isAdmin = await mt.isAdmin(accounts[1]);
             assert.equal(isAdmin, false);
         });
+
         it("admin should be able to enable/disable minting for all", async () => {
             const enable_result = await mt.setPublicMinting(true, {
                 from: accounts[1],
@@ -105,6 +108,7 @@ contract("ShowtimeMT", async (accounts) => {
             assert.equal(disable_publicMinting, false);
         });
     });
+
     describe("Minting Tests", async () => {
         beforeEach(async () => {
             // Deploy MultiToken
@@ -112,6 +116,7 @@ contract("ShowtimeMT", async (accounts) => {
             // Set Admin
             await mt.setAdmin(accounts[1], true);
         });
+
         it("minter should be able to mint", async () => {
             const recipient = accounts[1];
             const amount = 10;
@@ -119,28 +124,19 @@ contract("ShowtimeMT", async (accounts) => {
             const data = "0x00";
             const royaltyRecipient = "0x".padEnd(42, "0"); // "0x0000..."
             const royaltyPercent = 0; // 0 % means no royalty being set
-            await mt.issueToken(
-                recipient,
-                amount,
-                hash,
-                data,
-                royaltyRecipient,
-                royaltyPercent
-            );
+            await mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent);
             const balance = await mt.balanceOf(recipient, 1);
             assert.equal(balance, amount);
 
             // assert no royalty
-            const { receiver, royaltyAmount } = await mt.royaltyInfo(
-                1,
-                web3.utils.toWei("1")
-            );
+            const { receiver, royaltyAmount } = await mt.royaltyInfo(1, web3.utils.toWei("1"));
             assert.equal(receiver, "0x".padEnd(42, "0"));
             assert.equal(royaltyAmount, 0);
 
             const URI = await mt.uri(1);
             assert.equal(URI, "https://gateway.pinata.cloud/ipfs/some-hash");
         });
+
         it("minter should be able to batch mint", async () => {
             const recipient = accounts[1];
             const amounts = [];
@@ -170,20 +166,15 @@ contract("ShowtimeMT", async (accounts) => {
                 assert.equal(balance.toString(), tokenAmounts[i]);
 
                 // assert no royalty
-                const { receiver, royaltyAmount } = await mt.royaltyInfo(
-                    tokenIds[i],
-                    web3.utils.toWei("1")
-                );
+                const { receiver, royaltyAmount } = await mt.royaltyInfo(tokenIds[i], web3.utils.toWei("1"));
                 assert.equal(receiver, "0x".padEnd(42, "0"));
                 assert.equal(royaltyAmount, 0);
 
                 const URI = await mt.uri(tokenIds[i]);
-                assert.equal(
-                    URI,
-                    "https://gateway.pinata.cloud/ipfs/some-hash-" + i
-                );
+                assert.equal(URI, "https://gateway.pinata.cloud/ipfs/some-hash-" + i);
             }
         });
+
         it("should be able to mint if public minting is enabled", async () => {
             await mt.setPublicMinting(true, { from: accounts[1] });
             const recipient = accounts[1];
@@ -192,23 +183,14 @@ contract("ShowtimeMT", async (accounts) => {
             const data = "0x00";
             const royaltyRecipient = "0x".padEnd(42, "0");
             const royaltyPercent = 0; // 0 % means no royalty being set
-            await mt.issueToken(
-                recipient,
-                amount,
-                hash,
-                data,
-                royaltyRecipient,
-                royaltyPercent,
-                { from: accounts[4] }
-            );
+            await mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent, {
+                from: accounts[4],
+            });
             const balance = await mt.balanceOf(recipient, 1);
             assert.equal(balance, amount);
 
             // assert no royalty set
-            const { receiver, royaltyAmount } = await mt.royaltyInfo(
-                1,
-                web3.utils.toWei("1")
-            );
+            const { receiver, royaltyAmount } = await mt.royaltyInfo(1, web3.utils.toWei("1"));
             assert.equal(receiver, "0x".padEnd(42, "0"));
             assert.equal(royaltyAmount, 0);
 
@@ -216,6 +198,7 @@ contract("ShowtimeMT", async (accounts) => {
             assert.equal(URI, "https://gateway.pinata.cloud/ipfs/some-hash");
         });
     });
+
     describe("Burning tests", () => {
         beforeEach(async () => {
             // Deploy MultiToken
@@ -228,14 +211,7 @@ contract("ShowtimeMT", async (accounts) => {
             const data = "0x00";
             const royaltyRecipient = "0x".padEnd(42, "0"); // "0x0000..."
             const royaltyPercent = 0; // 0 % means no royalty being set
-            await mt.issueToken(
-                recipient,
-                amount,
-                hash,
-                data,
-                royaltyRecipient,
-                royaltyPercent
-            );
+            await mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent);
             let balance = await mt.balanceOf(recipient, 1);
             assert.equal(balance, amount);
             await mt.burn(recipient, 1, amount, { from: recipient });
@@ -244,6 +220,7 @@ contract("ShowtimeMT", async (accounts) => {
             // no balance after burning
             assert.equal(balance.toString(), 0);
         });
+
         it("holder should be able to batch burn", async () => {
             const recipient = accounts[1];
             const amounts = [];
@@ -280,6 +257,7 @@ contract("ShowtimeMT", async (accounts) => {
                 assert.equal(balance.toString(), 0);
             }
         });
+
         it("can burn arbitrary amount", async () => {
             const recipient = accounts[1];
             const amount = 10;
@@ -287,19 +265,13 @@ contract("ShowtimeMT", async (accounts) => {
             const data = "0x00";
             const royaltyRecipient = "0x".padEnd(42, "0"); // "0x0000..."
             const royaltyPercent = 0; // 0 % means no royalty being set
-            await mt.issueToken(
-                recipient,
-                amount,
-                hash,
-                data,
-                royaltyRecipient,
-                royaltyPercent
-            );
+            await mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent);
             // burn half i.e 5 and keep 5
             await mt.burn(recipient, 1, amount / 2, { from: recipient });
             const balance = await mt.balanceOf(recipient, 1);
             assert.equal(balance.toString(), 5);
         });
+
         it("reverts of attempting to burn unowned tokens", async () => {
             const recipient = accounts[1];
             const amount = 10;
@@ -307,19 +279,13 @@ contract("ShowtimeMT", async (accounts) => {
             const data = "0x00";
             const royaltyRecipient = "0x".padEnd(42, "0"); // "0x0000..."
             const royaltyPercent = 0; // 0 % means no royalty being set
-            await mt.issueToken(
-                recipient,
-                amount,
-                hash,
-                data,
-                royaltyRecipient,
-                royaltyPercent
-            );
+            await mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent);
             await truffleAssert.reverts(
                 mt.burn(recipient, 1, amount),
                 "ERC1155: caller is not owner nor approved"
             );
         });
+
         it("reverts on attempting to batch burn unowned tokens", async () => {
             const recipient = accounts[1];
             const amounts = [];
@@ -349,6 +315,7 @@ contract("ShowtimeMT", async (accounts) => {
                 "ERC1155: caller is not owner nor approved"
             );
         });
+
         it("reverts on attempting to burn more than balance", async () => {
             const recipient = accounts[1];
             const amount = 10;
@@ -356,20 +323,14 @@ contract("ShowtimeMT", async (accounts) => {
             const data = "0x00";
             const royaltyRecipient = "0x".padEnd(42, "0"); // "0x0000..."
             const royaltyPercent = 0; // 0 % means no royalty being set
-            await mt.issueToken(
-                recipient,
-                amount,
-                hash,
-                data,
-                royaltyRecipient,
-                royaltyPercent
-            );
+            await mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent);
             await truffleAssert.reverts(
                 mt.burn(recipient, 1, 11, { from: recipient }),
                 "ERC1155: burn amount exceeds balance"
             );
         });
     });
+
     describe("URI Tests", async () => {
         beforeEach(async () => {
             // Deploy MultiToken
@@ -381,14 +342,7 @@ contract("ShowtimeMT", async (accounts) => {
             const data = "0x00";
             const royaltyRecipient = "0x".padEnd(42, "0");
             const royaltyPercent = 0; // 0 % means no royalty being set
-            await mt.issueToken(
-                recipient,
-                amount,
-                hash,
-                data,
-                royaltyRecipient,
-                royaltyPercent
-            );
+            await mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent);
         });
         it("should be able to get baseURI", async () => {
             const baseURI = await mt.baseURI();
@@ -405,6 +359,7 @@ contract("ShowtimeMT", async (accounts) => {
             assert.equal(URI, "https://gateway.pinata.cloud/ipfs/some-hash");
         });
     });
+
     describe("Transfer Tests", async () => {
         beforeEach(async () => {
             // Deploy MultiToken
@@ -416,15 +371,9 @@ contract("ShowtimeMT", async (accounts) => {
             const data = "0x00";
             const royaltyRecipient = "0x".padEnd(42, "0");
             const royaltyPercent = 0; // 0 % means no royalty being set
-            await mt.issueToken(
-                recipient,
-                amount,
-                hash,
-                data,
-                royaltyRecipient,
-                royaltyPercent
-            );
+            await mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent);
         });
+
         it("nft-owner should be able to transfer amount", async () => {
             const from = accounts[1];
             const to = accounts[2];
@@ -440,6 +389,7 @@ contract("ShowtimeMT", async (accounts) => {
             assert.equal(BigInt(toBalance_new), BigInt(toBalance + amount));
         });
     });
+
     describe("Royalty tests", function () {
         beforeEach(async function () {
             // Deploy MultiToken
@@ -452,18 +402,12 @@ contract("ShowtimeMT", async (accounts) => {
             const data = "0x00";
             const royaltyRecipient = accounts[2];
             const royaltyPercent = 1000; // 10% royalty
-            await mt.issueToken(
-                recipient,
-                amount,
-                hash,
-                data,
-                royaltyRecipient,
-                royaltyPercent
-            );
+            await mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent);
             const { receiver, royaltyAmount } = await mt.royaltyInfo(1, 100); // 100 is sale price
             assert.equal(receiver, accounts[2]);
             assert.equal(royaltyAmount.toString(), 10);
         });
+
         it("mints in batch with royalty", async function () {
             const recipient = accounts[1];
             const amounts = [];
@@ -488,14 +432,12 @@ contract("ShowtimeMT", async (accounts) => {
             );
             const tokenIds = result.receipt.logs[0].args.ids;
             for (i = 0; i < iterations; i++) {
-                const { receiver, royaltyAmount } = await mt.royaltyInfo(
-                    tokenIds[i],
-                    100
-                );
+                const { receiver, royaltyAmount } = await mt.royaltyInfo(tokenIds[i], 100);
                 assert.equal(receiver, accounts[i]);
                 assert.equal(royaltyAmount.toString(), 5 * (i + 1));
             }
         });
+
         it("throws on % greater than 100%", async function () {
             const recipient = accounts[1];
             const amount = 1;
@@ -504,14 +446,7 @@ contract("ShowtimeMT", async (accounts) => {
             const royaltyRecipient = accounts[2];
             const royaltyPercent = 100001; // > 100% royalty
             await truffleAssert.reverts(
-                mt.issueToken(
-                    recipient,
-                    amount,
-                    hash,
-                    data,
-                    royaltyRecipient,
-                    royaltyPercent
-                ),
+                mt.issueToken(recipient, amount, hash, data, royaltyRecipient, royaltyPercent),
                 "ERC2981Royalties: value too high"
             );
         });

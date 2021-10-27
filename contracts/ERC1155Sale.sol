@@ -66,7 +66,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         nft = IERC1155(_nft);
 
         // is royalty standard compliant? if so turn royalties on
-        bool royaltiesEnabled = nft.supportsInterface(_INTERFACE_ID_ERC2981);
+        royaltiesEnabled = nft.supportsInterface(_INTERFACE_ID_ERC2981);
     }
 
     /**
@@ -131,11 +131,17 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         require(_amount <= listing.amount, "required amount greater than available amount");
 
         uint256 price = listing.price.mul(_amount);
+
+        // we let the transaction complete even if the currency is no longer accepted
+        // in order to avoid stuck listings
         IERC20 quoteToken = IERC20(listing.currency);
         if (royaltiesEnabled) {
             (address receiver, uint256 royaltyAmount) = _royaltyInfo(listing.tokenId, price);
-            if (royaltyAmount > 0) {
-                require(royaltyAmount <= price, "");
+
+            // we ignore royalties to address 0, otherwise the transfer would fail
+            // and it would result in NFTs that are impossible to sell
+            if (receiver != address(0) && royaltyAmount > 0) {
+                require(royaltyAmount <= price, "royalty amount too big");
 
                 emit RoyaltyPaid(receiver, royaltyAmount);
                 price = price.sub(royaltyAmount);

@@ -6,19 +6,41 @@ const truffleAsserts = require("truffle-assertions");
 // address(0)
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
 
+// TODO: test sale with price == 0
+// TODO: test self-sale
 contract("ERC1155 Sale Contract Tests", (accounts) => {
-    let mt, token, sale, admin, alice, bob;
+    let mt,
+        token,
+        sale,
+        admin,
+        alice,
+        bob,
+        tokenId0PctRoyalty,
+        tokenId10PctRoyaltyToAlice,
+        tokenId10PctRoyaltyToZeroAddress,
+        tokenId100PctRoyaltyToAlice;
+
     beforeEach(async () => {
         admin = accounts[0];
         alice = accounts[1];
         bob = accounts[2];
+
         // mint tokens
         mt = await MT.new();
-        await mt.issueToken(alice, 10, "some-hash", "0x0", "0x".padEnd(42, "0"), 0);
-        await mt.issueToken(admin, 10, "some-hash", "0x0", alice, 1000); // 10% royalty
+        tokenId0PctRoyalty = (await mt.issueToken(alice, 10, "some-hash", "0x0", ZERO_ADDRESS, 0)).logs[0]
+            .args.id;
+        tokenId10PctRoyaltyToAlice = (await mt.issueToken(admin, 10, "some-hash", "0x0", alice, 10_00))
+            .logs[0].args.id; // 10% royalty
+        tokenId10PctRoyaltyToZeroAddress = (
+            await mt.issueToken(admin, 10, "some-hash", "0x0", ZERO_ADDRESS, 10_00)
+        ).logs[0].args.id; // 10% royalty
+        tokenId100PctRoyaltyToAlice = (await mt.issueToken(admin, 10, "some-hash", "0x0", alice, 100_00))
+            .logs[0].args.id; // 100% royalty
+
         // mint erc20s to bob
         token = await Token.new();
         await token.mint(2500, { from: bob });
+
         // approvals
         sale = await ERC1155Sale.new(mt.address, [token.address]);
         await mt.setApprovalForAll(sale.address, true, { from: alice });
@@ -168,15 +190,36 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
     });
 
-    it("completes a sale which has royalties associated with it", async () => {
+    it("completes a sale which has 10% royalties associated with it", async () => {
         // admin puts his tokenId on sale which has 10% royalty to alice
-        await sale.createSale(2, 5, 500, token.address);
+        await sale.createSale(tokenId10PctRoyaltyToAlice, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
         const { args: RoyaltyPaid } = (await sale.buyFor(0, 5, bob, { from: bob })).logs[0];
         assert.equal(RoyaltyPaid.receiver, alice);
         assert.equal(RoyaltyPaid.amount, 250);
         assert.equal(await token.balanceOf(alice), 250); // received her 10%
         assert.equal(await token.balanceOf(admin), 2250); // price - royalty
+    });
+
+    it("completes a sale which has 10% royalties to the zero address associated with it", async () => {
+        // admin puts his tokenId on sale which has 10% royalty to the zero address
+        await sale.createSale(tokenId10PctRoyaltyToZeroAddress, 5, 500, token.address);
+        assert.equal(await token.balanceOf(alice), 0);
+
+        // we ignore the royalty, everything goes to the seller
+        truffleAsserts.eventNotEmitted(await sale.buyFor(0, 5, bob, { from: bob }), "RoyaltyPaid");
+        assert.equal(await token.balanceOf(admin), 2500); // price
+    });
+
+    it("completes a sale which has 100% royalties associated with it", async () => {
+        // admin puts his tokenId on sale which has 100% royalty to alice
+        await sale.createSale(tokenId100PctRoyaltyToAlice, 5, 500, token.address);
+        assert.equal(await token.balanceOf(alice), 0);
+        const { args: RoyaltyPaid } = (await sale.buyFor(0, 5, bob, { from: bob })).logs[0];
+        assert.equal(RoyaltyPaid.receiver, alice);
+        assert.equal(RoyaltyPaid.amount, 2500);
+        assert.equal(await token.balanceOf(alice), 2500); // received her 100%
+        assert.equal(await token.balanceOf(admin), 0); // price - royalty
     });
 
     it("permits only owner to turn off royalty on the contract", async () => {
@@ -204,12 +247,23 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await sale.paused(), false);
     });
 
-    it("doesnt function when paused", async () => {
+    it("can not create a listing when paused", async () => {
+        await sale.pause();
+        await truffleAsserts.reverts(sale.createSale(1, 5, 500, token.address, { from: alice }));
+        await sale.unpause();
+    });
+
+    it("can not buy when paused", async () => {
         await sale.createSale(1, 5, 500, token.address, { from: alice });
         await sale.pause();
         await truffleAsserts.reverts(sale.buyFor(0, 5, bob, { from: bob }), "Pausable: paused");
         await sale.unpause();
         await sale.buyFor(0, 5, bob, { from: bob });
+    });
+
+    it("can still cancel a listing when paused", async () => {
+        await sale.createSale(1, 5, 500, token.address, { from: alice });
+        await sale.cancelSale(0, { from: alice });
     });
 
     it("permits only owner to add accepted currencies", async () => {
