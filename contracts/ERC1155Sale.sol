@@ -86,7 +86,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         uint256 _amount,
         uint256 _price,
         address _currency
-    ) external returns (uint256 listingId) {
+    ) external whenNotPaused returns (uint256 listingId) {
         require(acceptedCurrencies[_currency], "currency not accepted");
 
         nft.safeTransferFrom(_msgSender(), address(this), _tokenId, _amount, "");
