@@ -6,8 +6,6 @@ const truffleAsserts = require("truffle-assertions");
 // address(0)
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
 
-// TODO: test sale with price == 0
-// TODO: test self-sale
 contract("ERC1155 Sale Contract Tests", (accounts) => {
     let mt,
         token,
@@ -62,7 +60,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await sale.royaltiesEnabled(), true);
     });
 
-    it("creates a new sale", async () => {
+    it("creates a new listing", async () => {
         // alice creates a sale
         // `New` is the event emitted when creating a new sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
@@ -75,6 +73,48 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(_sale.amount, 5);
         assert.equal(_sale.price, 500);
         assert.equal(_sale.seller, alice);
+    });
+
+    it("creates a new listing with price 0", async () => {
+        // alice creates a sale
+        const { args: New } = (await sale.createSale(1, 5, 0, token.address, { from: alice })).logs[0];
+        assert.equal(New.saleId, 0);
+        assert.equal(New.seller, alice);
+        assert.equal(New.tokenId, 1);
+
+        const bobsTokenBalanceBefore = await token.balanceOf(bob);
+        await sale.buyFor(New.saleId, /* amount */ 2, bob, { from: bob });
+
+        assert.equal(await mt.balanceOf(bob, New.tokenId), 2);
+
+        const bobsTokenBalanceAfter = await token.balanceOf(bob);
+        assert(bobsTokenBalanceBefore.eq(bobsTokenBalanceAfter));
+    });
+
+    it("sellers can buy from themselves", async () => {
+        // alice creates a sale
+        const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+
+        assert.equal(await mt.balanceOf(alice, New.tokenId), 10 - 5);
+
+        // alice can not initially complete the sale because she doesn't have the tokens to buy
+        await truffleAsserts.reverts(
+            sale.buyFor(New.saleId, /* amount */ 5, alice, { from: alice }),
+            "ERC20: transfer amount exceeds balance"
+        );
+
+        // mint the tokens
+        await token.mint(2500, { from: alice });
+        await token.approve(sale.address, 2500, { from: alice });
+        const alicesTokenBalanceBefore = await token.balanceOf(alice);
+
+        await sale.buyFor(New.saleId, /* amount */ 5, alice, { from: alice });
+
+        // she got the nft back
+        assert.equal(await mt.balanceOf(alice, New.tokenId), 10);
+
+        // and also the tokens used for the purchase
+        assert((await token.balanceOf(alice)).eq(alicesTokenBalanceBefore));
     });
 
     it("has enough tokens to buy", async () => {
