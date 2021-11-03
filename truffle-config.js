@@ -11,19 +11,21 @@ module.exports = {
         mumbai_testnet: {
             provider: () =>
                 new HDWalletProvider({
-                    privateKeys: [process.env.PRIVATE_KEY],
-                    providerOrUrl: "https://rpc-mumbai.maticvigil.com/",
+                    // privateKeys: [process.env.PRIVATE_KEY],
+                    mnemonic: process.env.MNEMONIC,
+                    providerOrUrl: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
                 }),
             network_id: 80001,
             confirmations: 1,
             timeoutBlocks: 200,
-            skipDryRun: true,
+            skipDryRun: false,
         },
         matic_mainnet: {
             provider: () =>
                 new HDWalletProvider({
-                    privateKeys: [process.env.PRIVATE_KEY],
-                    providerOrUrl: `https://rpc-mainnet.maticvigil.com/v1/${process.env.MATIC_VIGIL_APP_ID}`,
+                    // privateKeys: [process.env.PRIVATE_KEY],
+                    mnemonic: process.env.MNEMONIC,
+                    providerOrUrl: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
                     addressIndex: 0,
                 }),
             network_id: "137",

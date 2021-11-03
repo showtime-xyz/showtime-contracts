@@ -64,7 +64,7 @@ it.only("does a thing", ...);
 
 ## Deploy smart contracts
 
-### on Ganche
+### on Ganache
 
 ```sh
 npm run deploy:ganache
@@ -81,3 +81,23 @@ npm run deploy:mumbai_testnet
 ```sh
 npm run deploy:polygon_mainnet
 ```
+
+## Troubleshooting
+
+Getting this failure when deploying:
+
+```
+Error: error:0308010C:digital envelope routines::unsupported
+    at new Hash (node:internal/crypto/hash:67:19)
+    at Object.createHash (node:crypto:130:10)
+```
+
+Seems to be an issue in node v17, workaround suggested in https://github.com/Snapmaker/Luban/issues/1250 is
+
+    export NODE_OPTIONS=--openssl-legacy-provider
+
+### Running a single migration file
+
+Edit the command in `package.json`, for instance to run only the `2_deploy_mt.js` migration:
+
+    truffle migrate -f 2 --to 2

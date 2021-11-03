@@ -9,8 +9,8 @@
     "scripts": {
         "test": "truffle test",
         "deploy": "truffle migrate",
-        "deploy:ganache": "truffle migrate",
-        "deploy:mumbai_testnet": "truffle migrate --network mumbai_testnet",
+        "deploy:ganache": "truffle migrate -f 3 --to 3",
+        "deploy:mumbai_testnet": "truffle migrate --network mumbai_testnet -f 3 --to 3",
         "deploy:polygon_mainnet": "truffle migrate  --network matic_mainnet",
         "prepare": "husky install"
     },
