@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/utils/Counters.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,7 +13,6 @@ import { IERC2981 } from "./IERC2981.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 
 contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
-    using Counters for Counters.Counter;
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using Address for address;
@@ -39,7 +37,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     /// @dev maps a listing id to the corresponding listing
     mapping(uint256 => Listing) public listings;
 
-    Counters.Counter counter;
+    uint256 listingCounter;
 
     modifier onlySeller(uint256 _id) {
         require(listings[_id].seller == _msgSender(), "caller not seller");
@@ -99,10 +97,10 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
             seller: _msgSender()
         });
 
-        listingId = counter.current();
+        listingId = listingCounter;
         listings[listingId] = listing;
 
-        counter.increment();
+        listingCounter++;
 
         emit New(listingId, _msgSender(), _tokenId);
     }
