@@ -82,6 +82,21 @@ npm run deploy:mumbai_testnet
 npm run deploy:polygon_mainnet
 ```
 
+## Existing Deployments
+
+### Mumbai
+
+| Contract    | Commit  | Address                                    | Comment                          |
+| ----------- | ------- | ------------------------------------------ | -------------------------------- |
+| ShowtimeMT  | 0e4e654 | 0x09F3a26302e1c45f0d78Be5D592f52b6fca43811 |                                  |
+| ERC1155Sale | 0af4eae | 0x3225125E0a853ac1326d0d589e7a4dec10bd6479 | after 1st market-improvements PR |
+
+### Polygon Mainnet
+
+| Contract   | Commit  | Address                                    | Comment         |
+| ---------- | ------- | ------------------------------------------ | --------------- |
+| ShowtimeMT | 0e4e654 | 0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90 | Live in the app |
+
 ## Troubleshooting
 
 Getting this failure when deploying:
