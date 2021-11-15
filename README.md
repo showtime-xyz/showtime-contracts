@@ -1,8 +1,69 @@
 # Showtime Contracts
 
-<img alt="Solidity" src="https://img.shields.io/badge/Solidity-e6e6e6?style=for-the-badge&logo=solidity&logoColor=black"/> <img alt="Javascript" src="https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E"/>
+This repository contains the Solidity Smart Contracts for the Showtime NFT and its Marketplace.
 
-This repository contains the Solidity Smart Contracts for the Showtime NFT Marketplace.
+## Design
+
+### ShowtimeMT.sol
+
+`ShowtimeMT` is the NFT contract used on the Showtime platform, it is an ERC1955 that implements ERC2981 royalties.
+
+It is deployed at the following addresses:
+
+-   [https://mumbai.polygonscan.com/address/0x09F3a26302e1c45f0d78Be5D592f52b6fca43811](https://mumbai.polygonscan.com/address/0x09F3a26302e1c45f0d78Be5D592f52b6fca43811)
+
+-   [https://polygonscan.com/address/0x8a13628dd5d600ca1e8bf9dbc685b735f615cb90](https://polygonscan.com/address/0x8a13628dd5d600ca1e8bf9dbc685b735f615cb90)
+
+The Polygon mainnet deployment is the one that is currently in use by the showtime.io app.
+
+It has 3 admin addresses on Polygon mainnet:
+
+-   0xD3e9D60e4E4De615124D5239219F32946d10151D (Alex Masmej)
+-   0xE3fAC288a27fBdF947C234F39d6E45FB12807192 (Alex Masmej)
+-   0xfa6E0aDDF68267b8b6fF2dA55Ce01a53Fad6D8e2 (Alex Kilkka)
+
+Admin addresses can set the trusted forwarder and enable or disable minting (for specific addresses and for everyone).
+
+The owner has been set to 0x0C7f6405Bf7299A9EBDcCFD6841feaC6c91e5541 (?)
+
+It uses 0x86C80a8aa58e0A4fa09A69624c31Ab2a6CAD56b8 as the trusted forwarder for meta transactions, which corresponds to the [BiconomyForwarder](https://docs.biconomy.io/misc/contract-addresses). Meta-transactions enable gas-less transactions (from the end user's point of view):
+
+-   a user wants to create an NFT
+-   the app can prompt users to sign a message with the appropriate parameters
+-   this message is sent to the Biconomy API
+-   the `BiconomyForwarder` contract then interacts with `ShowtimeMT` on behalf of the end user
+-   this is why `ShowtimeMT` needs to rely on `BaseRelayRecipient._msgSender()` to get the address of the end user, `msg.sender` would return the address of the `BiconomyForwarder`
+
+⚠️ this method actually trusts `BiconomyForwarder` to send the correct address as the last bytes of `msg.data`, it does not verify
+
+### ERC1155Sale.sol
+
+`ERC1155Sale` is the marketplace for Showtime NFTs. It is currently being tested and is not deployed on Polygon mainnet.
+
+Users can either interact with the contract directly or through meta-transactions using the `BiconomyForwarder` method described above.
+
+Users can:
+
+-   list a given amount of a token id for sale for a specific number of ERC20 tokens (note: this transfers ownership of these tokens to the `ERC1155Sale` contract)
+-   cancel a listing (this returns the tokens to the seller)
+-   complete a sale (swap ERC20 tokens for the NFT listed for sale). If the NFT supports has EIP2981 royalties information, the corresponding portion of the ERC20 payment is transferred to the royalties recipient. Currently, we would expect this to be the creator of the NFT on Showtime.
+
+Note: sales can be partial, e.g. if N tokens are for sale in a particular listing, the buyer can purchase M tokens where `M <= N`. The listing is then updated to reflect that there are now only `N - M` tokens left for sale.
+
+The owner can:
+
+-   pause the contract, which effectively prevents the completion of sales
+-   add or remove ERC20 contract addresses that can be used to buy and sell NFTs
+-   turn royalty payments on and off
+
+Some limitations:
+
+-   it is hardcoded to only support a single `ShowtimeMT` contract
+-   it only supports transactions in a configurable list of ERC20 tokens, no native currency
+-   it only supports buying and selling at a fixed price, no auctions
+-   listings don't have an expiration date
+-   if we ever migrate to another NFT contract (or add support for more NFT contracts), we will need to migrate to a new marketplace
+-   the owner has no control over NFTs or any other balance owned by the `ERC1155Sale` contract
 
 ## Prerequisites
 
