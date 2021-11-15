@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/utils/Counters.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/ERC1155Receiver.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { Ownable, Context } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -12,44 +14,40 @@ import { IERC2981 } from "./IERC2981.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 
 contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
+    using Counters for Counters.Counter;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using Address for address;
 
+    bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
+
     IERC1155 public nft;
 
-    uint256 public minSellPrice;
-
-    struct Sale {
+    struct Listing {
         uint256 tokenId;
         uint256 amount;
         uint256 price;
         address currency;
         address seller;
-        bool isActive;
     }
 
-    enum Royalty {
-        OFF,
-        ON
-    } // making it support non ERC2981 compliant NFTs also
-    Royalty public royalty;
+    // making it support non ERC2981 compliant NFTs also
+    bool public royaltiesEnabled;
 
     mapping(address => bool) public acceptedCurrencies;
 
-    Sale[] public sales;
+    /// @dev maps a listing id to the corresponding listing
+    mapping(uint256 => Listing) public listings;
 
-    modifier onlySeller(uint256 _saleId) {
-        require(sales[_saleId].seller == _msgSender(), "caller not seller");
+    Counters.Counter counter;
+
+    modifier onlySeller(uint256 _id) {
+        require(listings[_id].seller == _msgSender(), "caller not seller");
         _;
     }
 
-    modifier isActive(uint256 _saleId) {
-        require(sales[_saleId].isActive, "sale already cancelled or bought");
-        _;
-    }
-
-    modifier saleExists(uint256 _saleId) {
-        require(sales.length > _saleId, "sale doesn't exist");
+    modifier listingExists(uint256 _id) {
+        require(listings[_id].seller != address(0), "listing doesn't exist");
         _;
     }
 
@@ -68,11 +66,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         nft = IERC1155(_nft);
 
         // is royalty standard compliant? if so turn royalties on
-        try nft.supportsInterface(0x2a55205a) returns (bool implementsERC2981) {
-            if (implementsERC2981) {
-                royalty = Royalty.ON;
-            }
-        } catch (bytes memory) {}
+        royaltiesEnabled = nft.supportsInterface(_INTERFACE_ID_ERC2981);
     }
 
     /**
@@ -85,72 +79,89 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     }
 
     /// @notice `setApprovalForAll` before calling
-    /// @notice creates a new sale
+    /// @notice creates a new Listing
     /// @param _amount the price for each of the amount in the listing
     function createSale(
         uint256 _tokenId,
         uint256 _amount,
         uint256 _price,
         address _currency
-    ) external {
+    ) external whenNotPaused returns (uint256 listingId) {
         require(acceptedCurrencies[_currency], "currency not accepted");
-        require(_price >= minSellPrice, "price must be greater then min sell price");
+
         nft.safeTransferFrom(_msgSender(), address(this), _tokenId, _amount, "");
-        Sale memory sale = Sale({
+
+        Listing memory listing = Listing({
             tokenId: _tokenId,
             amount: _amount,
             price: _price,
             currency: _currency,
-            seller: _msgSender(),
-            isActive: true
+            seller: _msgSender()
         });
-        uint256 saleId = sales.length;
-        sales.push(sale);
 
-        emit New(saleId, _msgSender(), _tokenId);
+        listingId = counter.current();
+        listings[listingId] = listing;
+
+        counter.increment();
+
+        emit New(listingId, _msgSender(), _tokenId);
     }
 
     /// @notice cancel an active sale
-    function cancelSale(uint256 _saleId) external saleExists(_saleId) onlySeller(_saleId) isActive(_saleId) {
-        Sale memory sale = sales[_saleId];
-        // make sale invalid, and send seller his nft back
-        sales[_saleId].isActive = false;
-        nft.safeTransferFrom(address(this), sale.seller, sale.tokenId, sale.amount, "");
+    function cancelSale(uint256 _listingId) external listingExists(_listingId) onlySeller(_listingId) {
+        Listing memory listing = listings[_listingId];
 
-        emit Cancel(_saleId, _msgSender());
+        delete listings[_listingId];
+
+        emit Cancel(_listingId, _msgSender());
+
+        nft.safeTransferFrom(address(this), listing.seller, listing.tokenId, listing.amount, "");
     }
 
-    /**
-     * Purhcase a sale
-     * @param _whom if gifting, the recipient address, else address(0)
-     */
+    /// @notice Complete a sale
+    /// @param _whom the recipient address
     function buyFor(
-        uint256 _saleId,
+        uint256 _listingId,
         uint256 _amount,
         address _whom
-    ) external saleExists(_saleId) isActive(_saleId) whenNotPaused {
-        Sale memory sale = sales[_saleId];
-        require(_amount <= sale.amount, "required amount greater than available amount");
-        sales[_saleId].amount -= _amount;
-        if (sales[_saleId].amount == 0) {
-            sales[_saleId].isActive = false;
-        }
+    ) external listingExists(_listingId) whenNotPaused {
+        require(_whom != address(0), "invalid _whom address");
 
-        uint256 price = sale.price.mul(_amount);
-        IERC20 quoteToken = IERC20(sale.currency);
-        quoteToken.transferFrom(_msgSender(), address(this), price);
-        if (royalty == Royalty.ON) {
-            (address receiver, uint256 royaltyAmount) = _royaltyInfo(sale.tokenId, price);
-            if (royaltyAmount > 0) {
-                quoteToken.transfer(receiver, royaltyAmount);
+        Listing memory listing = listings[_listingId];
+        require(_amount <= listing.amount, "required amount greater than available amount");
+
+        uint256 price = listing.price.mul(_amount);
+
+        // we let the transaction complete even if the currency is no longer accepted
+        // in order to avoid stuck listings
+        IERC20 quoteToken = IERC20(listing.currency);
+        if (royaltiesEnabled) {
+            (address receiver, uint256 royaltyAmount) = _royaltyInfo(listing.tokenId, price);
+
+            // we ignore royalties to address 0, otherwise the transfer would fail
+            // and it would result in NFTs that are impossible to sell
+            if (receiver != address(0) && royaltyAmount > 0) {
+                require(royaltyAmount <= price, "royalty amount too big");
+
                 emit RoyaltyPaid(receiver, royaltyAmount);
                 price = price.sub(royaltyAmount);
+
+                quoteToken.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
             }
         }
-        quoteToken.transfer(sale.seller, price);
-        nft.safeTransferFrom(address(this), _whom, sale.tokenId, _amount, "");
 
-        emit Buy(_saleId, sale.seller, _whom, _amount);
+        // update the amount in the listing or delete it if everything has been sold
+        if (_amount == listing.amount) {
+            delete listings[_listingId];
+        } else {
+            listings[_listingId].amount -= _amount;
+        }
+
+        emit Buy(_listingId, listing.seller, _whom, _amount);
+
+        // perform the exchange
+        quoteToken.safeTransferFrom(_msgSender(), listing.seller, price);
+        nft.safeTransferFrom(address(this), _whom, listing.tokenId, _amount, "");
     }
 
     /**
@@ -177,9 +188,9 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     //
 
     /// @notice switch royalty payments on/off
-    function royaltySwitch(Royalty _royalty) external onlyOwner {
-        require(_royalty != royalty, "royalty already on the desired state");
-        royalty = _royalty;
+    function royaltySwitch(bool enabled) external onlyOwner {
+        require(royaltiesEnabled != enabled, "royalty already on the desired state");
+        royaltiesEnabled = enabled;
     }
 
     /// @notice add a currency from the accepted currency list
@@ -204,33 +215,26 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         _unpause();
     }
 
-    /// @notice set minimum sell price, below which sales won't be created
-    function setMinSellPrice(uint256 _minPrice) external onlyOwner {
-        minSellPrice = _minPrice;
-    }
-
     //
     // IMPLEMENT ERC1155 RECEIVER
     //
-    /* solhint-disable no-unused-vars */
     function onERC1155Received(
-        address operator,
-        address from,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
+        address, // operator
+        address, // from
+        uint256, // id
+        uint256, // value
+        bytes calldata // data
     ) external override returns (bytes4) {
         return this.onERC1155Received.selector;
     }
 
     function onERC1155BatchReceived(
-        address operator,
-        address from,
-        uint256[] calldata ids,
-        uint256[] calldata values,
-        bytes calldata data
+        address, // operator
+        address, // from
+        uint256[] calldata, // ids
+        uint256[] calldata, // values
+        bytes calldata // data
     ) external override returns (bytes4) {
         return this.onERC1155BatchReceived.selector;
     }
-    /* solhint-disable no-unused-vars */
 }
