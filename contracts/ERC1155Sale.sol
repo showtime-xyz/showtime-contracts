@@ -25,7 +25,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         uint256 tokenId;
         uint256 amount;
         uint256 price;
-        address currency;
+        IERC20 currency;
         address seller;
     }
 
@@ -93,7 +93,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
             tokenId: _tokenId,
             amount: _amount,
             price: _price,
-            currency: _currency,
+            currency: IERC20(_currency),
             seller: _msgSender()
         });
 
@@ -132,7 +132,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
         // we let the transaction complete even if the currency is no longer accepted
         // in order to avoid stuck listings
-        IERC20 quoteToken = IERC20(listing.currency);
+        IERC20 currency = listing.currency;
         if (royaltiesEnabled) {
             (address receiver, uint256 royaltyAmount) = _royaltyInfo(listing.tokenId, price);
 
@@ -144,7 +144,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
                 emit RoyaltyPaid(receiver, royaltyAmount);
                 price = price.sub(royaltyAmount);
 
-                quoteToken.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
+                currency.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
             }
         }
 
@@ -158,7 +158,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
         emit Buy(_listingId, listing.seller, _whom, _amount);
 
         // perform the exchange
-        quoteToken.safeTransferFrom(_msgSender(), listing.seller, price);
+        currency.safeTransferFrom(_msgSender(), listing.seller, price);
         nft.safeTransferFrom(address(this), _whom, listing.tokenId, _amount, "");
     }
 

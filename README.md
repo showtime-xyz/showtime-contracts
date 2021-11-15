@@ -143,6 +143,12 @@ npm run deploy:mumbai_testnet
 npm run deploy:polygon_mainnet
 ```
 
+### Verify a deployed contract
+
+```sh
+npx truffle run verify ERC1155Sale@0x3225125E0a853ac1326d0d589e7a4dec10bd6479 --network mumbai_testnet
+```
+
 ## Existing Deployments
 
 ### Mumbai
