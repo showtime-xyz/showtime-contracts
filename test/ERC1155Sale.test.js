@@ -70,7 +70,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await mt.balanceOf(alice, 1), 5); // 10 - 5
         const _sale = await sale.listings(New.saleId);
         assert.equal(_sale.tokenId, 1);
-        assert.equal(_sale.amount, 5);
+        assert.equal(_sale.quantity, 5);
         assert.equal(_sale.price, 500);
         assert.equal(_sale.seller, alice);
     });
@@ -83,7 +83,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(New.tokenId, 1);
 
         const bobsTokenBalanceBefore = await token.balanceOf(bob);
-        await sale.buyFor(New.saleId, /* amount */ 2, bob, { from: bob });
+        await sale.buyFor(New.saleId, /* quantity */ 2, bob, { from: bob });
 
         assert.equal(await mt.balanceOf(bob, New.tokenId), 2);
 
@@ -99,7 +99,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
         // alice can not initially complete the sale because she doesn't have the tokens to buy
         await truffleAsserts.reverts(
-            sale.buyFor(New.saleId, /* amount */ 5, alice, { from: alice }),
+            sale.buyFor(New.saleId, /* quantity */ 5, alice, { from: alice }),
             "ERC20: transfer amount exceeds balance"
         );
 
@@ -108,7 +108,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await token.approve(sale.address, 2500, { from: alice });
         const alicesTokenBalanceBefore = await token.balanceOf(alice);
 
-        await sale.buyFor(New.saleId, /* amount */ 5, alice, { from: alice });
+        await sale.buyFor(New.saleId, /* quantity */ 5, alice, { from: alice });
 
         // she got the nft back
         assert.equal(await mt.balanceOf(alice, New.tokenId), 10);
@@ -155,7 +155,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const _sale = await sale.listings(Cancel.saleId);
         assert.equal(_sale.seller, ZERO_ADDRESS);
         assert.equal(_sale.tokenId, 0);
-        assert.equal(_sale.amount, 0);
+        assert.equal(_sale.quantity, 0);
         assert.equal(_sale.price, 0);
         assert.equal(_sale.currency, ZERO_ADDRESS);
     });
@@ -175,7 +175,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(Buy.saleId, 0);
         assert.equal(Buy.seller, alice);
         assert.equal(Buy.buyer, bob);
-        assert.equal(Buy.amount, 5);
+        assert.equal(Buy.quantity, 5);
         const _sale = await sale.listings(Buy.saleId);
         assert.equal(_sale.seller, ZERO_ADDRESS);
         assert.equal(await mt.balanceOf(alice, 1), 5); // 10 - 5
@@ -200,7 +200,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(Buy.saleId, 0);
         assert.equal(Buy.seller, alice);
         assert.equal(Buy.buyer, admin);
-        assert.equal(Buy.amount, 5);
+        assert.equal(Buy.quantity, 5);
 
         const _sale = await sale.listings(Buy.saleId);
         assert.equal(_sale.seller, ZERO_ADDRESS);
@@ -209,24 +209,24 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await mt.balanceOf(admin, 1), 5); // 0 + 5
     });
 
-    it("buys specific amount of tokenIds", async () => {
+    it("buys specific quantity of tokenIds", async () => {
         // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
         // bob buys the sale: 2 tokens only out of 5
         const { args: Buy1 } = (await sale.buyFor(New.saleId, 2, bob, { from: bob })).logs[0];
-        assert.equal(Buy1.amount, 2);
+        assert.equal(Buy1.quantity, 2);
         // there should still be 3 left available
         const { args: Buy2 } = (await sale.buyFor(New.saleId, 3, bob, { from: bob })).logs[0];
-        assert.equal(Buy2.amount, 3);
+        assert.equal(Buy2.quantity, 3);
     });
 
-    it("throws on attempting to buy more than available amount", async () => {
+    it("throws on attempting to buy more than available quantity", async () => {
         // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
         // bob buys the sale: tries to buy 6 tokens
         await truffleAsserts.reverts(
             sale.buyFor(New.saleId, 6, bob, { from: bob }),
-            "required amount greater than available amount"
+            "required more than available quantity"
         );
     });
 

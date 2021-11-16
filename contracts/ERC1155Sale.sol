@@ -23,7 +23,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     struct Listing {
         uint256 tokenId;
-        uint256 amount;
+        uint256 quantity;
         uint256 price;
         IERC20 currency;
         address seller;
@@ -51,7 +51,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     event New(uint256 indexed saleId, address indexed seller, uint256 indexed tokenId);
     event Cancel(uint256 indexed saleId, address indexed seller);
-    event Buy(uint256 indexed saleId, address indexed seller, address indexed buyer, uint256 amount);
+    event Buy(uint256 indexed saleId, address indexed seller, address indexed buyer, uint256 quantity);
     event RoyaltyPaid(address indexed receiver, uint256 amount);
 
     constructor(address _nft, address[] memory _initialCurrencies) public {
@@ -78,20 +78,21 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     /// @notice `setApprovalForAll` before calling
     /// @notice creates a new Listing
-    /// @param _amount the price for each of the amount in the listing
+    /// @param _quantity the number of tokens to be listed
+    /// @param _price the price per token
     function createSale(
         uint256 _tokenId,
-        uint256 _amount,
+        uint256 _quantity,
         uint256 _price,
         address _currency
     ) external whenNotPaused returns (uint256 listingId) {
         require(acceptedCurrencies[_currency], "currency not accepted");
 
-        nft.safeTransferFrom(_msgSender(), address(this), _tokenId, _amount, "");
+        nft.safeTransferFrom(_msgSender(), address(this), _tokenId, _quantity, "");
 
         Listing memory listing = Listing({
             tokenId: _tokenId,
-            amount: _amount,
+            quantity: _quantity,
             price: _price,
             currency: IERC20(_currency),
             seller: _msgSender()
@@ -113,22 +114,23 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
         emit Cancel(_listingId, _msgSender());
 
-        nft.safeTransferFrom(address(this), listing.seller, listing.tokenId, listing.amount, "");
+        nft.safeTransferFrom(address(this), listing.seller, listing.tokenId, listing.quantity, "");
     }
 
     /// @notice Complete a sale
+    /// @param _quantity the number of tokens to purchase
     /// @param _whom the recipient address
     function buyFor(
         uint256 _listingId,
-        uint256 _amount,
+        uint256 _quantity,
         address _whom
     ) external listingExists(_listingId) whenNotPaused {
         require(_whom != address(0), "invalid _whom address");
 
         Listing memory listing = listings[_listingId];
-        require(_amount <= listing.amount, "required amount greater than available amount");
+        require(_quantity <= listing.quantity, "required more than available quantity");
 
-        uint256 price = listing.price.mul(_amount);
+        uint256 price = listing.price.mul(_quantity);
 
         // we let the transaction complete even if the currency is no longer accepted
         // in order to avoid stuck listings
@@ -148,18 +150,18 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
             }
         }
 
-        // update the amount in the listing or delete it if everything has been sold
-        if (_amount == listing.amount) {
+        // update the listing with the remaining quantity, or delete it if everything has been sold
+        if (_quantity == listing.quantity) {
             delete listings[_listingId];
         } else {
-            listings[_listingId].amount -= _amount;
+            listings[_listingId].quantity -= _quantity;
         }
 
-        emit Buy(_listingId, listing.seller, _whom, _amount);
+        emit Buy(_listingId, listing.seller, _whom, _quantity);
 
         // perform the exchange
         currency.safeTransferFrom(_msgSender(), listing.seller, price);
-        nft.safeTransferFrom(address(this), _whom, listing.tokenId, _amount, "");
+        nft.safeTransferFrom(address(this), _whom, listing.tokenId, _quantity, "");
     }
 
     /**
