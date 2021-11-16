@@ -12,6 +12,11 @@ const POLYGON_MAINNET_PoS_WETH = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
 const POLYGON_MAINNET_PoS_DAI = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
 
 const networkConfigs = {
+    development: {
+        showtimeMTAddress: undefined,
+        initialCurrencies: [],
+    },
+
     mumbai_testnet: {
         showtimeMTAddress: "0x09F3a26302e1c45f0d78Be5D592f52b6fca43811",
         initialCurrencies: [MUMBAI_TEST_TOKEN],
@@ -28,11 +33,14 @@ const networkConfigs = {
 };
 
 module.exports = async function (deployer, network) {
-    // await deployer.deploy(ShowtimeMT, { overwrite: false });
-    // const deployedShowtimeMT = await ShowtimeMT.deployed();
-
     const networkConfig = networkConfigs[network];
     assert(networkConfig !== undefined);
+
+    if (network == "development") {
+        await deployer.deploy(ShowtimeMT);
+        const deployedShowtimeMT = await ShowtimeMT.deployed();
+        networkConfig.showtimeMTAddress = deployedShowtimeMT.address;
+    }
 
     console.log(`ERC1155Sale.new(${networkConfig.showtimeMTAddress}, ${networkConfig.initialCurrencies})`);
     const sale = await ERC1155Sale.new(networkConfig.showtimeMTAddress, networkConfig.initialCurrencies, {
