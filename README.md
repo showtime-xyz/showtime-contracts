@@ -143,6 +143,22 @@ npm run deploy:mumbai_testnet
 npm run deploy:polygon_mainnet
 ```
 
+### Running a single migration
+
+In package.json:
+
+```sh
+truffle migrate --network mumbai_testnet -f 3 --to 3
+```
+
+### Choosing the deployment address
+
+In truffle-config.js, set per network:
+
+```javascript
+from: "0xCC6440b74a95b5506B096A79c9D7Bd070E54E9Eb";
+```
+
 ### Verify a deployed contract
 
 ```sh
