@@ -107,8 +107,6 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
 
     /// @notice cancel an active sale
     function cancelSale(uint256 _listingId) external listingExists(_listingId) onlySeller(_listingId) {
-        Listing memory listing = listings[_listingId];
-
         delete listings[_listingId];
 
         emit Cancel(_listingId, _msgSender());
