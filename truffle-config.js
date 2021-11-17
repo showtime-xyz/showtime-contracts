@@ -14,6 +14,7 @@ module.exports = {
                     // privateKeys: [process.env.PRIVATE_KEY],
                     mnemonic: process.env.MNEMONIC,
                     providerOrUrl: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+                    // addressIndex: 0,
                 }),
             network_id: 80001,
             confirmations: 1,

@@ -43,9 +43,6 @@ const networkConfigs = {
 };
 
 module.exports = async function (deployer, network, accounts) {
-    console.log({ accounts });
-    con;
-
     const networkConfig = networkConfigs[network];
     assert(networkConfig !== undefined);
 
@@ -58,7 +55,7 @@ module.exports = async function (deployer, network, accounts) {
     console.log(`ERC1155Sale.new(${networkConfig.showtimeMTAddress}, ${networkConfig.initialCurrencies})`);
     const sale = await ERC1155Sale.new(networkConfig.showtimeMTAddress, networkConfig.initialCurrencies, {
         overwrite: false,
-        from: accounts[5],
+        // from: accounts[5],
     });
 
     console.log({

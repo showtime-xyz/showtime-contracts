@@ -173,6 +173,7 @@ npx truffle run verify ERC1155Sale@0x3225125E0a853ac1326d0d589e7a4dec10bd6479 --
 | ----------- | ------- | ------------------------------------------ | -------------------------------- |
 | ShowtimeMT  | 0e4e654 | 0x09F3a26302e1c45f0d78Be5D592f52b6fca43811 |                                  |
 | ERC1155Sale | 0af4eae | 0x3225125E0a853ac1326d0d589e7a4dec10bd6479 | after 1st market-improvements PR |
+| ERC1155Sale | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version               |
 
 ### Polygon Mainnet
 
