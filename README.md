@@ -177,9 +177,10 @@ npx truffle run verify ERC1155Sale@0x3225125E0a853ac1326d0d589e7a4dec10bd6479 --
 
 ### Polygon Mainnet
 
-| Contract   | Commit  | Address                                    | Comment         |
-| ---------- | ------- | ------------------------------------------ | --------------- |
-| ShowtimeMT | 0e4e654 | 0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90 | Live in the app |
+| Contract    | Commit  | Address                                    | Comment            |
+| ----------- | ------- | ------------------------------------------ | ------------------ |
+| ShowtimeMT  | 0e4e654 | 0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90 | Live in the app    |
+| ERC1155Sale | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version |
 
 ## Troubleshooting
 
