@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/utils/Counters.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/ERC1155Receiver.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { Ownable, Context } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Math } from "@openzeppelin/contracts/math/Math.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC2981 } from "./IERC2981.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 
-contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
-    using Counters for Counters.Counter;
+contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using Address for address;
@@ -25,9 +23,9 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     struct Listing {
         uint256 tokenId;
-        uint256 amount;
+        uint256 quantity;
         uint256 price;
-        address currency;
+        IERC20 currency;
         address seller;
     }
 
@@ -39,7 +37,7 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     /// @dev maps a listing id to the corresponding listing
     mapping(uint256 => Listing) public listings;
 
-    Counters.Counter counter;
+    uint256 listingCounter;
 
     modifier onlySeller(uint256 _id) {
         require(listings[_id].seller == _msgSender(), "caller not seller");
@@ -53,7 +51,8 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     event New(uint256 indexed saleId, address indexed seller, uint256 indexed tokenId);
     event Cancel(uint256 indexed saleId, address indexed seller);
-    event Buy(uint256 indexed saleId, address indexed seller, address indexed buyer, uint256 amount);
+    event Buy(uint256 indexed saleId, address indexed seller, address indexed buyer, uint256 quantity);
+    event Deleted(uint256 indexed saleId, address indexed seller);
     event RoyaltyPaid(address indexed receiver, uint256 amount);
 
     constructor(address _nft, address[] memory _initialCurrencies) public {
@@ -80,61 +79,64 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
 
     /// @notice `setApprovalForAll` before calling
     /// @notice creates a new Listing
-    /// @param _amount the price for each of the amount in the listing
+    /// @param _quantity the number of tokens to be listed
+    /// @param _price the price per token
     function createSale(
         uint256 _tokenId,
-        uint256 _amount,
+        uint256 _quantity,
         uint256 _price,
         address _currency
     ) external whenNotPaused returns (uint256 listingId) {
         require(acceptedCurrencies[_currency], "currency not accepted");
-
-        nft.safeTransferFrom(_msgSender(), address(this), _tokenId, _amount, "");
+        require(_quantity > 0, "quantity must be greater than 0");
 
         Listing memory listing = Listing({
             tokenId: _tokenId,
-            amount: _amount,
+            quantity: _quantity,
             price: _price,
-            currency: _currency,
+            currency: IERC20(_currency),
             seller: _msgSender()
         });
 
-        listingId = counter.current();
+        listingId = listingCounter;
         listings[listingId] = listing;
-
-        counter.increment();
+        listingCounter++;
 
         emit New(listingId, _msgSender(), _tokenId);
     }
 
     /// @notice cancel an active sale
     function cancelSale(uint256 _listingId) external listingExists(_listingId) onlySeller(_listingId) {
-        Listing memory listing = listings[_listingId];
-
         delete listings[_listingId];
 
         emit Cancel(_listingId, _msgSender());
+    }
 
-        nft.safeTransferFrom(address(this), listing.seller, listing.tokenId, listing.amount, "");
+    /// @notice the seller may own fewer NFTs than the listed quantity
+    function availableForSale(uint256 _listingId) public view listingExists(_listingId) returns (uint256) {
+        Listing memory listing = listings[_listingId];
+        return Math.min(nft.balanceOf(listing.seller, listing.tokenId), listing.quantity);
     }
 
     /// @notice Complete a sale
+    /// @param _quantity the number of tokens to purchase
     /// @param _whom the recipient address
     function buyFor(
         uint256 _listingId,
-        uint256 _amount,
+        uint256 _quantity,
         address _whom
     ) external listingExists(_listingId) whenNotPaused {
         require(_whom != address(0), "invalid _whom address");
 
         Listing memory listing = listings[_listingId];
-        require(_amount <= listing.amount, "required amount greater than available amount");
+        uint256 availableQuantity = availableForSale(_listingId);
+        require(_quantity <= availableQuantity, "required more than available quantity");
 
-        uint256 price = listing.price.mul(_amount);
+        uint256 price = listing.price.mul(_quantity);
 
         // we let the transaction complete even if the currency is no longer accepted
         // in order to avoid stuck listings
-        IERC20 quoteToken = IERC20(listing.currency);
+        IERC20 currency = listing.currency;
         if (royaltiesEnabled) {
             (address receiver, uint256 royaltyAmount) = _royaltyInfo(listing.tokenId, price);
 
@@ -146,22 +148,25 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
                 emit RoyaltyPaid(receiver, royaltyAmount);
                 price = price.sub(royaltyAmount);
 
-                quoteToken.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
+                currency.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
             }
         }
 
-        // update the amount in the listing or delete it if everything has been sold
-        if (_amount == listing.amount) {
+        // update the listing with the remaining quantity, or delete it if everything has been sold
+        if (_quantity == availableQuantity) {
             delete listings[_listingId];
+            emit Deleted(_listingId, listing.seller);
         } else {
-            listings[_listingId].amount -= _amount;
+            listings[_listingId].quantity = availableQuantity.sub(_quantity);
         }
 
-        emit Buy(_listingId, listing.seller, _whom, _amount);
+        emit Buy(_listingId, listing.seller, _whom, _quantity);
 
-        // perform the exchange
-        quoteToken.safeTransferFrom(_msgSender(), listing.seller, price);
-        nft.safeTransferFrom(address(this), _whom, listing.tokenId, _amount, "");
+        // transfer $price $currency from the buyer to the seller
+        currency.safeTransferFrom(_msgSender(), listing.seller, price);
+
+        // transfer the NFTs from the seller to the buyer
+        nft.safeTransferFrom(listing.seller, _whom, listing.tokenId, _quantity, "");
     }
 
     /**
@@ -213,28 +218,5 @@ contract ERC1155Sale is Ownable, Pausable, ERC1155Receiver, BaseRelayRecipient {
     /// @notice unpause the contract
     function unpause() external whenPaused onlyOwner {
         _unpause();
-    }
-
-    //
-    // IMPLEMENT ERC1155 RECEIVER
-    //
-    function onERC1155Received(
-        address, // operator
-        address, // from
-        uint256, // id
-        uint256, // value
-        bytes calldata // data
-    ) external override returns (bytes4) {
-        return this.onERC1155Received.selector;
-    }
-
-    function onERC1155BatchReceived(
-        address, // operator
-        address, // from
-        uint256[] calldata, // ids
-        uint256[] calldata, // values
-        bytes calldata // data
-    ) external override returns (bytes4) {
-        return this.onERC1155BatchReceived.selector;
     }
 }

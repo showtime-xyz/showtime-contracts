@@ -11,7 +11,7 @@
         "deploy": "truffle migrate",
         "deploy:ganache": "truffle migrate -f 3 --to 3",
         "deploy:mumbai_testnet": "truffle migrate --network mumbai_testnet -f 3 --to 3",
-        "deploy:polygon_mainnet": "truffle migrate  --network matic_mainnet",
+        "deploy:polygon_mainnet": "truffle migrate  --network matic_mainnet -f 3 --to 3",
         "prepare": "husky install"
     },
     "repository": {
