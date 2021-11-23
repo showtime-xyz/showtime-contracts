@@ -6,6 +6,42 @@ const truffleAsserts = require("truffle-assertions");
 // address(0)
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
 
+const BUY = "Buy";
+
+// we expect an array of logs like this coming out of a transaction:
+// {
+//     logIndex: 1,
+//     transactionIndex: 0,
+//     transactionHash: '0xecd242b4de0d1b85e67aa1a91f54d4a826f1ff322701cbb814fc80d43be5f87f',
+//     blockHash: '0x9f48f3711565ba1d32a2199e6fa0a447ba2a783193f1eb18894daffbd36db738',
+//     blockNumber: 425,
+//     address: '0x1dBaFfBF818ba9c09Fd0C7C19Ac510908A649DDf',
+//     type: 'mined',
+//     id: 'log_138b028a',
+//     event: 'Buy',
+//     args: [Result]
+// }
+//
+// this function findFirst(logs, 'Buy') returns the args for that event
+function findFirst(logs, eventName) {
+    const eventNames = [];
+
+    for (let i = 0; i < logs.length; i++) {
+        const log = logs[i];
+        eventNames.push(log.event);
+        if (log.event === eventName) {
+            return log.args;
+        }
+    }
+
+    throw Error(`no '${eventName}' event found in ${eventNames}`);
+}
+
+async function getLog(tx, eventName) {
+    const logs = (await tx).logs;
+    return findFirst(logs, eventName);
+}
+
 contract("ERC1155 Sale Contract Tests", (accounts) => {
     let showtimeNFT,
         token,
@@ -187,7 +223,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
 
         // bob buys the sale
-        const { args: Buy } = (await sale.buyFor(New.saleId, 5, bob, { from: bob })).logs[0];
+        const Buy = getLog(sale.buyFor(New.saleId, 5, bob, { from: bob }), BUY);
+
         assert.equal(Buy.saleId, 0);
         assert.equal(Buy.seller, alice);
         assert.equal(Buy.buyer, bob);
@@ -212,8 +249,9 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     it("buys for another user", async () => {
         // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+
         // bob buys the sale
-        const { args: Buy } = (await sale.buyFor(New.saleId, 5, admin, { from: bob })).logs[0];
+        const Buy = await getLog(sale.buyFor(New.saleId, 5, admin, { from: bob }), BUY);
         assert.equal(Buy.saleId, 0);
         assert.equal(Buy.seller, alice);
         assert.equal(Buy.buyer, admin);
@@ -229,12 +267,14 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     it("buys specific quantity of tokenIds", async () => {
         // alice creates a sale
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+
         // bob buys the sale: 2 tokens only out of 5
-        const { args: Buy1 } = (await sale.buyFor(New.saleId, 2, bob, { from: bob })).logs[0];
-        assert.equal(Buy1.quantity, 2);
+        const Buy2 = await getLog(sale.buyFor(New.saleId, 2, admin, { from: bob }), BUY);
+        assert.equal(Buy2.quantity, 2);
+
         // there should still be 3 left available
-        const { args: Buy2 } = (await sale.buyFor(New.saleId, 3, bob, { from: bob })).logs[0];
-        assert.equal(Buy2.quantity, 3);
+        const Buy3 = await getLog(sale.buyFor(New.saleId, 3, admin, { from: bob }), BUY);
+        assert.equal(Buy3.quantity, 3);
     });
 
     it("throws on attempting to buy more than available quantity", async () => {
