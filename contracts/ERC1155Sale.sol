@@ -32,6 +32,10 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
     // making it support non ERC2981 compliant NFTs also
     bool public royaltiesEnabled;
 
+    /// @notice the cap on royalties, configurable and enforced during the sale
+    /// @notice 50% by default
+    uint256 public maxRoyaltiesBasisPoints = 50_00;
+
     mapping(address => bool) public acceptedCurrencies;
 
     /// @dev maps a listing id to the corresponding listing
@@ -143,6 +147,7 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
             // we ignore royalties to address 0, otherwise the transfer would fail
             // and it would result in NFTs that are impossible to sell
             if (receiver != address(0) && royaltyAmount > 0) {
+                royaltyAmount = capRoyalties(price, royaltyAmount);
                 require(royaltyAmount <= price, "royalty amount too big");
 
                 emit RoyaltyPaid(receiver, royaltyAmount);
@@ -188,6 +193,11 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
         (receiver, royaltyAmount) = IERC2981(address(nft)).royaltyInfo(_tokenId, _salePrice);
     }
 
+    function capRoyalties(uint256 salePrice, uint256 royaltyAmount) private view returns (uint256) {
+        uint256 maxRoyaltiesAmount = salePrice.mul(maxRoyaltiesBasisPoints).div(100_00);
+        return Math.min(maxRoyaltiesAmount, royaltyAmount);
+    }
+
     //
     // CONTRACT SETTINGS
     //
@@ -196,6 +206,11 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
     function royaltySwitch(bool enabled) external onlyOwner {
         require(royaltiesEnabled != enabled, "royalty already on the desired state");
         royaltiesEnabled = enabled;
+    }
+
+    function setMaxRoyalties(uint256 _maxRoyaltiesBasisPoints) external onlyOwner {
+        require(maxRoyaltiesBasisPoints < 100_00, "maxRoyaltiesBasisPoints must be less than 100%");
+        maxRoyaltiesBasisPoints = _maxRoyaltiesBasisPoints;
     }
 
     /// @notice add a currency from the accepted currency list

@@ -2,11 +2,13 @@ const ShowtimeMT = artifacts.require("ShowtimeMT");
 const Token = artifacts.require("Token");
 const ERC1155Sale = artifacts.require("ERC1155Sale");
 const truffleAsserts = require("truffle-assertions");
+const BN = require("bn.js");
 
 // address(0)
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
 
 const BUY = "Buy";
+const ROYALTYPAID = "RoyaltyPaid";
 
 // we expect an array of logs like this coming out of a transaction:
 // {
@@ -223,7 +225,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
 
         // bob buys the sale
-        const Buy = getLog(sale.buyFor(New.saleId, 5, bob, { from: bob }), BUY);
+        const Buy = await getLog(sale.buyFor(New.saleId, 5, bob, { from: bob }), BUY);
 
         assert.equal(Buy.saleId, 0);
         assert.equal(Buy.seller, alice);
@@ -351,15 +353,53 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(admin), 2500); // price
     });
 
-    it("completes a sale which has 100% royalties associated with it", async () => {
-        // admin puts his tokenId on sale which has 100% royalty to alice
+    it("completes a sale which has 100% royalties associated with it, but royalties are capped at 50%", async () => {
+        // admin puts 5 of their tokenId on sale which has 100% royalty to alice
         await sale.createSale(tokenId100PctRoyaltyToAlice, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
-        const { args: RoyaltyPaid } = (await sale.buyFor(0, 5, bob, { from: bob })).logs[0];
+
+        // bob buys 2 of them
+        const RoyaltyPaid = await getLog(sale.buyFor(0, 2, bob, { from: bob }), ROYALTYPAID);
         assert.equal(RoyaltyPaid.receiver, alice);
-        assert.equal(RoyaltyPaid.amount, 2500);
-        assert.equal(await token.balanceOf(alice), 2500); // received her 100%
-        assert.equal(await token.balanceOf(admin), 0); // price - royalty
+        assert.equal(RoyaltyPaid.amount, 500);
+        assert.equal(await token.balanceOf(alice), 500); // capped at 50%!
+        assert.equal(await token.balanceOf(admin), 500); // price - royalty
+    });
+
+    it("completes a sale which has 100% royalties associated with it when we lift the royalties cap", async () => {
+        // admin puts 5 of their tokenId on sale which has 100% royalty to alice
+        await sale.createSale(tokenId100PctRoyaltyToAlice, 5, 500, token.address);
+
+        // then we set the max royalties to 100%
+        await sale.setMaxRoyalties(100 * 100);
+
+        const aliceBalanceBefore = await token.balanceOf(alice);
+        const adminBalanceBefore = await token.balanceOf(admin);
+
+        // bob buys 2 of them
+        RoyaltyPaid = await getLog(sale.buyFor(0, 2, bob, { from: bob }), ROYALTYPAID);
+        assert.equal(RoyaltyPaid.receiver, alice);
+        assert.equal(RoyaltyPaid.amount, 1000);
+        assert((await token.balanceOf(alice)).eq(aliceBalanceBefore.add(new BN(1000)))); // alice does get 100% of the sale
+        assert((await token.balanceOf(admin)).eq(adminBalanceBefore)); // and admin gets nothing
+    });
+
+    it("no royalties are paid when we set the royalties cap at 0%", async () => {
+        // admin puts 5 of their tokenId on sale which has 100% royalty to alice
+        await sale.createSale(tokenId100PctRoyaltyToAlice, 5, 500, token.address);
+
+        // then we set the max royalties to 0%
+        await sale.setMaxRoyalties(0 * 100);
+
+        const aliceBalanceBefore = await token.balanceOf(alice);
+        const adminBalanceBefore = await token.balanceOf(admin);
+
+        // bob buys 2 of them
+        RoyaltyPaid = await getLog(sale.buyFor(0, 2, bob, { from: bob }), ROYALTYPAID);
+        assert.equal(RoyaltyPaid.receiver, alice);
+        assert.equal(RoyaltyPaid.amount, 0);
+        assert((await token.balanceOf(alice)).eq(aliceBalanceBefore)); // alice gets no royalties
+        assert((await token.balanceOf(admin)).eq(adminBalanceBefore.add(new BN(1000)))); // the seller gets 100% of the proceeds
     });
 
     it("permits only owner to turn off royalty on the contract", async () => {
@@ -367,6 +407,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await sale.royaltiesEnabled(), true);
         await sale.royaltySwitch(false);
         assert.equal(await sale.royaltiesEnabled(), false);
+        ``;
     });
 
     it("pays no royalty when royalty is turned off", async () => {
