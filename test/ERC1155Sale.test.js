@@ -8,6 +8,7 @@ const BN = require("bn.js");
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
 
 const BUY = "Buy";
+const NEW = "New";
 const ROYALTYPAID = "RoyaltyPaid";
 
 // we expect an array of logs like this coming out of a transaction:
@@ -137,9 +138,9 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert(bobsTokenBalanceBefore.eq(bobsTokenBalanceAfter));
     });
 
-    it("sellers can buy from themselves", async () => {
+    it("sellers can *not* buy from themselves", async () => {
         // alice creates a sale
-        const { args: New } = (await sale.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+        const New = await getLog(sale.createSale(1, 5, 500, token.address, { from: alice }), NEW);
 
         // the listing exists and alice is the seller
         assert.equal((await sale.listings(New.saleId)).seller, alice);
@@ -150,24 +151,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         // alice can not initially complete the sale because she doesn't have the tokens to buy
         await truffleAsserts.reverts(
             sale.buyFor(New.saleId, /* quantity */ 5, alice, { from: alice }),
-            "ERC20: transfer amount exceeds balance"
+            "seller is not a valid _whom address"
         );
-
-        // mint the tokens
-        await token.mint(2500, { from: alice });
-        await token.approve(sale.address, 2500, { from: alice });
-        const alicesTokenBalanceBefore = await token.balanceOf(alice);
-
-        await sale.buyFor(New.saleId, /* quantity */ 5, alice, { from: alice });
-
-        // she still owns the NFTs
-        assert.equal(await showtimeNFT.balanceOf(alice, New.tokenId), INITIAL_NFT_SUPPLY);
-
-        // and also the tokens used for the purchase
-        assert((await token.balanceOf(alice)).eq(alicesTokenBalanceBefore));
-
-        // the listing does not exist anymore
-        assert.equal((await sale.listings(New.saleId)).seller, ZERO_ADDRESS);
     });
 
     it("has enough tokens to buy", async () => {

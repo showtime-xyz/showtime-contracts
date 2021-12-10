@@ -133,6 +133,12 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
         require(_whom != address(0), "invalid _whom address");
 
         Listing memory listing = listings[_listingId];
+
+        // disable buying something from the seller for the seller
+        // note that the seller can still buy from themselves as a gift for someone else
+        // the difference with a transfer is that this will result in royalties being paid out
+        require(_whom != listing.seller, "seller is not a valid _whom address");
+
         uint256 availableQuantity = availableForSale(_listingId);
         require(_quantity <= availableQuantity, "required more than available quantity");
 
