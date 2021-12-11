@@ -36,15 +36,15 @@ It uses 0x86C80a8aa58e0A4fa09A69624c31Ab2a6CAD56b8 as the trusted forwarder for 
 
 ⚠️ this method actually trusts `BiconomyForwarder` to send the correct address as the last bytes of `msg.data`, it does not verify
 
-### ERC1155Sale.sol
+### ShowtimeV1Market.sol
 
-`ERC1155Sale` is the marketplace for Showtime NFTs. It is currently being tested and is not deployed on Polygon mainnet.
+`ShowtimeV1Market` is the marketplace for Showtime NFTs. It is currently being tested and is not deployed on Polygon mainnet.
 
 Users can either interact with the contract directly or through meta-transactions using the `BiconomyForwarder` method described above.
 
 Users can:
 
--   list a given amount of a token id for sale for a specific number of ERC20 tokens (note: this transfers ownership of these tokens to the `ERC1155Sale` contract)
+-   list a given amount of a token id for sale for a specific number of ERC20 tokens (note: this transfers ownership of these tokens to the `ShowtimeV1Market` contract)
 -   cancel a listing (this returns the tokens to the seller)
 -   complete a sale (swap ERC20 tokens for the NFT listed for sale). If the NFT supports has EIP2981 royalties information, the corresponding portion of the ERC20 payment is transferred to the royalties recipient. Currently, we would expect this to be the creator of the NFT on Showtime.
 
@@ -63,7 +63,7 @@ Some limitations:
 -   it only supports buying and selling at a fixed price, no auctions
 -   listings don't have an expiration date
 -   if we ever migrate to another NFT contract (or add support for more NFT contracts), we will need to migrate to a new marketplace
--   the owner has no control over NFTs or any other balance owned by the `ERC1155Sale` contract
+-   the owner has no control over NFTs or any other balance owned by the `ShowtimeV1Market` contract
 
 ## Prerequisites
 
@@ -114,7 +114,7 @@ npm test
 -   Run a single test file
 
 ```sh
-npm test test/ERC1155Sale.test.js
+npm test test/ShowtimeV1Market.test.js
 ```
 
 -   Run a single test:
@@ -162,25 +162,25 @@ from: "0xCC6440b74a95b5506B096A79c9D7Bd070E54E9Eb";
 ### Verify a deployed contract
 
 ```sh
-npx truffle run verify ERC1155Sale@0x3225125E0a853ac1326d0d589e7a4dec10bd6479 --network mumbai_testnet
+npx truffle run verify ShowtimeV1Market@0x3225125E0a853ac1326d0d589e7a4dec10bd6479 --network mumbai_testnet
 ```
 
 ## Existing Deployments
 
 ### Mumbai
 
-| Contract    | Commit  | Address                                    | Comment                          |
-| ----------- | ------- | ------------------------------------------ | -------------------------------- |
-| ShowtimeMT  | 0e4e654 | 0x09F3a26302e1c45f0d78Be5D592f52b6fca43811 |                                  |
-| ERC1155Sale | 0af4eae | 0x3225125E0a853ac1326d0d589e7a4dec10bd6479 | after 1st market-improvements PR |
-| ERC1155Sale | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version               |
+| Contract         | Commit  | Address                                    | Comment                          |
+| ---------------- | ------- | ------------------------------------------ | -------------------------------- |
+| ShowtimeMT       | 0e4e654 | 0x09F3a26302e1c45f0d78Be5D592f52b6fca43811 |                                  |
+| ShowtimeV1Market | 0af4eae | 0x3225125E0a853ac1326d0d589e7a4dec10bd6479 | after 1st market-improvements PR |
+| ShowtimeV1Market | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version               |
 
 ### Polygon Mainnet
 
-| Contract    | Commit  | Address                                    | Comment            |
-| ----------- | ------- | ------------------------------------------ | ------------------ |
-| ShowtimeMT  | 0e4e654 | 0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90 | Live in the app    |
-| ERC1155Sale | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version |
+| Contract         | Commit  | Address                                    | Comment            |
+| ---------------- | ------- | ------------------------------------------ | ------------------ |
+| ShowtimeMT       | 0e4e654 | 0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90 | Live in the app    |
+| ShowtimeV1Market | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version |
 
 ## Troubleshooting
 

@@ -2,7 +2,7 @@ const { exec } = require("shelljs");
 const assert = require("assert");
 
 const ShowtimeMT = artifacts.require("ShowtimeMT");
-const ERC1155Sale = artifacts.require("ERC1155Sale");
+const ShowtimeV1Market = artifacts.require("ShowtimeV1Market");
 
 const MUMBAI_TEST_TOKEN = "0xd404017a401ff7ef65e7689630eca288e23d67a1";
 const MUMBAI_WMATIC = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889";
@@ -53,40 +53,46 @@ module.exports = async function (deployer, network, accounts) {
         networkConfig.showtimeMTAddress = deployedShowtimeMT.address;
     }
 
-    console.log(`ERC1155Sale.new(${networkConfig.showtimeMTAddress}, ${networkConfig.initialCurrencies})`);
-    const sale = await ERC1155Sale.new(networkConfig.showtimeMTAddress, networkConfig.initialCurrencies, {
-        overwrite: false,
-        // from: accounts[5],
-    });
+    console.log(
+        `ShowtimeV1Market.new(${networkConfig.showtimeMTAddress}, ${networkConfig.initialCurrencies})`
+    );
+    const market = await ShowtimeV1Market.new(
+        networkConfig.showtimeMTAddress,
+        networkConfig.initialCurrencies,
+        {
+            overwrite: false,
+            // from: accounts[5],
+        }
+    );
 
     console.log({
         ShowtimeMT: networkConfig.showtimeMTAddress,
-        ERC1155Sale: sale.address,
+        ShowtimeV1Market: market.address,
     });
 
     if (network !== "development") {
         await networkConfig.initialCurrencies.forEach((currencyAddress) => {
-            console.log(`sale.setAcceptedCurrency(${currencyAddress})`);
-            sale.setAcceptedCurrency(currencyAddress);
+            console.log(`market.setAcceptedCurrency(${currencyAddress})`);
+            market.setAcceptedCurrency(currencyAddress);
         });
 
-        console.log(`sale.setTrustedForwarder(${networkConfig.trustedForwarderAddress})`);
-        await sale.setTrustedForwarder(networkConfig.trustedForwarderAddress);
+        console.log(`market.setTrustedForwarder(${networkConfig.trustedForwarderAddress})`);
+        await market.setTrustedForwarder(networkConfig.trustedForwarderAddress);
 
         if (networkConfig.ownerAddress === null) {
             console.log("no owner address defined, skipping ownership transfer");
         } else {
-            console.log(`sale.transferOwnership(${networkConfig.ownerAddress})`);
-            await sale.transferOwnership(networkConfig.ownerAddress);
+            console.log(`market.transferOwnership(${networkConfig.ownerAddress})`);
+            await market.transferOwnership(networkConfig.ownerAddress);
         }
 
-        // await verify("ERC1155Sale", sale.address, network);
+        // await verify("ShowtimeV1Market", market.address, network);
     }
 };
 
 function verify(name, address, network) {
     console.log("Verifying on polygonscan.com:");
-    console.log(`npx truffle run verify ERC1155Sale@${sale.address} --network ${network}`);
+    console.log(`npx truffle run verify ShowtimeV1Market@${market.address} --network ${network}`);
 
     return new Promise((resolve, reject) => {
         exec(`npx truffle run verify ${name}@${address} --network ${network}`, (code, stdout, stderr) => {

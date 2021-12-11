@@ -12,7 +12,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 import { ShowtimeMT } from "./ShowtimeMT.sol";
 
-contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
+contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     using SafeERC20 for IERC20;
     using Address for address;
 
