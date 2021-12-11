@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity =0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
@@ -41,10 +41,7 @@ abstract contract AccessProtected is Context, Ownable {
      * @param minters - Address of Minters
      * @param enabled - Enable/Disable Admin Access
      */
-    function setMinters(address[] calldata minters, bool enabled)
-        external
-        onlyAdmin
-    {
+    function setMinters(address[] calldata minters, bool enabled) external onlyAdmin {
         for (uint256 i = 0; i < minters.length; i++) {
             address minter = minters[i];
             setMinter(minter, enabled);
@@ -85,10 +82,7 @@ abstract contract AccessProtected is Context, Ownable {
      * Throws if called by any account other than the Admin/Owner.
      */
     modifier onlyAdmin() {
-        require(
-            _admins[_msgSender()] || _msgSender() == owner(),
-            "AccessProtected: caller is not admin"
-        );
+        require(_admins[_msgSender()] || _msgSender() == owner(), "AccessProtected: caller is not admin");
         _;
     }
 
@@ -97,10 +91,7 @@ abstract contract AccessProtected is Context, Ownable {
      */
     modifier onlyMinter() {
         require(
-            publicMinting ||
-                _minters[_msgSender()] ||
-                _admins[_msgSender()] ||
-                _msgSender() == owner(),
+            publicMinting || _minters[_msgSender()] || _admins[_msgSender()] || _msgSender() == owner(),
             "AccessProtected: caller is not minter"
         );
         _;

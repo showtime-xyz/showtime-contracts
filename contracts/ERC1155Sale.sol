@@ -1,25 +1,22 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity =0.8.7;
 
-import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { Ownable, Context } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Math } from "@openzeppelin/contracts/math/Math.sol";
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { IERC2981 } from "./IERC2981.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
+import { ShowtimeMT } from "./ShowtimeMT.sol";
 
 contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
     using Address for address;
 
-    bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
-
-    IERC1155 public nft;
+    ShowtimeMT public nft;
 
     struct Listing {
         uint256 tokenId;
@@ -30,7 +27,7 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
     }
 
     // making it support non ERC2981 compliant NFTs also
-    bool public royaltiesEnabled;
+    bool public royaltiesEnabled = true;
 
     /// @notice the cap on royalties, configurable and enforced during the sale
     /// @notice 50% by default
@@ -59,17 +56,14 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
     event Deleted(uint256 indexed saleId, address indexed seller);
     event RoyaltyPaid(address indexed receiver, uint256 amount);
 
-    constructor(address _nft, address[] memory _initialCurrencies) public {
+    constructor(address _nft, address[] memory _initialCurrencies) {
         require(_nft.isContract(), "must be contract address");
         for (uint256 i = 0; i < _initialCurrencies.length; i++) {
             require(_initialCurrencies[i].isContract(), "_initialCurrencies must contain contract addresses");
             acceptedCurrencies[_initialCurrencies[i]] = true;
         }
 
-        nft = IERC1155(_nft);
-
-        // is royalty standard compliant? if so turn royalties on
-        royaltiesEnabled = nft.supportsInterface(_INTERFACE_ID_ERC2981);
+        nft = ShowtimeMT(_nft);
     }
 
     /**
@@ -142,13 +136,13 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
         uint256 availableQuantity = availableForSale(_listingId);
         require(_quantity <= availableQuantity, "required more than available quantity");
 
-        uint256 price = listing.price.mul(_quantity);
+        uint256 price = listing.price * _quantity;
 
         // we let the transaction complete even if the currency is no longer accepted
         // in order to avoid stuck listings
         IERC20 currency = listing.currency;
         if (royaltiesEnabled) {
-            (address receiver, uint256 royaltyAmount) = _royaltyInfo(listing.tokenId, price);
+            (address receiver, uint256 royaltyAmount) = nft.royaltyInfo(listing.tokenId, price);
 
             // we ignore royalties to address 0, otherwise the transfer would fail
             // and it would result in NFTs that are impossible to sell
@@ -157,7 +151,7 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
                 require(royaltyAmount <= price, "royalty amount too big");
 
                 emit RoyaltyPaid(receiver, royaltyAmount);
-                price = price.sub(royaltyAmount);
+                price = price - royaltyAmount;
 
                 currency.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
             }
@@ -168,7 +162,7 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
             delete listings[_listingId];
             emit Deleted(_listingId, listing.seller);
         } else {
-            listings[_listingId].quantity = availableQuantity.sub(_quantity);
+            listings[_listingId].quantity = availableQuantity - _quantity;
         }
 
         emit Buy(_listingId, listing.seller, _whom, _quantity);
@@ -183,7 +177,7 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
     /**
      * returns the message sender
      */
-    function _msgSender() internal view override(Context, BaseRelayRecipient) returns (address payable) {
+    function _msgSender() internal view override(Context, BaseRelayRecipient) returns (address) {
         return BaseRelayRecipient._msgSender();
     }
 
@@ -191,16 +185,8 @@ contract ERC1155Sale is Ownable, Pausable, BaseRelayRecipient {
     // PRIVATE FUNCTIONS
     //
 
-    function _royaltyInfo(uint256 _tokenId, uint256 _salePrice)
-        private
-        view
-        returns (address receiver, uint256 royaltyAmount)
-    {
-        (receiver, royaltyAmount) = IERC2981(address(nft)).royaltyInfo(_tokenId, _salePrice);
-    }
-
     function capRoyalties(uint256 salePrice, uint256 royaltyAmount) private view returns (uint256) {
-        uint256 maxRoyaltiesAmount = salePrice.mul(maxRoyaltiesBasisPoints).div(100_00);
+        uint256 maxRoyaltiesAmount = (salePrice * maxRoyaltiesBasisPoints) / 100_00;
         return Math.min(maxRoyaltiesAmount, royaltyAmount);
     }
 

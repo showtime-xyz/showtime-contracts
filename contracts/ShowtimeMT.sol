@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity =0.8.7;
 
+import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155Burnable.sol";
+
 import "./utils/AccessProtected.sol";
 import "./utils/BaseRelayRecipient.sol";
 import "./ERC2981Royalties.sol";
 
-contract ShowtimeMT is
-    ERC1155Burnable,
-    ERC2981Royalties,
-    AccessProtected,
-    BaseRelayRecipient
-{
+contract ShowtimeMT is ERC1155Burnable, ERC2981Royalties, AccessProtected, BaseRelayRecipient {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     string public baseURI = "https://gateway.pinata.cloud/ipfs/";
@@ -22,8 +18,13 @@ contract ShowtimeMT is
 
     bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
 
-    constructor() public ERC1155("") {
-        _registerInterface(_INTERFACE_ID_ERC2981);
+    constructor() ERC1155("") {}
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, IERC165) returns (bool) {
+        return interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /**
@@ -85,11 +86,7 @@ contract ShowtimeMT is
             _hashes[newTokenId] = hashes[i];
             ids[i] = newTokenId;
             if (royaltyPercents[i] > 0) {
-                _setTokenRoyalty(
-                    newTokenId,
-                    royaltyRecipients[i],
-                    royaltyPercents[i]
-                );
+                _setTokenRoyalty(newTokenId, royaltyRecipients[i], royaltyPercents[i]);
             }
         }
         _mintBatch(recipient, ids, amounts, data);
@@ -110,12 +107,7 @@ contract ShowtimeMT is
      *
      * @param tokenId - Token ID
      */
-    function uri(uint256 tokenId)
-        external
-        view
-        override
-        returns (string memory)
-    {
+    function uri(uint256 tokenId) public view override returns (string memory) {
         return string(abi.encodePacked(baseURI, _hashes[tokenId]));
     }
 
@@ -131,12 +123,7 @@ contract ShowtimeMT is
     /**
      * returns the message sender
      */
-    function _msgSender()
-        internal
-        view
-        override(Context, BaseRelayRecipient)
-        returns (address payable)
-    {
+    function _msgSender() internal view override(Context, BaseRelayRecipient) returns (address) {
         return BaseRelayRecipient._msgSender();
     }
 }

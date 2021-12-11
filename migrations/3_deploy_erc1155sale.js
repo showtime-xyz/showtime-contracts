@@ -6,6 +6,7 @@ const ERC1155Sale = artifacts.require("ERC1155Sale");
 
 const MUMBAI_TEST_TOKEN = "0xd404017a401ff7ef65e7689630eca288e23d67a1";
 const MUMBAI_WMATIC = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889";
+const MUMBAI_WETH = "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa";
 
 // https://docs.polygon.technology/docs/develop/network-details/mapped-tokens
 const POLYGON_MAINNET_PoS_USDC = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
@@ -21,7 +22,7 @@ const networkConfigs = {
 
     mumbai_testnet: {
         showtimeMTAddress: "0x09F3a26302e1c45f0d78Be5D592f52b6fca43811",
-        initialCurrencies: [MUMBAI_TEST_TOKEN, MUMBAI_WMATIC],
+        initialCurrencies: [MUMBAI_TEST_TOKEN, MUMBAI_WMATIC, MUMBAI_WETH],
         ownerAddress: null,
         trustedForwarderAddress: "0x9399BB24DBB5C4b782C70c2969F58716Ebbd6a3b",
     },
