@@ -44,9 +44,9 @@ Users can either interact with the contract directly or through meta-transaction
 
 Users can:
 
--   list a given amount of a token id for sale for a specific number of ERC20 tokens (note: this transfers ownership of these tokens to the `ShowtimeV1Market` contract)
--   cancel a listing (this returns the tokens to the seller)
--   complete a sale (swap ERC20 tokens for the NFT listed for sale). If the NFT supports has EIP2981 royalties information, the corresponding portion of the ERC20 payment is transferred to the royalties recipient. Currently, we would expect this to be the creator of the NFT on Showtime.
+-   list a given amount of a token id for sale for a specific number of ERC20 tokens
+-   cancel a listing
+-   complete a sale (swap ERC20 tokens for the NFT listed for sale). If royalties are enabled, the corresponding portion of the ERC20 payment is transferred to the royalties recipient. Currently, we would expect this to be the creator of the NFT on Showtime.
 
 Note: sales can be partial, e.g. if N tokens are for sale in a particular listing, the buyer can purchase M tokens where `M <= N`. The listing is then updated to reflect that there are now only `N - M` tokens left for sale.
 
@@ -101,6 +101,12 @@ cp .example.env .env
 ```
 
 -   Add the matic vigil app ID & deployer private key to the `.env`
+
+## Compile
+
+```
+npx truffle compile --all
+```
 
 ## Run tests
 
