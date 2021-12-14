@@ -4,7 +4,7 @@ const assert = require("assert");
 const ShowtimeMT = artifacts.require("ShowtimeMT");
 const ShowtimeV1Market = artifacts.require("ShowtimeV1Market");
 
-const MUMBAI_TEST_TOKEN = "0xd404017a401ff7ef65e7689630eca288e23d67a1";
+const MUMBAI_TEST_TOKEN = "0xd404017A401ff7EF65E7689630eCa288E23d67a1";
 const MUMBAI_WMATIC = "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889";
 const MUMBAI_WETH = "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa";
 
@@ -12,7 +12,7 @@ const MUMBAI_WETH = "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa";
 const POLYGON_MAINNET_PoS_USDC = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
 const POLYGON_MAINNET_PoS_WETH = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
 const POLYGON_MAINNET_PoS_DAI = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
-const POLYGON_MAINNET_WMATIC = "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270";
+const POLYGON_MAINNET_WMATIC = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270";
 
 const networkConfigs = {
     development: {
@@ -37,7 +37,7 @@ const networkConfigs = {
         ],
 
         // for the staging deployment, we want to keep the deployment address as the owner
-        // ownerAddress: "0x0c7f6405bf7299a9ebdccfd6841feac6c91e5541",
+        // ownerAddress: "0x0C7f6405Bf7299A9EBDcCFD6841feaC6c91e5541",
 
         trustedForwarderAddress: "0x86C80a8aa58e0A4fa09A69624c31Ab2a6CAD56b8",
     },
