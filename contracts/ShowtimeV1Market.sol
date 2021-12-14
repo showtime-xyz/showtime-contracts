@@ -12,6 +12,12 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 import { ShowtimeMT } from "./ShowtimeMT.sol";
 
+/// @title Showtime V1 Market for the Showtime ERC1155 Token
+///
+/// This is a non-escrow marketplace that allows users to list Showtime NFTs for sale
+/// for a fixed price, using a configurable list of allowed ERC20 currencies.
+///
+/// @dev listings have no expiration date, but frontends may choose to hide old listings
 contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -26,16 +32,16 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         address seller;
     }
 
-    // making it support non ERC2981 compliant NFTs also
+    /// royalties payments can be turned on/off by the owner of the contract
     bool public royaltiesEnabled = true;
 
-    /// @notice the cap on royalties, configurable and enforced during the sale
-    /// @notice 50% by default
+    /// the configurable cap on royalties, enforced during the sale (50% by default)
     uint256 public maxRoyaltiesBasisPoints = 50_00;
 
+    /// the configurable list of accepted ERC20 contract addresses
     mapping(address => bool) public acceptedCurrencies;
 
-    /// @dev maps a listing id to the corresponding listing
+    /// @dev maps a listing id to the corresponding Listing
     mapping(uint256 => Listing) public listings;
 
     uint256 listingCounter;
@@ -205,7 +211,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         maxRoyaltiesBasisPoints = _maxRoyaltiesBasisPoints;
     }
 
-    /// @notice add a currency from the accepted currency list
+    /// @notice add a currency to the accepted currency list
     function setAcceptedCurrency(address _currency) external onlyOwner {
         require(_currency.isContract(), "_currency != contract address");
         acceptedCurrencies[_currency] = true;
