@@ -22,8 +22,10 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     using SafeERC20 for IERC20;
     using Address for address;
 
-    ShowtimeMT public nft;
+    /// the address of the ShowtimeMT NFT (ERC1155) contract
+    ShowtimeMT public immutable nft;
 
+    /// @dev listings only contain a tokenId because we are implicitly only listing tokens from the ShowtimeMT contract
     struct Listing {
         uint256 tokenId;
         uint256 quantity;
@@ -62,22 +64,21 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     event Deleted(uint256 indexed saleId, address indexed seller);
     event RoyaltyPaid(address indexed receiver, uint256 amount);
 
-    constructor(address _nft, address[] memory _initialCurrencies) {
+    constructor(
+        address _nft,
+        address _trustedForwarder,
+        address[] memory _initialCurrencies
+    ) {
+        /// initialize the address of the NFT contract
         require(_nft.isContract(), "must be contract address");
+        nft = ShowtimeMT(_nft);
+
         for (uint256 i = 0; i < _initialCurrencies.length; i++) {
             require(_initialCurrencies[i].isContract(), "_initialCurrencies must contain contract addresses");
             acceptedCurrencies[_initialCurrencies[i]] = true;
         }
 
-        nft = ShowtimeMT(_nft);
-    }
-
-    /**
-     * Set Trusted Forwarder
-     *
-     * @param _trustedForwarder - Trusted Forwarder address
-     */
-    function setTrustedForwarder(address _trustedForwarder) external onlyOwner {
+        /// set the trustedForwarder only once, see BaseRelayRecipient
         trustedForwarder = _trustedForwarder;
     }
 

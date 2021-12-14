@@ -84,19 +84,28 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await token.mint(2500, { from: bob });
 
         // approvals
-        market = await ShowtimeV1Market.new(showtimeNFT.address, [token.address]);
+        market = await ShowtimeV1Market.new(showtimeNFT.address, /* trustedForwarder */ ZERO_ADDRESS, [
+            token.address,
+        ]);
         await showtimeNFT.setApprovalForAll(market.address, true, { from: alice });
         await showtimeNFT.setApprovalForAll(market.address, true);
         await token.approve(market.address, 2500, { from: bob });
     });
 
     it("doesn't allow to deploy with incorrect constructor arguments", async () => {
+        // fixes `base fee exceeds gas limit` error
+        const defaults = ShowtimeV1Market.defaults({
+            gas: 4712388,
+            gasPrice: 100000000000,
+        });
+
         await truffleAsserts.reverts(
-            ShowtimeV1Market.new(alice, [token.address]),
+            ShowtimeV1Market.new(alice, ZERO_ADDRESS, [token.address]),
             "must be contract address"
         );
+
         await truffleAsserts.reverts(
-            ShowtimeV1Market.new(showtimeNFT.address, [ZERO_ADDRESS]),
+            ShowtimeV1Market.new(showtimeNFT.address, ZERO_ADDRESS, [ZERO_ADDRESS]),
             "_initialCurrencies must contain contract addresses"
         );
     });

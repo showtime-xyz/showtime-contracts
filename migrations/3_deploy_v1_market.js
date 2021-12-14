@@ -17,6 +17,7 @@ const POLYGON_MAINNET_WMATIC = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270";
 const networkConfigs = {
     development: {
         showtimeMTAddress: undefined,
+        trustedForwarderAddress: "0x0000000000000000000000000000000000000000",
         initialCurrencies: [],
     },
 
@@ -58,6 +59,7 @@ module.exports = async function (deployer, network, accounts) {
     );
     const market = await ShowtimeV1Market.new(
         networkConfig.showtimeMTAddress,
+        networkConfig.trustedForwarderAddress,
         networkConfig.initialCurrencies,
         {
             overwrite: false,
@@ -71,14 +73,6 @@ module.exports = async function (deployer, network, accounts) {
     });
 
     if (network !== "development") {
-        await networkConfig.initialCurrencies.forEach((currencyAddress) => {
-            console.log(`market.setAcceptedCurrency(${currencyAddress})`);
-            market.setAcceptedCurrency(currencyAddress);
-        });
-
-        console.log(`market.setTrustedForwarder(${networkConfig.trustedForwarderAddress})`);
-        await market.setTrustedForwarder(networkConfig.trustedForwarderAddress);
-
         if (networkConfig.ownerAddress === null) {
             console.log("no owner address defined, skipping ownership transfer");
         } else {
