@@ -134,6 +134,26 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(_sale.seller, alice);
     });
 
+    it("ensures that the seller owns the listed tokens", async () => {
+        // alice does not own token 2
+        assert.equal(await showtimeNFT.balanceOf(alice, 2), 0);
+
+        await truffleAsserts.reverts(
+            market.createSale(2, 5, 500, token.address, { from: alice }),
+            "seller does not own listed quantity of tokens"
+        );
+    });
+
+    it("ensures that the seller owns enough of the listed tokens", async () => {
+        // alice owns INITIAL_NFT_SUPPLY of token 1
+        assert.equal(await showtimeNFT.balanceOf(alice, 1), INITIAL_NFT_SUPPLY);
+
+        await truffleAsserts.reverts(
+            market.createSale(1, INITIAL_NFT_SUPPLY + 1, 500, token.address, { from: alice }),
+            "seller does not own listed quantity of tokens"
+        );
+    });
+
     it("creates a new listing with price 0", async () => {
         // alice creates a sale
         const { args: New } = (await market.createSale(1, 5, 0, token.address, { from: alice })).logs[0];

@@ -92,22 +92,25 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         uint256 _price,
         address _currency
     ) external whenNotPaused returns (uint256 listingId) {
+        address msgSender = _msgSender();
+
         require(acceptedCurrencies[_currency], "currency not accepted");
         require(_quantity > 0, "quantity must be greater than 0");
+        require(nft.balanceOf(msgSender, _tokenId) >= _quantity, "seller does not own listed quantity of tokens");
 
         Listing memory listing = Listing({
             tokenId: _tokenId,
             quantity: _quantity,
             price: _price,
             currency: IERC20(_currency),
-            seller: _msgSender()
+            seller: msgSender
         });
 
         listingId = listingCounter;
         listings[listingId] = listing;
         listingCounter++;
 
-        emit New(listingId, _msgSender(), _tokenId);
+        emit New(listingId, msgSender, _tokenId);
     }
 
     /// @notice cancel an active sale
