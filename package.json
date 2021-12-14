@@ -43,7 +43,7 @@
         "prettier": "^2.3.2",
         "prettier-plugin-solidity": "^1.0.0-beta.17",
         "shelljs": "^0.8.4",
-        "truffle": "^5.3.10",
+        "truffle": "^5.4.24",
         "truffle-flattener": "^1.5.0",
         "truffle-plugin-verify": "^0.5.15"
     },
