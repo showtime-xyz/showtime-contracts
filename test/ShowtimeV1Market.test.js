@@ -7,9 +7,10 @@ const BN = require("bn.js");
 // address(0)
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
 
-const BUY = "Buy";
-const NEW = "New";
-const ROYALTYPAID = "RoyaltyPaid";
+const SaleCompletedEvent = "SaleCompleted";
+const ListingCreatedEvent = "ListingCreated";
+const ListingDeletedEvent = "ListingDeleted";
+const RoyaltyPaidEvent = "RoyaltyPaid";
 
 // we expect an array of logs like this coming out of a transaction:
 // {
@@ -21,11 +22,11 @@ const ROYALTYPAID = "RoyaltyPaid";
 //     address: '0x1dBaFfBF818ba9c09Fd0C7C19Ac510908A649DDf',
 //     type: 'mined',
 //     id: 'log_138b028a',
-//     event: 'Buy',
+//     event: 'SaleCompleted',
 //     args: [Result]
 // }
 //
-// this function findFirst(logs, 'Buy') returns the args for that event
+// this function findFirst(logs, 'SaleCompleted') returns the args for that event
 function findFirst(logs, eventName) {
     const eventNames = [];
 
@@ -118,16 +119,18 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
     it("creates a new listing", async () => {
         // alice creates a sale
-        // `New` is the event emitted when creating a new sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
-        assert.equal(New.saleId, 0);
-        assert.equal(New.seller, alice);
-        assert.equal(New.tokenId, 1);
+        const listing = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
+        assert.equal(listing.listingId, 0);
+        assert.equal(listing.seller, alice);
+        assert.equal(listing.tokenId, 1);
 
         // alice still owns the NFTs
         assert.equal(await showtimeNFT.balanceOf(alice, 1), INITIAL_NFT_SUPPLY);
 
-        const _sale = await market.listings(New.saleId);
+        const _sale = await market.listings(listing.listingId);
         assert.equal(_sale.tokenId, 1);
         assert.equal(_sale.quantity, 5);
         assert.equal(_sale.price, 500);
@@ -156,15 +159,18 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
     it("creates a new listing with price 0", async () => {
         // alice creates a sale
-        const { args: New } = (await market.createSale(1, 5, 0, token.address, { from: alice })).logs[0];
-        assert.equal(New.saleId, 0);
-        assert.equal(New.seller, alice);
-        assert.equal(New.tokenId, 1);
+        const listing = await getLog(
+            market.createSale(1, 5, 0, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
+        assert.equal(listing.listingId, 0);
+        assert.equal(listing.seller, alice);
+        assert.equal(listing.tokenId, 1);
 
         const bobsTokenBalanceBefore = await token.balanceOf(bob);
-        await market.buyFor(New.saleId, /* quantity */ 2, bob, { from: bob });
+        await market.buyFor(listing.listingId, /* quantity */ 2, bob, { from: bob });
 
-        assert.equal(await showtimeNFT.balanceOf(bob, New.tokenId), 2);
+        assert.equal(await showtimeNFT.balanceOf(bob, listing.tokenId), 2);
 
         const bobsTokenBalanceAfter = await token.balanceOf(bob);
         assert(bobsTokenBalanceBefore.eq(bobsTokenBalanceAfter));
@@ -172,27 +178,33 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
     it("sellers can *not* buy from themselves", async () => {
         // alice creates a sale
-        const New = await getLog(market.createSale(1, 5, 500, token.address, { from: alice }), NEW);
+        const listing = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
 
         // the listing exists and alice is the seller
-        assert.equal((await market.listings(New.saleId)).seller, alice);
+        assert.equal((await market.listings(listing.listingId)).seller, alice);
 
         // alice still owns the NFTs
-        assert.equal(await showtimeNFT.balanceOf(alice, New.tokenId), INITIAL_NFT_SUPPLY);
+        assert.equal(await showtimeNFT.balanceOf(alice, listing.tokenId), INITIAL_NFT_SUPPLY);
 
         // alice can not initially complete the sale because she doesn't have the tokens to buy
         await truffleAsserts.reverts(
-            market.buyFor(New.saleId, /* quantity */ 5, alice, { from: alice }),
+            market.buyFor(listing.listingId, /* quantity */ 5, alice, { from: alice }),
             "seller is not a valid _whom address"
         );
     });
 
     it("has enough tokens to buy", async () => {
         // alice creates the sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+        const listing = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
 
         // bob burns his tokens
-        await token.transfer("0x000000000000000000000000000000000000dead", await token.balanceOf(bob), {
+        await token.transfer("0x000000000000000000000000000000000000dEaD", await token.balanceOf(bob), {
             from: bob,
         });
 
@@ -200,14 +212,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(bob), 0);
 
         // bob can no longer buy
-        await truffleAsserts.reverts(market.buyFor(New.saleId, 5, bob, { from: bob }));
+        await truffleAsserts.reverts(market.buyFor(listing.listingId, 5, bob, { from: bob }));
     });
 
     it("cannot cancel other seller's sale", async () => {
         const tx = await market.createSale(1, 5, 500, token.address, { from: alice });
-        const { saleId } = tx.logs[0].args;
+        const { listingId } = tx.logs[0].args;
+
         // bob cannot cancel
-        await truffleAsserts.reverts(market.cancelSale(saleId), "caller not seller");
+        await truffleAsserts.reverts(market.cancelSale(listingId), "caller not seller");
     });
 
     it("cannot cancel not existent sale", async () => {
@@ -216,68 +229,92 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
     it("allows seller to cancel their sale", async () => {
         // alice creates a sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
-        // alice cancels her sale
-        const { args: Cancel } = (await market.cancelSale(New.saleId, { from: alice })).logs[0];
-        assert.equal(Cancel.saleId, 0);
-        assert.equal(Cancel.seller, alice);
+        const created = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
 
-        const _sale = await market.listings(Cancel.saleId);
-        assert.equal(_sale.seller, ZERO_ADDRESS);
-        assert.equal(_sale.tokenId, 0);
-        assert.equal(_sale.quantity, 0);
-        assert.equal(_sale.price, 0);
-        assert.equal(_sale.currency, ZERO_ADDRESS);
+        // alice cancels her sale
+        const deleted = await getLog(
+            market.cancelSale(created.listingId, { from: alice }),
+            ListingDeletedEvent
+        );
+        assert.equal(deleted.listingId, 0);
+        assert.equal(deleted.seller, alice);
+
+        const listing = await market.listings(deleted.listingId);
+        assert.equal(listing.seller, ZERO_ADDRESS);
+        assert.equal(listing.tokenId, 0);
+        assert.equal(listing.quantity, 0);
+        assert.equal(listing.price, 0);
+        assert.equal(listing.currency, ZERO_ADDRESS);
     });
 
     it("cannot buy a cancelled sale", async () => {
         const tx = await market.createSale(1, 5, 500, token.address, { from: alice }); // alice create
-        const { saleId } = tx.logs[0].args;
-        await market.cancelSale(saleId, { from: alice }); // alice cancel
-        await truffleAsserts.reverts(market.buyFor(saleId, 5, admin), "listing doesn't exist");
+        const { listingId } = tx.logs[0].args;
+        await market.cancelSale(listingId, { from: alice }); // alice cancel
+        await truffleAsserts.reverts(market.buyFor(listingId, 5, admin), "listing doesn't exist");
     });
 
     it("completes a valid buy", async () => {
         // alice creates a sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+        const created = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
 
         // bob buys the sale
-        const Buy = await getLog(market.buyFor(New.saleId, 5, bob, { from: bob }), BUY);
+        const saleCompleted = await getLog(
+            market.buyFor(created.listingId, 5, bob, { from: bob }),
+            SaleCompletedEvent
+        );
 
-        assert.equal(Buy.saleId, 0);
-        assert.equal(Buy.seller, alice);
-        assert.equal(Buy.buyer, bob);
-        assert.equal(Buy.quantity, 5);
+        assert.equal(saleCompleted.listingId, 0);
+        assert.equal(saleCompleted.seller, alice);
+        assert.equal(saleCompleted.buyer, bob);
+        assert.equal(saleCompleted.quantity, 5);
 
-        const _sale = await market.listings(Buy.saleId);
-        assert.equal(_sale.seller, ZERO_ADDRESS);
+        const listing = await market.listings(saleCompleted.listingId);
+        assert.equal(listing.seller, ZERO_ADDRESS);
         assert.equal(await showtimeNFT.balanceOf(alice, 1), 5); // 10 - 5
         assert.equal(await showtimeNFT.balanceOf(bob, 1), 5); // 0 + 5
     });
 
     it("can not buy for address 0", async () => {
         // alice creates a sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+        const created = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
+
         // bob attempts to buy
         await truffleAsserts.reverts(
-            market.buyFor(New.saleId, 5, ZERO_ADDRESS, { from: bob }),
+            market.buyFor(created.listingId, 5, ZERO_ADDRESS, { from: bob }),
             "invalid _whom address"
         );
     });
 
     it("buys for another user", async () => {
         // alice creates a sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+        const created = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
 
         // bob buys the sale
-        const Buy = await getLog(market.buyFor(New.saleId, 5, admin, { from: bob }), BUY);
-        assert.equal(Buy.saleId, 0);
-        assert.equal(Buy.seller, alice);
-        assert.equal(Buy.buyer, admin);
-        assert.equal(Buy.quantity, 5);
+        const saleCompleted = await getLog(
+            market.buyFor(created.listingId, 5, admin, { from: bob }),
+            SaleCompletedEvent
+        );
+        assert.equal(saleCompleted.listingId, 0);
+        assert.equal(saleCompleted.seller, alice);
+        assert.equal(saleCompleted.buyer, bob);
+        assert.equal(saleCompleted.receiver, admin);
+        assert.equal(saleCompleted.quantity, 5);
 
-        const _sale = await market.listings(Buy.saleId);
-        assert.equal(_sale.seller, ZERO_ADDRESS);
+        const listing = await market.listings(saleCompleted.listingId);
+        assert.equal(listing.seller, ZERO_ADDRESS);
 
         assert.equal(await showtimeNFT.balanceOf(alice, 1), 5); // 10 - 5
         assert.equal(await showtimeNFT.balanceOf(admin, 1), 5); // 0 + 5
@@ -285,75 +322,99 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
     it("buys specific quantity of tokenIds", async () => {
         // alice creates a sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+        const created = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
 
         // bob buys the sale: 2 tokens only out of 5
-        const Buy2 = await getLog(market.buyFor(New.saleId, 2, admin, { from: bob }), BUY);
-        assert.equal(Buy2.quantity, 2);
+        const saleCompleted2 = await getLog(
+            market.buyFor(created.listingId, 2, admin, { from: bob }),
+            SaleCompletedEvent
+        );
+        assert.equal(saleCompleted2.quantity, 2);
 
         // there should still be 3 left available
-        const Buy3 = await getLog(market.buyFor(New.saleId, 3, admin, { from: bob }), BUY);
-        assert.equal(Buy3.quantity, 3);
+        const saleCompleted3 = await getLog(
+            market.buyFor(created.listingId, 3, admin, { from: bob }),
+            SaleCompletedEvent
+        );
+        assert.equal(saleCompleted3.quantity, 3);
     });
 
     it("throws on attempting to buy more than available quantity", async () => {
         // alice lists 5 NFTs for sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
+        const created = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
 
         // bob tries to buy 6 NFTs
         await truffleAsserts.reverts(
-            market.buyFor(New.saleId, 6, bob, { from: bob }),
+            market.buyFor(created.listingId, 6, bob, { from: bob }),
             "required more than available quantity"
         );
     });
 
     it("throws on attempting to buy listed quantity that is no longer available", async () => {
         // alice creates a sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
-        assert.equal((await market.listings(New.saleId)).seller, alice);
+        const created = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
+        assert.equal((await market.listings(created.listingId)).seller, alice);
 
         // then she burns the NFTs
         await showtimeNFT.burn(alice, 1, INITIAL_NFT_SUPPLY, { from: alice });
 
         // the sale can not be completed
         await truffleAsserts.reverts(
-            market.buyFor(New.saleId, 1, bob),
+            market.buyFor(created.listingId, 1, bob),
             "required more than available quantity"
         );
     });
 
     it("completes a partial sale when required <= available < listed", async () => {
         // alice lists 5 NFTs for sale
-        const { args: New } = (await market.createSale(1, 5, 500, token.address, { from: alice })).logs[0];
-        assert.equal((await market.listings(New.saleId)).seller, alice);
+        const created = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
+        assert.equal((await market.listings(created.listingId)).seller, alice);
 
         // then she burns 8 NFTs
         await showtimeNFT.burn(alice, 1, 8, { from: alice });
 
         // there are still 2 available for sale
-        assert.equal(await market.availableForSale(New.saleId), 2);
+        assert.equal(await market.availableForSale(created.listingId), 2);
 
         // bob can buy 1
-        const { args: Buy1 } = (await market.buyFor(New.saleId, 1, bob, { from: bob })).logs[0];
+        const saleCompleted1 = await getLog(
+            market.buyFor(created.listingId, 1, bob, { from: bob }),
+            SaleCompletedEvent
+        );
 
         // there is still 1 available for sale
-        assert.equal(await market.availableForSale(New.saleId), 1);
+        assert.equal(await market.availableForSale(created.listingId), 1);
 
         // the listing has been updated to reflect the available quantity
-        assert.equal((await market.listings(New.saleId)).quantity, 1);
+        assert.equal((await market.listings(created.listingId)).quantity, 1);
 
         // bob buys the last one
-        const { args: Buy2 } = (await market.buyFor(New.saleId, 1, bob, { from: bob })).logs[0];
+        const saleCompleted2 = await getLog(
+            market.buyFor(created.listingId, 1, bob, { from: bob }),
+            SaleCompletedEvent
+        );
 
         // the listing no longer exists
-        assert.equal((await market.listings(New.saleId)).seller, ZERO_ADDRESS);
+        assert.equal((await market.listings(created.listingId)).seller, ZERO_ADDRESS);
     });
 
     it("completes a sale which has 10% royalties associated with it", async () => {
         // admin puts his tokenId on sale which has 10% royalty to alice
         await market.createSale(tokenId10PctRoyaltyToAlice, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
-        const RoyaltyPaid = await getLog(market.buyFor(0, 5, bob, { from: bob }), ROYALTYPAID);
+        const RoyaltyPaid = await getLog(market.buyFor(0, 5, bob, { from: bob }), RoyaltyPaidEvent);
         assert.equal(RoyaltyPaid.receiver, alice);
         assert.equal(RoyaltyPaid.amount, 250);
         assert.equal(await token.balanceOf(alice), 250); // received her 10%
@@ -366,7 +427,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(alice), 0);
 
         // we ignore the royalty, everything goes to the seller
-        truffleAsserts.eventNotEmitted(await market.buyFor(0, 5, bob, { from: bob }), "RoyaltyPaid");
+        truffleAsserts.eventNotEmitted(await market.buyFor(0, 5, bob, { from: bob }), RoyaltyPaidEvent);
         assert.equal(await token.balanceOf(admin), 2500); // price
     });
 
@@ -376,7 +437,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(alice), 0);
 
         // bob buys 2 of them
-        const RoyaltyPaid = await getLog(market.buyFor(0, 2, bob, { from: bob }), ROYALTYPAID);
+        const RoyaltyPaid = await getLog(market.buyFor(0, 2, bob, { from: bob }), RoyaltyPaidEvent);
         assert.equal(RoyaltyPaid.receiver, alice);
         assert.equal(RoyaltyPaid.amount, 500);
         assert.equal(await token.balanceOf(alice), 500); // capped at 50%!
@@ -394,7 +455,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const adminBalanceBefore = await token.balanceOf(admin);
 
         // bob buys 2 of them
-        RoyaltyPaid = await getLog(market.buyFor(0, 2, bob, { from: bob }), ROYALTYPAID);
+        RoyaltyPaid = await getLog(market.buyFor(0, 2, bob, { from: bob }), RoyaltyPaidEvent);
         assert.equal(RoyaltyPaid.receiver, alice);
         assert.equal(RoyaltyPaid.amount, 1000);
         assert((await token.balanceOf(alice)).eq(aliceBalanceBefore.add(new BN(1000)))); // alice does get 100% of the sale

@@ -34,6 +34,8 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         address seller;
     }
 
+    /// ============ Mutable storage ============
+
     /// royalties payments can be turned on/off by the owner of the contract
     bool public royaltiesEnabled = true;
 
@@ -48,6 +50,8 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
 
     uint256 listingCounter;
 
+    /// ============ Modifiers ============
+
     modifier onlySeller(uint256 _id) {
         require(listings[_id].seller == _msgSender(), "caller not seller");
         _;
@@ -58,11 +62,20 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         _;
     }
 
-    event New(uint256 indexed saleId, address indexed seller, uint256 indexed tokenId);
-    event Cancel(uint256 indexed saleId, address indexed seller);
-    event Buy(uint256 indexed saleId, address indexed seller, address indexed buyer, uint256 quantity);
-    event Deleted(uint256 indexed saleId, address indexed seller);
-    event RoyaltyPaid(address indexed receiver, uint256 amount);
+    /// ============ Events ============
+
+    event ListingCreated(uint256 indexed listingId, address indexed seller, uint256 indexed tokenId);
+    event ListingDeleted(uint256 indexed listingId, address indexed seller);
+    event RoyaltyPaid(address indexed receiver, IERC20 currency, uint256 amount);
+    event SaleCompleted(
+        uint256 indexed listingId,
+        address indexed seller,
+        address indexed buyer,
+        address receiver,
+        uint256 quantity
+    );
+
+    /// ============ Constructor ============
 
     constructor(
         address _nft,
@@ -81,6 +94,8 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         /// set the trustedForwarder only once, see BaseRelayRecipient
         trustedForwarder = _trustedForwarder;
     }
+
+    /// ============ Marketplace functions ============
 
     /// @notice `setApprovalForAll` before calling
     /// @notice creates a new Listing
@@ -110,14 +125,14 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         listings[listingId] = listing;
         listingCounter++;
 
-        emit New(listingId, seller, _tokenId);
+        emit ListingCreated(listingId, seller, _tokenId);
     }
 
     /// @notice cancel an active sale
     function cancelSale(uint256 _listingId) external listingExists(_listingId) onlySeller(_listingId) {
         delete listings[_listingId];
 
-        emit Cancel(_listingId, _msgSender());
+        emit ListingDeleted(_listingId, _msgSender());
     }
 
     /// @notice the seller may own fewer NFTs than the listed quantity
@@ -135,7 +150,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         uint256 _quantity,
         address _whom
     ) external listingExists(_listingId) whenNotPaused {
-        /// 1. CHECKS
+        /// 1. Checks
         require(_whom != address(0), "invalid _whom address");
 
         Listing memory listing = listings[_listingId];
@@ -158,24 +173,22 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         // the royalty amount is deducted from the price paid by the buyer
         price -= royaltyAmount;
 
-        /// 2. EFFECTS
+        /// 2. Effects
         // update the listing with the remaining quantity, or delete it if everything has been sold
         if (_quantity == availableQuantity) {
             delete listings[_listingId];
-            emit Deleted(_listingId, seller);
+            emit ListingDeleted(_listingId, seller);
         } else {
             listings[_listingId].quantity = availableQuantity - _quantity;
         }
 
-        emit Buy(_listingId, seller, _whom, _quantity);
-
-        /// 3. INTERACTIONS
-
         address buyer = _msgSender();
+        emit SaleCompleted(_listingId, seller, buyer, _whom, _quantity);
 
+        /// 3. Interactions
         // transfer royalties
         if (royaltyAmount > 0) {
-            emit RoyaltyPaid(royaltyReceiver, royaltyAmount);
+            emit RoyaltyPaid(royaltyReceiver, listing.currency, royaltyAmount);
             listing.currency.safeTransferFrom(buyer, royaltyReceiver, royaltyAmount);
         }
 
@@ -186,16 +199,11 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         nft.safeTransferFrom(seller, _whom, tokenId, _quantity, "");
     }
 
-    /**
-     * returns the message sender
-     */
+    /// ============ Util functions ============
+
     function _msgSender() internal view override(Context, BaseRelayRecipient) returns (address) {
         return BaseRelayRecipient._msgSender();
     }
-
-    //
-    // PRIVATE FUNCTIONS
-    //
 
     function getRoyalties(uint256 tokenId, uint256 price)
         private
@@ -222,9 +230,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         return Math.min(maxRoyaltiesAmount, royaltyAmount);
     }
 
-    //
-    // CONTRACT SETTINGS
-    //
+    /// ============ Admin functions ============
 
     /// @notice switch royalty payments on/off
     function royaltySwitch(bool enabled) external onlyOwner {
