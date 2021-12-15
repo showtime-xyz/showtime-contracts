@@ -8,6 +8,12 @@ contract("ShowtimeMT", async (accounts) => {
         beforeEach(async () => {
             // Deploy MultiToken
             mt = await MT.new();
+
+            MT.defaults({
+                gas: 4712388,
+                gasPrice: 100000000000,
+            });
+
             // Set Admin
             await mt.setAdmin(accounts[1], true);
             // Set Minter

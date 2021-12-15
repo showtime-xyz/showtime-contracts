@@ -160,20 +160,20 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         uint256 _listingId,
         uint256 _tokenId,
         uint256 _quantity,
-        uint256 _pricePerItem,
+        uint256 _price,
         address _currency,
         address _receiver
     ) external listingExists(_listingId) whenNotPaused {
         /// 1. Checks
-        require(_receiver != address(0), "can not buy for address 0");
+        require(_receiver != address(0), "_receiver cannot be address 0");
 
         Listing memory listing = listings[_listingId];
 
         // to prevent issues with block reorgs, we need to make sure that the expectations of the buyer (tokenId,
         // price and currency) match with the listing
-        require(listing.tokenId == _tokenId, "tokenId does not match listing");
-        require(listing.price == _pricePerItem, "price does not match listing");
-        require(address(listing.currency) == _currency, "currency does not match listing");
+        require(listing.tokenId == _tokenId, "_tokenId does not match listing");
+        require(listing.price == _price, "_price does not match listing");
+        require(address(listing.currency) == _currency, "_currency does not match listing");
 
         // disable buying something from the seller for the seller
         // note that the seller can still buy from themselves as a gift for someone else
@@ -183,12 +183,9 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         uint256 availableQuantity = availableForSale(_listingId);
         require(_quantity <= availableQuantity, "required more than available quantity");
 
-        uint256 price = listing.price * _quantity;
-        (address royaltyReceiver, uint256 royaltyAmount) = getRoyalties(listing.tokenId, price);
-        require(royaltyAmount <= price, "royalty amount too big");
-
-        // the royalty amount is deducted from the price paid by the buyer
-        price -= royaltyAmount;
+        uint256 totalPrice = listing.price * _quantity;
+        (address royaltyReceiver, uint256 royaltyAmount) = getRoyalties(listing.tokenId, totalPrice);
+        require(royaltyAmount <= totalPrice, "royalty amount too big");
 
         /// 2. Effects
         updateListing(_listingId, availableQuantity - _quantity);
@@ -202,8 +199,8 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
             listing.currency.safeTransferFrom(_msgSender(), royaltyReceiver, royaltyAmount);
         }
 
-        // transfer $price $currency from the buyer to the seller
-        listing.currency.safeTransferFrom(_msgSender(), listing.seller, price);
+        // the royalty amount is deducted from the price paid by the buyer
+        listing.currency.safeTransferFrom(_msgSender(), listing.seller, totalPrice - royaltyAmount);
 
         // transfer the NFTs from the seller to the buyer
         nft.safeTransferFrom(listing.seller, _receiver, listing.tokenId, _quantity, "");

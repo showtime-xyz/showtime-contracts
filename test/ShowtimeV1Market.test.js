@@ -178,7 +178,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 bob,
                 { from: bob }
             ),
-            "tokenId does not match listing"
+            "_tokenId does not match listing"
         );
 
         await truffleAsserts.reverts(
@@ -191,7 +191,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 bob,
                 { from: bob }
             ),
-            "price does not match listing"
+            "_price does not match listing"
         );
 
         await truffleAsserts.reverts(
@@ -204,7 +204,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 bob,
                 { from: bob }
             ),
-            "currency does not match listing"
+            "_currency does not match listing"
         );
     });
 
@@ -389,7 +389,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 ZERO_ADDRESS,
                 { from: bob }
             ),
-            "can not buy for address 0"
+            "_receiver cannot be address 0"
         );
     });
 
