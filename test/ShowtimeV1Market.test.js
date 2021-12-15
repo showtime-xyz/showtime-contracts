@@ -462,17 +462,21 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
     });
 
+    it("does not permit to set maxRoyalties above 100%", async () => {
+        await truffleAsserts.reverts(
+            market.setMaxRoyalties(200_00),
+            "maxRoyaltiesBasisPoints must be <= 100%"
+        );
+    });
+
     it("completes a sale which has 100% royalties associated with it when we lift the royalties cap", async () => {
         // admin puts 5 of their tokenId on sale which has 100% royalty to alice
         await market.createSale(tokenId100PctRoyaltyToAlice, 5, 500, token.address);
 
         // then we set the max royalties to 100%
-        const royaltiesUpdatedEvent = await getLog(
-            market.setMaxRoyalties(100 * 100),
-            MaxRoyaltiesUpdatedEvent
-        );
+        const royaltiesUpdatedEvent = await getLog(market.setMaxRoyalties(100_00), MaxRoyaltiesUpdatedEvent);
         assert.equal(royaltiesUpdatedEvent.account, admin);
-        assert.equal(royaltiesUpdatedEvent.maxRoyaltiesBasisPoints, 100 * 100);
+        assert.equal(royaltiesUpdatedEvent.maxRoyaltiesBasisPoints, 100_00);
 
         const aliceBalanceBefore = await token.balanceOf(alice);
         const adminBalanceBefore = await token.balanceOf(admin);

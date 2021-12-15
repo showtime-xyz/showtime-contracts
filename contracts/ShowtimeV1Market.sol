@@ -248,8 +248,8 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     /// ============ Admin functions ============
 
     /// @notice switch royalty payments on/off
-    function setRoyaltiesEnabled(bool _royaltiesEnabled) external onlyOwner {
-        royaltiesEnabled = _royaltiesEnabled;
+    function setRoyaltiesEnabled(bool newValue) external onlyOwner {
+        royaltiesEnabled = newValue;
 
         emit RoyaltiesEnabledChanged(_msgSender(), royaltiesEnabled);
     }
@@ -257,9 +257,9 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     /// @notice sets the maximum royalties that will be paid during sales, in basis points
     /// ex: if a token requests 75% royalties but maxRoyaltiesBasisPoints is set to 60_00 (= 60%),
     ///    then 60% will be paid out instead of the 75% requested
-    function setMaxRoyalties(uint256 _maxRoyaltiesBasisPoints) external onlyOwner {
-        require(maxRoyaltiesBasisPoints < 100_00, "maxRoyaltiesBasisPoints must be less than 100%");
-        maxRoyaltiesBasisPoints = _maxRoyaltiesBasisPoints;
+    function setMaxRoyalties(uint256 newValue) external onlyOwner {
+        require(newValue <= 100_00, "maxRoyaltiesBasisPoints must be <= 100%");
+        maxRoyaltiesBasisPoints = newValue;
 
         emit MaxRoyaltiesUpdated(_msgSender(), maxRoyaltiesBasisPoints);
     }
