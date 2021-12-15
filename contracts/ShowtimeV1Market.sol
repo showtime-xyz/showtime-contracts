@@ -154,30 +154,37 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
 
     /// @notice Complete a sale
     /// @param _quantity the number of tokens to purchase
-    /// @param _whom the recipient address
+    /// @param _receiver the address that will receive the NFTs
     /// @dev we let the transaction complete even if the currency is no longer accepted in order to avoid stuck listings
-    function buyFor(
+    function buy(
         uint256 _listingId,
+        uint256 _tokenId,
         uint256 _quantity,
-        address _whom
+        uint256 _pricePerItem,
+        address _currency,
+        address _receiver
     ) external listingExists(_listingId) whenNotPaused {
         /// 1. Checks
-        require(_whom != address(0), "invalid _whom address");
+        require(_receiver != address(0), "can not buy for address 0");
 
         Listing memory listing = listings[_listingId];
-        address seller = listing.seller;
-        uint256 tokenId = listing.tokenId;
+
+        // to prevent issues with block reorgs, we need to make sure that the expectations of the buyer (tokenId,
+        // price and currency) match with the listing
+        require(listing.tokenId == _tokenId, "tokenId does not match listing");
+        require(listing.price == _pricePerItem, "price does not match listing");
+        require(address(listing.currency) == _currency, "currency does not match listing");
 
         // disable buying something from the seller for the seller
         // note that the seller can still buy from themselves as a gift for someone else
         // the difference with a transfer is that this will result in royalties being paid out
-        require(_whom != seller, "seller is not a valid _whom address");
+        require(_receiver != listing.seller, "seller is not a valid receiver address");
 
         uint256 availableQuantity = availableForSale(_listingId);
         require(_quantity <= availableQuantity, "required more than available quantity");
 
         uint256 price = listing.price * _quantity;
-        (address royaltyReceiver, uint256 royaltyAmount) = getRoyalties(tokenId, price);
+        (address royaltyReceiver, uint256 royaltyAmount) = getRoyalties(listing.tokenId, price);
         require(royaltyAmount <= price, "royalty amount too big");
 
         // the royalty amount is deducted from the price paid by the buyer
@@ -186,21 +193,20 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         /// 2. Effects
         updateListing(_listingId, availableQuantity - _quantity);
 
-        address buyer = _msgSender();
-        emit SaleCompleted(_listingId, seller, buyer, _whom, _quantity);
+        emit SaleCompleted(_listingId, listing.seller, _msgSender(), _receiver, _quantity);
 
         /// 3. Interactions
         // transfer royalties
         if (royaltyAmount > 0) {
             emit RoyaltyPaid(royaltyReceiver, listing.currency, royaltyAmount);
-            listing.currency.safeTransferFrom(buyer, royaltyReceiver, royaltyAmount);
+            listing.currency.safeTransferFrom(_msgSender(), royaltyReceiver, royaltyAmount);
         }
 
         // transfer $price $currency from the buyer to the seller
-        listing.currency.safeTransferFrom(buyer, seller, price);
+        listing.currency.safeTransferFrom(_msgSender(), listing.seller, price);
 
         // transfer the NFTs from the seller to the buyer
-        nft.safeTransferFrom(seller, _whom, tokenId, _quantity, "");
+        nft.safeTransferFrom(listing.seller, _receiver, listing.tokenId, _quantity, "");
     }
 
     /// ============ Utility functions ============

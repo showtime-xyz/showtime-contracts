@@ -161,6 +161,53 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
     });
 
+    it("ensures that request from the buyer lines up with the listing", async () => {
+        // alice creates a sale
+        const listing = await getLog(
+            market.createSale(1, 5, 10, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
+
+        await truffleAsserts.reverts(
+            market.buy(
+                listing.listingId,
+                /* tokenId */ 424242424242,
+                /* quantity */ 2,
+                /* price */ 10,
+                token.address,
+                bob,
+                { from: bob }
+            ),
+            "tokenId does not match listing"
+        );
+
+        await truffleAsserts.reverts(
+            market.buy(
+                listing.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 2,
+                /* price */ 424242424242,
+                token.address,
+                bob,
+                { from: bob }
+            ),
+            "price does not match listing"
+        );
+
+        await truffleAsserts.reverts(
+            market.buy(
+                listing.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 2,
+                /* price */ 10,
+                /* currency */ bob,
+                bob,
+                { from: bob }
+            ),
+            "currency does not match listing"
+        );
+    });
+
     it("creates a new listing with price 0", async () => {
         // alice creates a sale
         const listing = await getLog(
@@ -172,7 +219,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(listing.tokenId, 1);
 
         const bobsTokenBalanceBefore = await token.balanceOf(bob);
-        await market.buyFor(listing.listingId, /* quantity */ 2, bob, { from: bob });
+        await market.buy(
+            listing.listingId,
+            /* tokenId */ 1,
+            /* quantity */ 2,
+            /* price */ 0,
+            token.address,
+            bob,
+            { from: bob }
+        );
 
         assert.equal(await showtimeNFT.balanceOf(bob, listing.tokenId), 2);
 
@@ -195,8 +250,16 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
         // alice can not initially complete the sale because she doesn't have the tokens to buy
         await truffleAsserts.reverts(
-            market.buyFor(listing.listingId, /* quantity */ 5, alice, { from: alice }),
-            "seller is not a valid _whom address"
+            market.buy(
+                listing.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 5,
+                /* price */ 500,
+                token.address,
+                alice,
+                { from: alice }
+            ),
+            "seller is not a valid receiver address"
         );
     });
 
@@ -216,7 +279,17 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(bob), 0);
 
         // bob can no longer buy
-        await truffleAsserts.reverts(market.buyFor(listing.listingId, 5, bob, { from: bob }));
+        await truffleAsserts.reverts(
+            market.buy(
+                listing.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 5,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            )
+        );
     });
 
     it("cannot cancel other seller's sale", async () => {
@@ -258,19 +331,32 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const tx = await market.createSale(1, 5, 500, token.address, { from: alice }); // alice create
         const { listingId } = tx.logs[0].args;
         await market.cancelSale(listingId, { from: alice }); // alice cancel
-        await truffleAsserts.reverts(market.buyFor(listingId, 5, admin), "listing doesn't exist");
+        await truffleAsserts.reverts(
+            market.buy(listingId, /* tokenId */ 1, /* quantity */ 5, /* price */ 500, token.address, bob, {
+                from: bob,
+            }),
+            "listing doesn't exist"
+        );
     });
 
     it("completes a valid buy", async () => {
-        // alice creates a sale
+        // alice puts up 5 NFTs for sale
         const created = await getLog(
             market.createSale(1, 5, 500, token.address, { from: alice }),
             ListingCreatedEvent
         );
 
-        // bob buys the sale
+        // bob buys them
         const saleCompleted = await getLog(
-            market.buyFor(created.listingId, 5, bob, { from: bob }),
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 5,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
             SaleCompletedEvent
         );
 
@@ -294,21 +380,37 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
         // bob attempts to buy
         await truffleAsserts.reverts(
-            market.buyFor(created.listingId, 5, ZERO_ADDRESS, { from: bob }),
-            "invalid _whom address"
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 5,
+                /* price */ 500,
+                token.address,
+                ZERO_ADDRESS,
+                { from: bob }
+            ),
+            "can not buy for address 0"
         );
     });
 
-    it("buys for another user", async () => {
+    it("allows buying for another user", async () => {
         // alice creates a sale
         const created = await getLog(
             market.createSale(1, 5, 500, token.address, { from: alice }),
             ListingCreatedEvent
         );
 
-        // bob buys the sale
+        // bob buys the sale for another user
         const saleCompleted = await getLog(
-            market.buyFor(created.listingId, 5, admin, { from: bob }),
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 5,
+                /* price */ 500,
+                token.address,
+                /* receiver */ admin,
+                { from: bob }
+            ),
             SaleCompletedEvent
         );
         assert.equal(saleCompleted.listingId, 0);
@@ -333,14 +435,30 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
         // bob buys the sale: 2 tokens only out of 5
         const saleCompleted2 = await getLog(
-            market.buyFor(created.listingId, 2, admin, { from: bob }),
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 2,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
             SaleCompletedEvent
         );
         assert.equal(saleCompleted2.quantity, 2);
 
         // there should still be 3 left available
         const saleCompleted3 = await getLog(
-            market.buyFor(created.listingId, 3, admin, { from: bob }),
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 3,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
             SaleCompletedEvent
         );
         assert.equal(saleCompleted3.quantity, 3);
@@ -355,7 +473,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
         // bob tries to buy 6 NFTs
         await truffleAsserts.reverts(
-            market.buyFor(created.listingId, 6, bob, { from: bob }),
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 6,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
             "required more than available quantity"
         );
     });
@@ -373,7 +499,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
         // bob tries to buy 2
         await truffleAsserts.reverts(
-            market.buyFor(created.listingId, 2, bob),
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 2,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
             "required more than available quantity"
         );
 
@@ -401,7 +535,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
         // bob can buy 1
         const saleCompleted1 = await getLog(
-            market.buyFor(created.listingId, 1, bob, { from: bob }),
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 1,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
             SaleCompletedEvent
         );
 
@@ -413,7 +555,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
         // bob buys the last one
         const saleCompleted2 = await getLog(
-            market.buyFor(created.listingId, 1, bob, { from: bob }),
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 1,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
             SaleCompletedEvent
         );
 
@@ -425,7 +575,19 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         // admin puts his tokenId on sale which has 10% royalty to alice
         await market.createSale(tokenId10PctRoyaltyToAlice, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
-        const RoyaltyPaid = await getLog(market.buyFor(0, 5, bob, { from: bob }), RoyaltyPaidEvent);
+        const RoyaltyPaid = await getLog(
+            market.buy(
+                /* listingId */ 0,
+                /* tokenId */ tokenId10PctRoyaltyToAlice,
+                /* quantity */ 5,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
+            RoyaltyPaidEvent
+        );
+
         assert.equal(RoyaltyPaid.receiver, alice);
         assert.equal(RoyaltyPaid.amount, 250);
         assert.equal(await token.balanceOf(alice), 250); // received her 10%
@@ -438,7 +600,18 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(alice), 0);
 
         // we ignore the royalty, everything goes to the seller
-        truffleAsserts.eventNotEmitted(await market.buyFor(0, 5, bob, { from: bob }), RoyaltyPaidEvent);
+        truffleAsserts.eventNotEmitted(
+            await market.buy(
+                /* listingId */ 0,
+                /* tokenId */ tokenId10PctRoyaltyToZeroAddress,
+                /* quantity */ 5,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
+            RoyaltyPaidEvent
+        );
         assert.equal(await token.balanceOf(admin), 2500); // price
     });
 
@@ -448,7 +621,19 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(alice), 0);
 
         // bob buys 2 of them
-        const RoyaltyPaid = await getLog(market.buyFor(0, 2, bob, { from: bob }), RoyaltyPaidEvent);
+        const RoyaltyPaid = await getLog(
+            market.buy(
+                /* listingId */ 0,
+                /* tokenId */ tokenId100PctRoyaltyToAlice,
+                /* quantity */ 2,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
+            RoyaltyPaidEvent
+        );
+
         assert.equal(RoyaltyPaid.receiver, alice);
         assert.equal(RoyaltyPaid.amount, 500);
         assert.equal(await token.balanceOf(alice), 500); // capped at 50%!
@@ -482,7 +667,18 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const adminBalanceBefore = await token.balanceOf(admin);
 
         // bob buys 2 of them
-        RoyaltyPaid = await getLog(market.buyFor(0, 2, bob, { from: bob }), RoyaltyPaidEvent);
+        RoyaltyPaid = await getLog(
+            market.buy(
+                /* listingId */ 0,
+                /* tokenId */ tokenId100PctRoyaltyToAlice,
+                /* quantity */ 2,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
+            RoyaltyPaidEvent
+        );
         assert.equal(RoyaltyPaid.receiver, alice);
         assert.equal(RoyaltyPaid.amount, 1000);
         assert((await token.balanceOf(alice)).eq(aliceBalanceBefore.add(new BN(1000)))); // alice does get 100% of the sale
@@ -500,7 +696,18 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const adminBalanceBefore = await token.balanceOf(admin);
 
         // bob buys 2 of them
-        truffleAsserts.eventNotEmitted(await market.buyFor(0, 2, bob, { from: bob }), "RoyaltyPaid");
+        truffleAsserts.eventNotEmitted(
+            await market.buy(
+                /* listingId */ 0,
+                /* tokenId */ tokenId100PctRoyaltyToAlice,
+                /* quantity */ 2,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
+            RoyaltyPaidEvent
+        );
 
         assert((await token.balanceOf(alice)).eq(aliceBalanceBefore)); // alice gets no royalties
         assert((await token.balanceOf(admin)).eq(adminBalanceBefore.add(new BN(1000)))); // the seller gets 100% of the proceeds
@@ -514,7 +721,9 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
             market.setRoyaltiesEnabled(false),
             RoyaltiesEnabledChangedEvent
         );
-        // TODO finish this
+
+        assert.equal(royaltiesEnabledEvent.account, admin);
+        assert.equal(royaltiesEnabledEvent.royaltiesEnabled, false);
         assert.equal(await market.royaltiesEnabled(), false);
     });
 
@@ -522,7 +731,9 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await market.setRoyaltiesEnabled(false);
         await market.createSale(2, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
-        await market.buyFor(0, 5, bob, { from: bob });
+        await market.buy(0, /* tokenId */ 2, /* quantity */ 5, /* price */ 500, token.address, bob, {
+            from: bob,
+        });
         assert.equal(await token.balanceOf(alice), 0); // received no royalty
         assert.equal(await token.balanceOf(admin), 2500);
     });
@@ -547,9 +758,30 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     it("can not buy when paused", async () => {
         await market.createSale(1, 5, 500, token.address, { from: alice });
         await market.pause();
-        await truffleAsserts.reverts(market.buyFor(0, 5, bob, { from: bob }), "Pausable: paused");
+        await truffleAsserts.reverts(
+            market.buy(
+                /* listingId */ 0,
+                /* tokenId */ 1,
+                /* quantity */ 5,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            ),
+            "Pausable: paused"
+        );
         await market.unpause();
-        await market.buyFor(0, 5, bob, { from: bob });
+
+        // succeeds after unpausing
+        await market.buy(
+            /* listingId */ 0,
+            /* tokenId */ 1,
+            /* quantity */ 5,
+            /* price */ 500,
+            token.address,
+            bob,
+            { from: bob }
+        );
     });
 
     it("can still cancel a listing when paused", async () => {
