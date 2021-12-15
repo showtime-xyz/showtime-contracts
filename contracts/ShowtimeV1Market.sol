@@ -233,26 +233,22 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     /// ============ Admin functions ============
 
     /// @notice switch royalty payments on/off
-    function royaltySwitch(bool enabled) external onlyOwner {
-        require(royaltiesEnabled != enabled, "royalty already on the desired state");
-        royaltiesEnabled = enabled;
+    function setRoyaltiesEnabled(bool _royaltiesEnabled) external onlyOwner {
+        royaltiesEnabled = _royaltiesEnabled;
     }
 
+    /// @notice sets the maximum royalties that will be paid during sales, in basis points
+    /// ex: if a token requests 75% royalties but maxRoyaltiesBasisPoints is set to 60_00 (= 60%),
+    ///    then 60% will be paid out instead of the 75% requested
     function setMaxRoyalties(uint256 _maxRoyaltiesBasisPoints) external onlyOwner {
         require(maxRoyaltiesBasisPoints < 100_00, "maxRoyaltiesBasisPoints must be less than 100%");
         maxRoyaltiesBasisPoints = _maxRoyaltiesBasisPoints;
     }
 
     /// @notice add a currency to the accepted currency list
-    function setAcceptedCurrency(address _currency) external onlyOwner {
-        require(_currency.isContract(), "_currency != contract address");
-        acceptedCurrencies[_currency] = true;
-    }
-
-    /// @notice remove a currency from the accepted currency list
-    function removeAcceptedCurrency(address _currency) external onlyOwner {
-        require(acceptedCurrencies[_currency], "currency does not exist");
-        acceptedCurrencies[_currency] = false;
+    function setAcceptedCurrency(address currency, bool accepted) external onlyOwner {
+        require(currency.isContract(), "_currency != contract address");
+        acceptedCurrencies[currency] = accepted;
     }
 
     /// @notice pause the contract

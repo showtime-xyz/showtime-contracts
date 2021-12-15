@@ -480,16 +480,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     });
 
     it("permits only owner to turn off royalty on the contract", async () => {
-        await truffleAsserts.reverts(market.royaltySwitch(false, { from: alice }));
+        await truffleAsserts.reverts(market.setRoyaltiesEnabled(false, { from: alice }));
         assert.equal(await market.royaltiesEnabled(), true);
-        await market.royaltySwitch(false);
+
+        await market.setRoyaltiesEnabled(false);
         assert.equal(await market.royaltiesEnabled(), false);
-        ``;
     });
 
     it("pays no royalty when royalty is turned off", async () => {
-        await market.royaltySwitch(false);
-        await truffleAsserts.reverts(market.royaltySwitch(false), "royalty already on the desired state");
+        await market.setRoyaltiesEnabled(false);
         await market.createSale(2, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
         await market.buyFor(0, 5, bob, { from: bob });
@@ -526,20 +525,22 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
     it("permits only owner to add accepted currencies", async () => {
         await truffleAsserts.reverts(
-            market.setAcceptedCurrency(showtimeNFT.address, { from: alice }),
+            market.setAcceptedCurrency(showtimeNFT.address, true, { from: alice }),
             "Ownable: caller is not the owner"
         );
-        await market.setAcceptedCurrency(showtimeNFT.address);
+
+        await market.setAcceptedCurrency(showtimeNFT.address, true);
         assert.equal(await market.acceptedCurrencies(showtimeNFT.address), true);
     });
 
     it("permits only owner to remove accepted currency", async () => {
-        await market.setAcceptedCurrency(showtimeNFT.address);
+        await market.setAcceptedCurrency(showtimeNFT.address, true);
         await truffleAsserts.reverts(
-            market.removeAcceptedCurrency(showtimeNFT.address, { from: alice }),
+            market.setAcceptedCurrency(showtimeNFT.address, false, { from: alice }),
             "Ownable: caller is not the owner"
         );
-        await market.removeAcceptedCurrency(showtimeNFT.address);
+
+        await market.setAcceptedCurrency(showtimeNFT.address, false);
         assert.equal(await market.acceptedCurrencies(showtimeNFT.address), false);
     });
 });
