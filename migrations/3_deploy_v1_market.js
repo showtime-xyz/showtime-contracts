@@ -55,15 +55,14 @@ module.exports = async function (deployer, network, accounts) {
     }
 
     console.log(
-        `ShowtimeV1Market.new(${networkConfig.showtimeMTAddress}, ${networkConfig.initialCurrencies})`
+        `ShowtimeV1Market.new(${networkConfig.showtimeMTAddress}, ${networkConfig.trustedForwarderAddress}, ${networkConfig.initialCurrencies})`
     );
     const market = await ShowtimeV1Market.new(
         networkConfig.showtimeMTAddress,
         networkConfig.trustedForwarderAddress,
         networkConfig.initialCurrencies,
         {
-            overwrite: false,
-            // from: accounts[5],
+            overwrite: true,
         }
     );
 
@@ -80,13 +79,13 @@ module.exports = async function (deployer, network, accounts) {
             await market.transferOwnership(networkConfig.ownerAddress);
         }
 
-        // await verify("ShowtimeV1Market", market.address, network);
+        await verify("ShowtimeV1Market", market.address, network);
     }
 };
 
 function verify(name, address, network) {
     console.log("Verifying on polygonscan.com:");
-    console.log(`npx truffle run verify ShowtimeV1Market@${market.address} --network ${network}`);
+    console.log(`npx truffle run verify ShowtimeV1Market@${address} --network ${network}`);
 
     return new Promise((resolve, reject) => {
         exec(`npx truffle run verify ${name}@${address} --network ${network}`, (code, stdout, stderr) => {
