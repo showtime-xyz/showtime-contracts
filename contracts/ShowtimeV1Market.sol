@@ -129,59 +129,59 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     /// @notice Complete a sale
     /// @param _quantity the number of tokens to purchase
     /// @param _whom the recipient address
+    /// @dev we let the transaction complete even if the currency is no longer accepted in order to avoid stuck listings
     function buyFor(
         uint256 _listingId,
         uint256 _quantity,
         address _whom
     ) external listingExists(_listingId) whenNotPaused {
+        /// 1. CHECKS
         require(_whom != address(0), "invalid _whom address");
 
         Listing memory listing = listings[_listingId];
+        address seller = listing.seller;
+        IERC20 currency = listing.currency;
+        uint256 tokenId = listing.tokenId;
 
         // disable buying something from the seller for the seller
         // note that the seller can still buy from themselves as a gift for someone else
         // the difference with a transfer is that this will result in royalties being paid out
-        require(_whom != listing.seller, "seller is not a valid _whom address");
+        require(_whom != seller, "seller is not a valid _whom address");
 
         uint256 availableQuantity = availableForSale(_listingId);
         require(_quantity <= availableQuantity, "required more than available quantity");
 
         uint256 price = listing.price * _quantity;
 
-        // we let the transaction complete even if the currency is no longer accepted
-        // in order to avoid stuck listings
-        IERC20 currency = listing.currency;
-        if (royaltiesEnabled) {
-            (address receiver, uint256 royaltyAmount) = nft.royaltyInfo(listing.tokenId, price);
+        (address royaltyReceiver, uint256 royaltyAmount) = getRoyalties(tokenId, price);
+        require(royaltyAmount <= price, "royalty amount too big");
 
-            // we ignore royalties to address 0, otherwise the transfer would fail
-            // and it would result in NFTs that are impossible to sell
-            if (receiver != address(0) && royaltyAmount > 0) {
-                royaltyAmount = capRoyalties(price, royaltyAmount);
-                require(royaltyAmount <= price, "royalty amount too big");
+        // the royalty amount is deducted from the price paid by the buyer
+        price -= royaltyAmount;
 
-                emit RoyaltyPaid(receiver, royaltyAmount);
-                price = price - royaltyAmount;
-
-                currency.safeTransferFrom(_msgSender(), receiver, royaltyAmount);
-            }
-        }
-
+        /// 2. EFFECTS
         // update the listing with the remaining quantity, or delete it if everything has been sold
         if (_quantity == availableQuantity) {
             delete listings[_listingId];
-            emit Deleted(_listingId, listing.seller);
+            emit Deleted(_listingId, seller);
         } else {
             listings[_listingId].quantity = availableQuantity - _quantity;
         }
 
-        emit Buy(_listingId, listing.seller, _whom, _quantity);
+        emit Buy(_listingId, seller, _whom, _quantity);
+
+        /// 3. INTERACTIONS
+        // transfer royalties
+        if (royaltyAmount > 0) {
+            emit RoyaltyPaid(royaltyReceiver, royaltyAmount);
+            currency.safeTransferFrom(_msgSender(), royaltyReceiver, royaltyAmount);
+        }
 
         // transfer $price $currency from the buyer to the seller
-        currency.safeTransferFrom(_msgSender(), listing.seller, price);
+        currency.safeTransferFrom(_msgSender(), seller, price);
 
         // transfer the NFTs from the seller to the buyer
-        nft.safeTransferFrom(listing.seller, _whom, listing.tokenId, _quantity, "");
+        nft.safeTransferFrom(seller, _whom, tokenId, _quantity, "");
     }
 
     /**
@@ -194,6 +194,26 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     //
     // PRIVATE FUNCTIONS
     //
+
+    function getRoyalties(uint256 tokenId, uint256 price)
+        private
+        view
+        returns (address receiver, uint256 royaltyAmount)
+    {
+        if (!royaltiesEnabled) {
+            return (address(0), 0);
+        }
+
+        (receiver, royaltyAmount) = nft.royaltyInfo(tokenId, price);
+
+        // we ignore royalties to address 0, otherwise the transfer would fail
+        // and it would result in NFTs that are impossible to sell
+        if (receiver == address(0) || royaltyAmount == 0) {
+            return (address(0), 0);
+        }
+
+        royaltyAmount = capRoyalties(price, royaltyAmount);
+    }
 
     function capRoyalties(uint256 salePrice, uint256 royaltyAmount) private view returns (uint256) {
         uint256 maxRoyaltiesAmount = (salePrice * maxRoyaltiesBasisPoints) / 100_00;

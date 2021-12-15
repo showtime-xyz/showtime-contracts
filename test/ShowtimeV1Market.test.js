@@ -353,7 +353,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         // admin puts his tokenId on sale which has 10% royalty to alice
         await market.createSale(tokenId10PctRoyaltyToAlice, 5, 500, token.address);
         assert.equal(await token.balanceOf(alice), 0);
-        const { args: RoyaltyPaid } = (await market.buyFor(0, 5, bob, { from: bob })).logs[0];
+        const RoyaltyPaid = await getLog(market.buyFor(0, 5, bob, { from: bob }), ROYALTYPAID);
         assert.equal(RoyaltyPaid.receiver, alice);
         assert.equal(RoyaltyPaid.amount, 250);
         assert.equal(await token.balanceOf(alice), 250); // received her 10%
@@ -412,9 +412,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const adminBalanceBefore = await token.balanceOf(admin);
 
         // bob buys 2 of them
-        RoyaltyPaid = await getLog(market.buyFor(0, 2, bob, { from: bob }), ROYALTYPAID);
-        assert.equal(RoyaltyPaid.receiver, alice);
-        assert.equal(RoyaltyPaid.amount, 0);
+        truffleAsserts.eventNotEmitted(await market.buyFor(0, 2, bob, { from: bob }), "RoyaltyPaid");
+
         assert((await token.balanceOf(alice)).eq(aliceBalanceBefore)); // alice gets no royalties
         assert((await token.balanceOf(admin)).eq(adminBalanceBefore.add(new BN(1000)))); // the seller gets 100% of the proceeds
     });
