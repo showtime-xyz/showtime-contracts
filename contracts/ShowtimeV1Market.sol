@@ -92,25 +92,25 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         uint256 _price,
         address _currency
     ) external whenNotPaused returns (uint256 listingId) {
-        address msgSender = _msgSender();
+        address seller = _msgSender();
 
         require(acceptedCurrencies[_currency], "currency not accepted");
         require(_quantity > 0, "quantity must be greater than 0");
-        require(nft.balanceOf(msgSender, _tokenId) >= _quantity, "seller does not own listed quantity of tokens");
+        require(nft.balanceOf(seller, _tokenId) >= _quantity, "seller does not own listed quantity of tokens");
 
         Listing memory listing = Listing({
             tokenId: _tokenId,
             quantity: _quantity,
             price: _price,
             currency: IERC20(_currency),
-            seller: msgSender
+            seller: seller
         });
 
         listingId = listingCounter;
         listings[listingId] = listing;
         listingCounter++;
 
-        emit New(listingId, msgSender, _tokenId);
+        emit New(listingId, seller, _tokenId);
     }
 
     /// @notice cancel an active sale
@@ -140,7 +140,6 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
 
         Listing memory listing = listings[_listingId];
         address seller = listing.seller;
-        IERC20 currency = listing.currency;
         uint256 tokenId = listing.tokenId;
 
         // disable buying something from the seller for the seller
@@ -171,14 +170,17 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         emit Buy(_listingId, seller, _whom, _quantity);
 
         /// 3. INTERACTIONS
+
+        address buyer = _msgSender();
+
         // transfer royalties
         if (royaltyAmount > 0) {
             emit RoyaltyPaid(royaltyReceiver, royaltyAmount);
-            currency.safeTransferFrom(_msgSender(), royaltyReceiver, royaltyAmount);
+            listing.currency.safeTransferFrom(buyer, royaltyReceiver, royaltyAmount);
         }
 
         // transfer $price $currency from the buyer to the seller
-        currency.safeTransferFrom(_msgSender(), seller, price);
+        listing.currency.safeTransferFrom(buyer, seller, price);
 
         // transfer the NFTs from the seller to the buyer
         nft.safeTransferFrom(seller, _whom, tokenId, _quantity, "");
