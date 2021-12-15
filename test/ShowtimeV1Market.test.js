@@ -12,6 +12,10 @@ const ListingCreatedEvent = "ListingCreated";
 const ListingDeletedEvent = "ListingDeleted";
 const RoyaltyPaidEvent = "RoyaltyPaid";
 
+const AcceptedCurrencyChangedEvent = "AcceptedCurrencyChanged";
+const RoyaltiesEnabledChangedEvent = "RoyaltiesEnabledChanged";
+const MaxRoyaltiesUpdatedEvent = "MaxRoyaltiesUpdated";
+
 // we expect an array of logs like this coming out of a transaction:
 // {
 //     logIndex: 1,
@@ -359,19 +363,26 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     it("throws on attempting to buy listed quantity that is no longer available", async () => {
         // alice creates a sale
         const created = await getLog(
-            market.createSale(1, 5, 500, token.address, { from: alice }),
+            market.createSale(1, INITIAL_NFT_SUPPLY, 500, token.address, { from: alice }),
             ListingCreatedEvent
         );
         assert.equal((await market.listings(created.listingId)).seller, alice);
 
-        // then she burns the NFTs
-        await showtimeNFT.burn(alice, 1, INITIAL_NFT_SUPPLY, { from: alice });
+        // then she burns the NFTs except 1
+        await showtimeNFT.burn(alice, 1, INITIAL_NFT_SUPPLY - 1, { from: alice });
 
-        // the sale can not be completed
+        // bob tries to buy 2
         await truffleAsserts.reverts(
-            market.buyFor(created.listingId, 1, bob),
+            market.buyFor(created.listingId, 2, bob),
             "required more than available quantity"
         );
+
+        const actuallyAvailable = await market.availableForSale(created.listingId);
+        assert.equal(actuallyAvailable, 1);
+
+        // the listing is unchanged
+        const listing = await market.listings(created.listingId);
+        assert.equal(listing.quantity, INITIAL_NFT_SUPPLY);
     });
 
     it("completes a partial sale when required <= available < listed", async () => {
@@ -444,12 +455,24 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await token.balanceOf(admin), 500); // price - royalty
     });
 
+    it("permits only owner to update max royalties", async () => {
+        await truffleAsserts.reverts(
+            market.setMaxRoyalties(100, { from: bob }),
+            "Ownable: caller is not the owner"
+        );
+    });
+
     it("completes a sale which has 100% royalties associated with it when we lift the royalties cap", async () => {
         // admin puts 5 of their tokenId on sale which has 100% royalty to alice
         await market.createSale(tokenId100PctRoyaltyToAlice, 5, 500, token.address);
 
         // then we set the max royalties to 100%
-        await market.setMaxRoyalties(100 * 100);
+        const royaltiesUpdatedEvent = await getLog(
+            market.setMaxRoyalties(100 * 100),
+            MaxRoyaltiesUpdatedEvent
+        );
+        assert.equal(royaltiesUpdatedEvent.account, admin);
+        assert.equal(royaltiesUpdatedEvent.maxRoyaltiesBasisPoints, 100 * 100);
 
         const aliceBalanceBefore = await token.balanceOf(alice);
         const adminBalanceBefore = await token.balanceOf(admin);
@@ -483,7 +506,11 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await truffleAsserts.reverts(market.setRoyaltiesEnabled(false, { from: alice }));
         assert.equal(await market.royaltiesEnabled(), true);
 
-        await market.setRoyaltiesEnabled(false);
+        const royaltiesEnabledEvent = await getLog(
+            market.setRoyaltiesEnabled(false),
+            RoyaltiesEnabledChangedEvent
+        );
+        // TODO finish this
         assert.equal(await market.royaltiesEnabled(), false);
     });
 
@@ -506,7 +533,10 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
 
     it("can not create a listing when paused", async () => {
         await market.pause();
-        await truffleAsserts.reverts(market.createSale(1, 5, 500, token.address, { from: alice }));
+        await truffleAsserts.reverts(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            "Pausable: paused"
+        );
         await market.unpause();
     });
 
@@ -529,7 +559,14 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
             "Ownable: caller is not the owner"
         );
 
-        await market.setAcceptedCurrency(showtimeNFT.address, true);
+        const event = await getLog(
+            market.setAcceptedCurrency(showtimeNFT.address, true),
+            AcceptedCurrencyChangedEvent
+        );
+        assert.equal(event.account, admin);
+        assert.equal(event.currency, showtimeNFT.address);
+        assert.equal(event.accepted, true);
+
         assert.equal(await market.acceptedCurrencies(showtimeNFT.address), true);
     });
 
@@ -540,7 +577,14 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
             "Ownable: caller is not the owner"
         );
 
-        await market.setAcceptedCurrency(showtimeNFT.address, false);
+        const event = await getLog(
+            market.setAcceptedCurrency(showtimeNFT.address, false),
+            AcceptedCurrencyChangedEvent
+        );
+        assert.equal(event.account, admin);
+        assert.equal(event.currency, showtimeNFT.address);
+        assert.equal(event.accepted, false);
+
         assert.equal(await market.acceptedCurrencies(showtimeNFT.address), false);
     });
 });

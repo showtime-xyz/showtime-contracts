@@ -64,6 +64,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
 
     /// ============ Events ============
 
+    /// marketplace and listing related events
     event ListingCreated(uint256 indexed listingId, address indexed seller, uint256 indexed tokenId);
     event ListingDeleted(uint256 indexed listingId, address indexed seller);
     event RoyaltyPaid(address indexed receiver, IERC20 currency, uint256 amount);
@@ -74,6 +75,11 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         address receiver,
         uint256 quantity
     );
+
+    /// admin events
+    event AcceptedCurrencyChanged(address indexed account, address currency, bool accepted);
+    event RoyaltiesEnabledChanged(address indexed account, bool royaltiesEnabled);
+    event MaxRoyaltiesUpdated(address indexed account, uint256 maxRoyaltiesBasisPoints);
 
     /// ============ Constructor ============
 
@@ -166,7 +172,6 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         require(_quantity <= availableQuantity, "required more than available quantity");
 
         uint256 price = listing.price * _quantity;
-
         (address royaltyReceiver, uint256 royaltyAmount) = getRoyalties(tokenId, price);
         require(royaltyAmount <= price, "royalty amount too big");
 
@@ -174,13 +179,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         price -= royaltyAmount;
 
         /// 2. Effects
-        // update the listing with the remaining quantity, or delete it if everything has been sold
-        if (_quantity == availableQuantity) {
-            delete listings[_listingId];
-            emit ListingDeleted(_listingId, seller);
-        } else {
-            listings[_listingId].quantity = availableQuantity - _quantity;
-        }
+        updateListing(_listingId, availableQuantity - _quantity);
 
         address buyer = _msgSender();
         emit SaleCompleted(_listingId, seller, buyer, _whom, _quantity);
@@ -201,8 +200,15 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
 
     /// ============ Util functions ============
 
-    function _msgSender() internal view override(Context, BaseRelayRecipient) returns (address) {
-        return BaseRelayRecipient._msgSender();
+    /// @notice update the listing with the remaining quantity, or delete it if newQuantity is zero
+    function updateListing(uint256 listingId, uint256 newQuantity) private {
+        if (newQuantity == 0) {
+            address seller = listings[listingId].seller;
+            delete listings[listingId];
+            emit ListingDeleted(listingId, seller);
+        } else {
+            listings[listingId].quantity = newQuantity;
+        }
     }
 
     function getRoyalties(uint256 tokenId, uint256 price)
@@ -230,11 +236,17 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         return Math.min(maxRoyaltiesAmount, royaltyAmount);
     }
 
+    function _msgSender() internal view override(Context, BaseRelayRecipient) returns (address) {
+        return BaseRelayRecipient._msgSender();
+    }
+
     /// ============ Admin functions ============
 
     /// @notice switch royalty payments on/off
     function setRoyaltiesEnabled(bool _royaltiesEnabled) external onlyOwner {
         royaltiesEnabled = _royaltiesEnabled;
+
+        emit RoyaltiesEnabledChanged(_msgSender(), royaltiesEnabled);
     }
 
     /// @notice sets the maximum royalties that will be paid during sales, in basis points
@@ -243,12 +255,16 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     function setMaxRoyalties(uint256 _maxRoyaltiesBasisPoints) external onlyOwner {
         require(maxRoyaltiesBasisPoints < 100_00, "maxRoyaltiesBasisPoints must be less than 100%");
         maxRoyaltiesBasisPoints = _maxRoyaltiesBasisPoints;
+
+        emit MaxRoyaltiesUpdated(_msgSender(), maxRoyaltiesBasisPoints);
     }
 
     /// @notice add a currency to the accepted currency list
     function setAcceptedCurrency(address currency, bool accepted) external onlyOwner {
         require(currency.isContract(), "_currency != contract address");
         acceptedCurrencies[currency] = accepted;
+
+        emit AcceptedCurrencyChanged(_msgSender(), currency, accepted);
     }
 
     /// @notice pause the contract
