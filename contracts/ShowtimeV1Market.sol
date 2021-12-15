@@ -45,9 +45,10 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     /// the configurable list of accepted ERC20 contract addresses
     mapping(address => bool) public acceptedCurrencies;
 
-    /// @dev maps a listing id to the corresponding Listing
+    /// maps a listing id to the corresponding Listing
     mapping(uint256 => Listing) public listings;
 
+    /// a simple counter to assign ids to new listings
     uint256 listingCounter;
 
     /// ============ Modifiers ============
@@ -129,7 +130,11 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
 
         listingId = listingCounter;
         listings[listingId] = listing;
-        listingCounter++;
+
+        // no need to check for overflows here
+        unchecked {
+            listingCounter++;
+        }
 
         emit ListingCreated(listingId, seller, _tokenId);
     }
@@ -198,7 +203,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         nft.safeTransferFrom(seller, _whom, tokenId, _quantity, "");
     }
 
-    /// ============ Util functions ============
+    /// ============ Utility functions ============
 
     /// @notice update the listing with the remaining quantity, or delete it if newQuantity is zero
     function updateListing(uint256 listingId, uint256 newQuantity) private {
