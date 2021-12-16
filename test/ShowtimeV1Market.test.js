@@ -448,6 +448,27 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(saleCompleted3.quantity, 3);
     });
 
+    it("throws on attempting to buy 0", async () => {
+        // alice lists 5 NFTs for sale
+        const created = await getLog(
+            market.createSale(1, 5, 500, token.address, { from: alice }),
+            ListingCreatedEvent
+        );
+
+        // bob tries to buy 0 NFTs
+        await truffleAsserts.reverts(
+            market.buy(
+                created.listingId,
+                /* tokenId */ 1,
+                /* quantity */ 0,
+                /* price */ 500,
+                token.address,
+                bob,
+                { from: bob }
+            )
+        );
+    });
+
     it("throws on attempting to buy more than available quantity", async () => {
         // alice lists 5 NFTs for sale
         const created = await getLog(
