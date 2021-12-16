@@ -12,12 +12,34 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 import { ShowtimeMT } from "./ShowtimeMT.sol";
 
+//                    ▄▄
+//                   ▄██▄
+//                  ▄████▄
+//                ▄████████▄
+//              ▄████████████▄
+//            ▄████████████████▄
+//        ▄████████████████████████▄
+//   ▄██████████████████████████████████▄
+//   ▀██████████████████████████████████▀
+//       ████████████████████████████
+//           ████████████████████
+//              ██████████████
+//                ██████████
+//                 ████████
+//                  ██████
+//                   ████
+//                    ██
+
 /// @title Showtime V1 Market for the Showtime ERC1155 Token
 ///
 /// This is a non-escrow marketplace that allows users to list Showtime NFTs for sale
 /// for a fixed price, using a configurable list of allowed ERC20 currencies.
 ///
 /// @dev listings have no expiration date, but frontends may choose to hide old listings
+///
+/// Built with feedback from the community! ♥️ Big thanks to:
+///     aaronsebesta chejazi chiuzon garythung mariobyn_eth MarkBeylin sina_eth_
+///     StErMi theramblingboy timidan_x transmissions11 William94029369
 contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     using SafeERC20 for IERC20;
     using Address for address;
