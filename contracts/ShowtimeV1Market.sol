@@ -12,23 +12,27 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
 import { ShowtimeMT } from "./ShowtimeMT.sol";
 
-//                    ▄▄
-//                   ▄██▄
-//                  ▄████▄
-//                ▄████████▄
-//              ▄████████████▄
-//            ▄████████████████▄
-//        ▄████████████████████████▄
-//   ▄██████████████████████████████████▄
-//   ▀██████████████████████████████████▀
-//       ████████████████████████████
-//           ████████████████████
-//              ██████████████
-//                ██████████
-//                 ████████
-//                  ██████
-//                   ████
-//                    ██
+//////////////////////////////////////////////
+//                                          //
+//                    ▄▄                    //
+//                   ▄██▄                   //
+//                  ▄████▄                  //
+//                ▄████████▄                //
+//              ▄████████████▄              //
+//            ▄████████████████▄            //
+//        ▄████████████████████████▄        //
+//   ▄██████████████████████████████████▄   //
+//   ▀██████████████████████████████████▀   //
+//       ████████████████████████████       //
+//           ████████████████████           //
+//              ██████████████              //
+//                ██████████                //
+//                 ████████                 //
+//                  ██████                  //
+//                   ████                   //
+//                    ██                    //
+//                                          //
+//////////////////////////////////////////////
 
 /// @title Showtime V1 Market for the Showtime ERC1155 Token
 ///
@@ -73,18 +77,6 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     /// a simple counter to assign ids to new listings
     uint256 listingCounter;
 
-    /// ============ Modifiers ============
-
-    modifier onlySeller(uint256 _id) {
-        require(listings[_id].seller == _msgSender(), "caller not seller");
-        _;
-    }
-
-    modifier listingExists(uint256 _id) {
-        require(listings[_id].seller != address(0), "listing doesn't exist");
-        _;
-    }
-
     /// ============ Events ============
 
     /// marketplace and listing related events
@@ -104,6 +96,35 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     event RoyaltiesEnabledChanged(address indexed account, bool royaltiesEnabled);
     event MaxRoyaltiesUpdated(address indexed account, uint256 maxRoyaltiesBasisPoints);
 
+    /// ============ Custom Errors ============
+
+    error ListingDoesNotExist(uint256 listingId);
+    error NotListingSeller(uint256 listingId);
+    error NotContractAddress(address addr);
+    error CurrencyNotAccepted(address currency);
+    error SellerDoesNotOwnToken(uint256 tokenId, uint256 quantity);
+    error NullAddress();
+    error NullQuantity();
+    error TokenIdMismatch(uint256 listedTokenId);
+    error PriceMismatch(uint256 listedPrice);
+    error CurrencyMismatch(address listedCurrency);
+    error CanNotSellToSelf();
+    error AvailableQuantityInsuficient(uint256 availableQuantity);
+    error RoyaltiesTooHigh(uint256 royaltyAmount, uint256 totalPrice);
+    error InvalidMaxRoyalties();
+
+    /// ============ Modifiers ============
+
+    modifier onlySeller(uint256 _id) {
+        if (listings[_id].seller != _msgSender()) revert NotListingSeller(_id);
+        _;
+    }
+
+    modifier listingExists(uint256 _id) {
+        if (listings[_id].seller == address(0)) revert ListingDoesNotExist(_id);
+        _;
+    }
+
     /// ============ Constructor ============
 
     constructor(
@@ -112,12 +133,13 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         address[] memory _initialCurrencies
     ) {
         /// initialize the address of the NFT contract
-        require(_nft.isContract(), "must be contract address");
+        if (!_nft.isContract()) revert NotContractAddress(_nft);
         nft = ShowtimeMT(_nft);
 
         for (uint256 i = 0; i < _initialCurrencies.length; i++) {
-            require(_initialCurrencies[i].isContract(), "_initialCurrencies must contain contract addresses");
-            acceptedCurrencies[_initialCurrencies[i]] = true;
+            address currency = _initialCurrencies[i];
+            if (!currency.isContract()) revert NotContractAddress(currency);
+            acceptedCurrencies[currency] = true;
         }
 
         /// set the trustedForwarder only once, see BaseRelayRecipient
@@ -138,9 +160,9 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     ) external whenNotPaused returns (uint256 listingId) {
         address seller = _msgSender();
 
-        require(acceptedCurrencies[_currency], "currency not accepted");
-        require(_quantity > 0, "quantity must be greater than 0");
-        require(nft.balanceOf(seller, _tokenId) >= _quantity, "seller does not own listed quantity of tokens");
+        if (!acceptedCurrencies[_currency]) revert CurrencyNotAccepted(_currency);
+        if (_quantity == 0) revert NullQuantity();
+        if (nft.balanceOf(seller, _tokenId) < _quantity) revert SellerDoesNotOwnToken(_tokenId, _quantity);
 
         Listing memory listing = Listing({
             tokenId: _tokenId,
@@ -187,27 +209,28 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         address _receiver
     ) external listingExists(_listingId) whenNotPaused {
         /// 1. Checks
-        require(_receiver != address(0), "_receiver cannot be address 0");
+        if (_quantity == 0) revert NullQuantity();
+        if (_receiver == address(0)) revert NullAddress();
 
         Listing memory listing = listings[_listingId];
 
         // to prevent issues with block reorgs, we need to make sure that the expectations of the buyer (tokenId,
         // price and currency) match with the listing
-        require(listing.tokenId == _tokenId, "_tokenId does not match listing");
-        require(listing.price == _price, "_price does not match listing");
-        require(address(listing.currency) == _currency, "_currency does not match listing");
+        if (listing.tokenId != _tokenId) revert TokenIdMismatch(listing.tokenId);
+        if (listing.price != _price) revert PriceMismatch(listing.price);
+        if (address(listing.currency) != _currency) revert CurrencyMismatch(address(listing.currency));
 
         // disable buying something from the seller for the seller
         // note that the seller can still buy from themselves as a gift for someone else
         // the difference with a transfer is that this will result in royalties being paid out
-        require(_receiver != listing.seller, "seller is not a valid receiver address");
+        if (_receiver == listing.seller) revert CanNotSellToSelf();
 
         uint256 availableQuantity = availableForSale(_listingId);
-        require(_quantity <= availableQuantity, "required more than available quantity");
+        if (_quantity > availableQuantity) revert AvailableQuantityInsuficient(availableQuantity);
 
         uint256 totalPrice = listing.price * _quantity;
         (address royaltyReceiver, uint256 royaltyAmount) = getRoyalties(listing.tokenId, totalPrice);
-        require(royaltyAmount <= totalPrice, "royalty amount too big");
+        if (royaltyAmount > totalPrice) revert RoyaltiesTooHigh(royaltyAmount, totalPrice);
 
         /// 2. Effects
         updateListing(_listingId, availableQuantity - _quantity);
@@ -283,7 +306,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     /// ex: if a token requests 75% royalties but maxRoyaltiesBasisPoints is set to 60_00 (= 60%),
     ///    then 60% will be paid out instead of the 75% requested
     function setMaxRoyalties(uint256 newValue) external onlyOwner {
-        require(newValue <= 100_00, "maxRoyaltiesBasisPoints must be <= 100%");
+        if (newValue > 100_00) revert InvalidMaxRoyalties();
         maxRoyaltiesBasisPoints = newValue;
 
         emit MaxRoyaltiesUpdated(_msgSender(), maxRoyaltiesBasisPoints);
@@ -291,7 +314,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
 
     /// @notice add a currency to the accepted currency list
     function setAcceptedCurrency(address currency, bool accepted) external onlyOwner {
-        require(currency.isContract(), "_currency != contract address");
+        if (accepted && !currency.isContract()) revert NotContractAddress(currency);
         acceptedCurrencies[currency] = accepted;
 
         emit AcceptedCurrencyChanged(_msgSender(), currency, accepted);

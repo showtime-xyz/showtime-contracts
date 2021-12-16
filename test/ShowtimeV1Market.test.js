@@ -104,15 +104,9 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
             gasPrice: 100000000000,
         });
 
-        await truffleAsserts.reverts(
-            ShowtimeV1Market.new(alice, ZERO_ADDRESS, [token.address]),
-            "must be contract address"
-        );
+        await truffleAsserts.reverts(ShowtimeV1Market.new(alice, ZERO_ADDRESS, [token.address]));
 
-        await truffleAsserts.reverts(
-            ShowtimeV1Market.new(showtimeNFT.address, ZERO_ADDRESS, [ZERO_ADDRESS]),
-            "_initialCurrencies must contain contract addresses"
-        );
+        await truffleAsserts.reverts(ShowtimeV1Market.new(showtimeNFT.address, ZERO_ADDRESS, [ZERO_ADDRESS]));
     });
 
     it("deploys with correct constructor arguments", async () => {
@@ -145,10 +139,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         // alice does not own token 2
         assert.equal(await showtimeNFT.balanceOf(alice, 2), 0);
 
-        await truffleAsserts.reverts(
-            market.createSale(2, 5, 500, token.address, { from: alice }),
-            "seller does not own listed quantity of tokens"
-        );
+        await truffleAsserts.reverts(market.createSale(2, 5, 500, token.address, { from: alice }));
     });
 
     it("ensures that the seller owns enough of the listed tokens", async () => {
@@ -156,8 +147,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await showtimeNFT.balanceOf(alice, 1), INITIAL_NFT_SUPPLY);
 
         await truffleAsserts.reverts(
-            market.createSale(1, INITIAL_NFT_SUPPLY + 1, 500, token.address, { from: alice }),
-            "seller does not own listed quantity of tokens"
+            market.createSale(1, INITIAL_NFT_SUPPLY + 1, 500, token.address, { from: alice })
         );
     });
 
@@ -177,8 +167,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            ),
-            "_tokenId does not match listing"
+            )
         );
 
         await truffleAsserts.reverts(
@@ -190,8 +179,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            ),
-            "_price does not match listing"
+            )
         );
 
         await truffleAsserts.reverts(
@@ -203,8 +191,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 /* currency */ bob,
                 bob,
                 { from: bob }
-            ),
-            "_currency does not match listing"
+            )
         );
     });
 
@@ -258,8 +245,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 alice,
                 { from: alice }
-            ),
-            "seller is not a valid receiver address"
+            )
         );
     });
 
@@ -297,11 +283,11 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const { listingId } = tx.logs[0].args;
 
         // bob cannot cancel
-        await truffleAsserts.reverts(market.cancelSale(listingId), "caller not seller");
+        await truffleAsserts.reverts(market.cancelSale(listingId));
     });
 
-    it("cannot cancel not existent sale", async () => {
-        await truffleAsserts.reverts(market.cancelSale(42), "listing doesn't exist");
+    it("cannot cancel non existent sale", async () => {
+        await truffleAsserts.reverts(market.cancelSale(42));
     });
 
     it("allows seller to cancel their sale", async () => {
@@ -334,8 +320,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await truffleAsserts.reverts(
             market.buy(listingId, /* tokenId */ 1, /* quantity */ 5, /* price */ 500, token.address, bob, {
                 from: bob,
-            }),
-            "listing doesn't exist"
+            })
         );
     });
 
@@ -388,8 +373,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 ZERO_ADDRESS,
                 { from: bob }
-            ),
-            "_receiver cannot be address 0"
+            )
         );
     });
 
@@ -481,8 +465,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            ),
-            "required more than available quantity"
+            )
         );
     });
 
@@ -507,8 +490,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            ),
-            "required more than available quantity"
+            )
         );
 
         const actuallyAvailable = await market.availableForSale(created.listingId);
@@ -648,10 +630,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     });
 
     it("does not permit to set maxRoyalties above 100%", async () => {
-        await truffleAsserts.reverts(
-            market.setMaxRoyalties(200_00),
-            "maxRoyaltiesBasisPoints must be <= 100%"
-        );
+        await truffleAsserts.reverts(market.setMaxRoyalties(200_00));
     });
 
     it("completes a sale which has 100% royalties associated with it when we lift the royalties cap", async () => {
