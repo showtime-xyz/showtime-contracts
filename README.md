@@ -2,7 +2,7 @@
 
 This repository contains the Solidity Smart Contracts for the Showtime NFT and its Marketplace.
 
-Truffle tests status: [![CI](https://github.com/tryshowtime/nonceblox-showtime-contracts/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tryshowtime/nonceblox-showtime-contracts/actions/workflows/ci.yml)
+[![Truffle tests](https://github.com/tryshowtime/nonceblox-showtime-contracts/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tryshowtime/nonceblox-showtime-contracts/actions/workflows/ci.yml)
 
 ## Design
 
