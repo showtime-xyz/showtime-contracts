@@ -234,6 +234,13 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
     });
 
+    it("ensures that the listing is in an accepted currency", async () => {
+        await expectCustomError(
+            market.createSale(1, 5, 500, showtimeNFT.address, { from: alice }),
+            CurrencyNotAccepted(showtimeNFT.address)
+        );
+    });
+
     it("ensures that the seller owns enough of the listed tokens", async () => {
         // alice owns INITIAL_NFT_SUPPLY of token 1
         assert.equal(await showtimeNFT.balanceOf(alice, 1), INITIAL_NFT_SUPPLY);
