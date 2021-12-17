@@ -4,6 +4,13 @@ const ShowtimeV1Market = artifacts.require("ShowtimeV1Market");
 const truffleAsserts = require("truffle-assertions");
 const BN = require("bn.js");
 
+const { solidity } = require("ethereum-waffle");
+const chai = require("chai");
+
+chai.use(solidity);
+chai.use(require("chai-string"));
+const { expect } = chai;
+
 // address(0)
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
 
@@ -15,6 +22,60 @@ const RoyaltyPaidEvent = "RoyaltyPaid";
 const AcceptedCurrencyChangedEvent = "AcceptedCurrencyChanged";
 const RoyaltiesEnabledChangedEvent = "RoyaltiesEnabledChanged";
 const MaxRoyaltiesUpdatedEvent = "MaxRoyaltiesUpdated";
+
+function ListingDoesNotExist(listingId) {
+    return { abi: errorsByName.get("ListingDoesNotExist"), params: [listingId] };
+}
+function NotListingSeller(listingId) {
+    return { abi: errorsByName.get("NotListingSeller"), params: [listingId] };
+}
+function NotContractAddress(address) {
+    return { abi: errorsByName.get("NotContractAddress"), params: [address] };
+}
+function CurrencyNotAccepted(currency) {
+    return { abi: errorsByName.get("CurrencyNotAccepted"), params: [currency] };
+}
+function SellerDoesNotOwnToken(tokenId, quantity) {
+    return { abi: errorsByName.get("SellerDoesNotOwnToken"), params: [tokenId, quantity] };
+}
+function NullAddress() {
+    return { abi: errorsByName.get("NullAddress"), params: [] };
+}
+function NullQuantity() {
+    return { abi: errorsByName.get("NullQuantity"), params: [] };
+}
+function TokenIdMismatch(listedTokenId) {
+    return { abi: errorsByName.get("TokenIdMismatch"), params: [listedTokenId] };
+}
+function PriceMismatch(listedPrice) {
+    return { abi: errorsByName.get("PriceMismatch"), params: [listedPrice] };
+}
+function CurrencyMismatch(listedCurrency) {
+    return { abi: errorsByName.get("CurrencyMismatch"), params: [listedCurrency] };
+}
+function CanNotSellToSelf() {
+    return { abi: errorsByName.get("CanNotSellToSelf"), params: [] };
+}
+function AvailableQuantityInsuficient(availableQuantity) {
+    return { abi: errorsByName.get("AvailableQuantityInsuficient"), params: [availableQuantity] };
+}
+function RoyaltiesTooHigh(royaltyAmount, totalPrice) {
+    return { abi: errorsByName.get("RoyaltiesTooHigh"), params: [royaltyAmount, totalPrice] };
+}
+function InvalidMaxRoyalties() {
+    return { abi: errorsByName.get("InvalidMaxRoyalties"), params: [] };
+}
+
+const errorsByName = (function (abi) {
+    let errorsList = abi.filter((item) => item.type === "error");
+
+    let groupedMap = new Map();
+    for (let i = 0; i < errorsList.length; i++) {
+        groupedMap.set(errorsList[i].name, errorsList[i]);
+    }
+
+    return groupedMap;
+})(ShowtimeV1Market.abi);
 
 // we expect an array of logs like this coming out of a transaction:
 // {
@@ -49,6 +110,28 @@ async function getLog(tx, eventName) {
     const logs = (await tx).logs;
     return findFirst(logs, eventName);
 }
+
+const expectCustomError = async function (promise, errorObject) {
+    try {
+        // The tx will revert from the custom error that is not decoded because of a truffle limitation.
+        await promise;
+    } catch (error) {
+        const encoded = web3.eth.abi.encodeFunctionCall(errorObject.abi, errorObject.params);
+
+        // Pluck out the relevant encoded data
+        const returnValue = Object.entries(error.data)
+            .filter((it) => it.length > 1)
+            .map((it) => it[1])
+            .find((it) => it != null && it.constructor.name === "Object" && "return" in it).return;
+
+        // Checks if the start matches our expected encoded errorSignature
+        expect(returnValue).to.equal(encoded);
+        return;
+    }
+
+    // fails if no revert happened
+    expect.fail("Expected an exception but none was received");
+};
 
 contract("ERC1155 Sale Contract Tests", (accounts) => {
     let showtimeNFT,
@@ -104,9 +187,15 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
             gasPrice: 100000000000,
         });
 
-        await truffleAsserts.reverts(ShowtimeV1Market.new(alice, ZERO_ADDRESS, [token.address]));
+        await expectCustomError(
+            ShowtimeV1Market.new(alice, ZERO_ADDRESS, [token.address]),
+            NotContractAddress(alice)
+        );
 
-        await truffleAsserts.reverts(ShowtimeV1Market.new(showtimeNFT.address, ZERO_ADDRESS, [ZERO_ADDRESS]));
+        await expectCustomError(
+            ShowtimeV1Market.new(showtimeNFT.address, ZERO_ADDRESS, [ZERO_ADDRESS]),
+            NotContractAddress(ZERO_ADDRESS)
+        );
     });
 
     it("deploys with correct constructor arguments", async () => {
@@ -139,15 +228,19 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         // alice does not own token 2
         assert.equal(await showtimeNFT.balanceOf(alice, 2), 0);
 
-        await truffleAsserts.reverts(market.createSale(2, 5, 500, token.address, { from: alice }));
+        await expectCustomError(
+            market.createSale(2, 5, 500, token.address, { from: alice }),
+            SellerDoesNotOwnToken(2, 5)
+        );
     });
 
     it("ensures that the seller owns enough of the listed tokens", async () => {
         // alice owns INITIAL_NFT_SUPPLY of token 1
         assert.equal(await showtimeNFT.balanceOf(alice, 1), INITIAL_NFT_SUPPLY);
 
-        await truffleAsserts.reverts(
-            market.createSale(1, INITIAL_NFT_SUPPLY + 1, 500, token.address, { from: alice })
+        await expectCustomError(
+            market.createSale(1, INITIAL_NFT_SUPPLY + 1, 500, token.address, { from: alice }),
+            SellerDoesNotOwnToken(1, INITIAL_NFT_SUPPLY + 1)
         );
     });
 
@@ -158,7 +251,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
             ListingCreatedEvent
         );
 
-        await truffleAsserts.reverts(
+        await expectCustomError(
             market.buy(
                 listing.listingId,
                 /* tokenId */ 424242424242,
@@ -167,10 +260,11 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            )
+            ),
+            TokenIdMismatch(1)
         );
 
-        await truffleAsserts.reverts(
+        await expectCustomError(
             market.buy(
                 listing.listingId,
                 /* tokenId */ 1,
@@ -179,10 +273,11 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            )
+            ),
+            PriceMismatch(10)
         );
 
-        await truffleAsserts.reverts(
+        await expectCustomError(
             market.buy(
                 listing.listingId,
                 /* tokenId */ 1,
@@ -191,7 +286,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 /* currency */ bob,
                 bob,
                 { from: bob }
-            )
+            ),
+            CurrencyMismatch(token.address)
         );
     });
 
@@ -236,7 +332,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         assert.equal(await showtimeNFT.balanceOf(alice, listing.tokenId), INITIAL_NFT_SUPPLY);
 
         // alice can not initially complete the sale because she doesn't have the tokens to buy
-        await truffleAsserts.reverts(
+        await expectCustomError(
             market.buy(
                 listing.listingId,
                 /* tokenId */ 1,
@@ -245,7 +341,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 alice,
                 { from: alice }
-            )
+            ),
+            CanNotSellToSelf()
         );
     });
 
@@ -274,7 +371,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            )
+            ),
+            "ERC20: transfer amount exceeds balance"
         );
     });
 
@@ -283,11 +381,11 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const { listingId } = tx.logs[0].args;
 
         // bob cannot cancel
-        await truffleAsserts.reverts(market.cancelSale(listingId));
+        await expectCustomError(market.cancelSale(listingId), NotListingSeller(listingId));
     });
 
     it("cannot cancel non existent sale", async () => {
-        await truffleAsserts.reverts(market.cancelSale(42));
+        await expectCustomError(market.cancelSale(42), ListingDoesNotExist(42));
     });
 
     it("allows seller to cancel their sale", async () => {
@@ -317,10 +415,11 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         const tx = await market.createSale(1, 5, 500, token.address, { from: alice }); // alice create
         const { listingId } = tx.logs[0].args;
         await market.cancelSale(listingId, { from: alice }); // alice cancel
-        await truffleAsserts.reverts(
+        await expectCustomError(
             market.buy(listingId, /* tokenId */ 1, /* quantity */ 5, /* price */ 500, token.address, bob, {
                 from: bob,
-            })
+            }),
+            ListingDoesNotExist(listingId)
         );
     });
 
@@ -363,8 +462,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
             ListingCreatedEvent
         );
 
-        // bob attempts to buy
-        await truffleAsserts.reverts(
+        expectCustomError(
             market.buy(
                 created.listingId,
                 /* tokenId */ 1,
@@ -373,7 +471,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 ZERO_ADDRESS,
                 { from: bob }
-            )
+            ),
+            NullAddress()
         );
     });
 
@@ -456,7 +555,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
 
         // bob tries to buy 0 NFTs
-        await truffleAsserts.reverts(
+        await expectCustomError(
             market.buy(
                 created.listingId,
                 /* tokenId */ 1,
@@ -465,7 +564,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            )
+            ),
+            NullQuantity()
         );
     });
 
@@ -477,7 +577,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
 
         // bob tries to buy 6 NFTs
-        await truffleAsserts.reverts(
+        await expectCustomError(
             market.buy(
                 created.listingId,
                 /* tokenId */ 1,
@@ -486,7 +586,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            )
+            ),
+            AvailableQuantityInsuficient(5)
         );
     });
 
@@ -502,7 +603,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         await showtimeNFT.burn(alice, 1, INITIAL_NFT_SUPPLY - 1, { from: alice });
 
         // bob tries to buy 2
-        await truffleAsserts.reverts(
+        await expectCustomError(
             market.buy(
                 created.listingId,
                 /* tokenId */ 1,
@@ -511,7 +612,8 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
                 token.address,
                 bob,
                 { from: bob }
-            )
+            ),
+            AvailableQuantityInsuficient(1)
         );
 
         const actuallyAvailable = await market.availableForSale(created.listingId);
@@ -651,7 +753,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     });
 
     it("does not permit to set maxRoyalties above 100%", async () => {
-        await truffleAsserts.reverts(market.setMaxRoyalties(200_00));
+        await expectCustomError(market.setMaxRoyalties(200_00), InvalidMaxRoyalties());
     });
 
     it("completes a sale which has 100% royalties associated with it when we lift the royalties cap", async () => {
@@ -714,7 +816,10 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     });
 
     it("permits only owner to turn off royalty on the contract", async () => {
-        await truffleAsserts.reverts(market.setRoyaltiesEnabled(false, { from: alice }));
+        await truffleAsserts.reverts(
+            market.setRoyaltiesEnabled(false, { from: alice }),
+            "Ownable: caller is not the owner"
+        );
         assert.equal(await market.royaltiesEnabled(), true);
 
         const royaltiesEnabledEvent = await getLog(
