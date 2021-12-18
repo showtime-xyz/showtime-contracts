@@ -3,6 +3,8 @@ pragma solidity =0.8.7;
 
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
+
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
@@ -10,7 +12,8 @@ import { Ownable, Context } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
-import { ShowtimeMT } from "./ShowtimeMT.sol";
+
+interface ShowtimeERC1155 is IERC1155, IERC2981 {}
 
 //////////////////////////////////////////////
 //                                          //
@@ -49,7 +52,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     using Address for address;
 
     /// the address of the ShowtimeMT NFT (ERC1155) contract
-    ShowtimeMT public immutable nft;
+    ShowtimeERC1155 public immutable nft;
 
     /// @dev listings only contain a tokenId because we are implicitly only listing tokens from the ShowtimeMT contract
     struct Listing {
@@ -134,7 +137,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     ) {
         /// initialize the address of the NFT contract
         if (!_nft.isContract()) revert NotContractAddress(_nft);
-        nft = ShowtimeMT(_nft);
+        nft = ShowtimeERC1155(_nft);
 
         for (uint256 i = 0; i < _initialCurrencies.length; i++) {
             address currency = _initialCurrencies[i];
@@ -143,6 +146,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         }
 
         /// set the trustedForwarder only once, see BaseRelayRecipient
+        if (_trustedForwarder == address(0)) revert NullAddress();
         trustedForwarder = _trustedForwarder;
     }
 

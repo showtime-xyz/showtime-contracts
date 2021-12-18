@@ -11,8 +11,9 @@ chai.use(solidity);
 chai.use(require("chai-string"));
 const { expect } = chai;
 
-// address(0)
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
+const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+const FORWARDER_ADDRESS = BURN_ADDRESS;
 
 const SaleCompletedEvent = "SaleCompleted";
 const ListingCreatedEvent = "ListingCreated";
@@ -124,7 +125,6 @@ const expectCustomError = async function (promise, errorObject) {
             .map((it) => it[1])
             .find((it) => it != null && it.constructor.name === "Object" && "return" in it).return;
 
-        // Checks if the start matches our expected encoded errorSignature
         expect(returnValue).to.equal(encoded);
         return;
     }
@@ -171,8 +171,14 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         token = await Token.new();
         await token.mint(2500, { from: bob });
 
+        // fixes `base fee exceeds gas limit` error
+        const defaults = ShowtimeV1Market.defaults({
+            gas: 4712388,
+            gasPrice: 100000000000,
+        });
+
         // approvals
-        market = await ShowtimeV1Market.new(showtimeNFT.address, /* trustedForwarder */ ZERO_ADDRESS, [
+        market = await ShowtimeV1Market.new(showtimeNFT.address, /* trustedForwarder */ FORWARDER_ADDRESS, [
             token.address,
         ]);
         await showtimeNFT.setApprovalForAll(market.address, true, { from: alice });
@@ -181,20 +187,19 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
     });
 
     it("doesn't allow to deploy with incorrect constructor arguments", async () => {
-        // fixes `base fee exceeds gas limit` error
-        const defaults = ShowtimeV1Market.defaults({
-            gas: 4712388,
-            gasPrice: 100000000000,
-        });
-
         await expectCustomError(
-            ShowtimeV1Market.new(alice, ZERO_ADDRESS, [token.address]),
+            ShowtimeV1Market.new(alice, FORWARDER_ADDRESS, [token.address]),
             NotContractAddress(alice)
         );
 
         await expectCustomError(
-            ShowtimeV1Market.new(showtimeNFT.address, ZERO_ADDRESS, [ZERO_ADDRESS]),
+            ShowtimeV1Market.new(showtimeNFT.address, FORWARDER_ADDRESS, [ZERO_ADDRESS]),
             NotContractAddress(ZERO_ADDRESS)
+        );
+
+        await expectCustomError(
+            ShowtimeV1Market.new(showtimeNFT.address, ZERO_ADDRESS, [token.address]),
+            NullAddress()
         );
     });
 
@@ -361,7 +366,7 @@ contract("ERC1155 Sale Contract Tests", (accounts) => {
         );
 
         // bob burns his tokens
-        await token.transfer("0x000000000000000000000000000000000000dEaD", await token.balanceOf(bob), {
+        await token.transfer(BURN_ADDRESS, await token.balanceOf(bob), {
             from: bob,
         });
 

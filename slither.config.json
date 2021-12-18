@@ -1,4 +1,5 @@
 {
     "exclude_informational": true,
-    "filter_paths": "node_modules"
+    "filter_paths": "node_modules",
+    "solc_remaps": "@openzeppelin=node_modules/@openzeppelin"
 }
