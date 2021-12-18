@@ -186,10 +186,11 @@ npx truffle run verify ShowtimeV1Market@0x3225125E0a853ac1326d0d589e7a4dec10bd64
 
 ### Polygon Mainnet
 
-| Contract         | Commit  | Address                                    | Comment            |
-| ---------------- | ------- | ------------------------------------------ | ------------------ |
-| ShowtimeMT       | 0e4e654 | 0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90 | Live in the app    |
-| ShowtimeV1Market | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version |
+| Contract         | Commit  | Address                                    | Comment               |
+| ---------------- | ------- | ------------------------------------------ | --------------------- |
+| ShowtimeMT       | 0e4e654 | 0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90 | Live in the app       |
+| ShowtimeV1Market | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version    |
+| ShowtimeV1Market | bee01b1 | 0x022F3C027572FE1b321ba7a7844ab77aC4193650 | crowdsourced feedback |
 
 ## Troubleshooting
 

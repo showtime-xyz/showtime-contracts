@@ -11,27 +11,24 @@ module.exports = {
         mumbai_testnet: {
             provider: () =>
                 new HDWalletProvider({
-                    // privateKeys: [process.env.PRIVATE_KEY],
                     mnemonic: process.env.MNEMONIC,
                     providerOrUrl: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
-                    // addressIndex: 0,
                 }),
             network_id: 80001,
             confirmations: 1,
             timeoutBlocks: 200,
             skipDryRun: false,
-            from: "0x74Eb6F5384c91989B231e714334067591DAaE300",
+            from: process.env.ETH_FROM,
         },
         matic_mainnet: {
             provider: () =>
                 new HDWalletProvider({
-                    // privateKeys: [process.env.PRIVATE_KEY],
                     mnemonic: process.env.MNEMONIC,
                     providerOrUrl: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
                     addressIndex: 0,
                 }),
             network_id: "137",
-            from: "0xCC6440b74a95b5506B096A79c9D7Bd070E54E9Eb",
+            from: process.env.ETH_FROM,
         },
     },
     solc: {

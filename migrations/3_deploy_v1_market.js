@@ -1,5 +1,6 @@
 const { exec } = require("shelljs");
 const assert = require("assert");
+require("dotenv").config();
 
 const ShowtimeMT = artifacts.require("ShowtimeMT");
 const ShowtimeV1Market = artifacts.require("ShowtimeV1Market");
@@ -13,6 +14,11 @@ const POLYGON_MAINNET_PoS_USDC = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
 const POLYGON_MAINNET_PoS_WETH = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
 const POLYGON_MAINNET_PoS_DAI = "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063";
 const POLYGON_MAINNET_WMATIC = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270";
+
+const POLYGON_MULTISIG = "0x8C929a803A5Aae8B0F8fB9df0217332cBD7C6cB5";
+
+// see https://docs.biconomy.io/misc/contract-addresses
+const POLYGON_BICONOMY_FORWARDER = "0x86C80a8aa58e0A4fa09A69624c31Ab2a6CAD56b8";
 
 const networkConfigs = {
     development: {
@@ -34,13 +40,14 @@ const networkConfigs = {
             POLYGON_MAINNET_PoS_WETH,
             POLYGON_MAINNET_PoS_DAI,
             POLYGON_MAINNET_PoS_USDC,
-            POLYGON_MAINNET_WMATIC,
+            // we don't use WMATIC anymore because it doesn't do permit()
+            // POLYGON_MAINNET_WMATIC,
         ],
 
         // for the staging deployment, we want to keep the deployment address as the owner
-        // ownerAddress: "0x0C7f6405Bf7299A9EBDcCFD6841feaC6c91e5541",
+        ownerAddress: POLYGON_MULTISIG,
 
-        trustedForwarderAddress: "0x86C80a8aa58e0A4fa09A69624c31Ab2a6CAD56b8",
+        trustedForwarderAddress: POLYGON_BICONOMY_FORWARDER,
     },
 };
 
@@ -54,9 +61,15 @@ module.exports = async function (deployer, network, accounts) {
         networkConfig.showtimeMTAddress = deployedShowtimeMT.address;
     }
 
+    if (network !== "development") {
+        console.log(`Using ETH_FROM: ${process.env.ETH_FROM}`);
+        assert(process.env.ETH_FROM != undefined);
+    }
+
     console.log(
         `ShowtimeV1Market.new(${networkConfig.showtimeMTAddress}, ${networkConfig.trustedForwarderAddress}, ${networkConfig.initialCurrencies})`
     );
+
     const market = await ShowtimeV1Market.new(
         networkConfig.showtimeMTAddress,
         networkConfig.trustedForwarderAddress,
@@ -83,8 +96,14 @@ module.exports = async function (deployer, network, accounts) {
     }
 };
 
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function verify(name, address, network) {
-    console.log("Verifying on polygonscan.com:");
+    // give some time to Polygonscan to realize that a contract was deployed
+    console.log("Verifying on polygonscan.com in 15s...");
+    await sleep(15000);
     console.log(`npx truffle run verify ShowtimeV1Market@${address} --network ${network}`);
 
     return new Promise((resolve, reject) => {
