@@ -100,7 +100,7 @@ function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function verify(name, address, network) {
+async function verify(name, address, network) {
     // give some time to Polygonscan to realize that a contract was deployed
     console.log("Verifying on polygonscan.com in 15s...");
     await sleep(15000);
