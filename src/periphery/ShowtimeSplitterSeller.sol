@@ -16,67 +16,26 @@ import { ShowtimeMTReceiver } from "./ShowtimeMTReceiver.sol";
 /// Usage:
 /// 1. deploy a copy of this contract with the appropriate payees and shares. The payees are immutable and auditable by anyone.
 /// 2. anybody can mint a Showtime NFT with the royalties recipient set to the address of this contract
-/// 3. (optional) the minter can verify what currencies are configured and the corresponding minimum sale price
-/// 4. the minter transfers (some or all of the editions of) the Showtime NFT to this contract
-/// 5. the deployer of the contract calls `createSale`
-/// 6. (optional) the deployer calls `renounceOwnership()`, proving that the listing and the remaining supply will be permanently left untouched
-/// 7. proceeds from primary sales and secondary sales will accrue in this contract
-/// 8. anybody can call `release(IERC20 token, address account)` to disperse the funds to the recipients
+/// 3. the minter transfers (some or all of the editions of) the Showtime NFT to this contract
+/// 4. the deployer of the contract calls `createSale`
+/// 5. (optional) the deployer calls `renounceOwnership()`, proving that the listing and the remaining supply will be permanently left untouched
+/// 6. proceeds from primary sales and secondary sales will accrue in this contract
+/// 7. anybody can call `release(IERC20 token, address account)` to disperse the funds to the recipients
 contract ShowtimeSplitterSeller is PaymentSplitter, ShowtimeMTReceiver, Ownable {
-    /// Immutable storage
     IERC1155 public immutable showtimeMT;
     ShowtimeV1Market public immutable showtimeMarket;
-
-    /// Mutable storage
-    mapping(address => uint256) public minPriceByCurrency;
-
-    /// Errors
-    error MustConfigureCurrencies();
-    error MinPricesCurrenciesLengthMismatch();
-    error InvalidMinPrice();
-    error InvalidCurrency();
-    error CurrencyNotConfigured();
-    error PriceTooLow();
-
-    event MinPriceSet(address currency, uint256 minPrice);
 
     constructor(
         address _showtimeMT,
         ShowtimeV1Market _showtimeMarket,
-        address[] memory _currencies,
-        uint256[] memory _minPrices,
-        address[] memory _payees,
-        uint256[] memory _shares
-    ) PaymentSplitter(_payees, _shares) ShowtimeMTReceiver(_showtimeMT) {
-        // configure the min price by currency
-        uint256 length = _currencies.length;
-        if (length == 0) {
-            revert MustConfigureCurrencies();
-        }
-        if (length != _minPrices.length) {
-            revert MinPricesCurrenciesLengthMismatch();
-        }
-
-        for (uint256 i = 0; i < length; i++) {
-            address currency = _currencies[i];
-            if (currency == address(0)) {
-                revert InvalidCurrency();
-            }
-
-            uint256 minPrice = _minPrices[i];
-            if (minPrice == 0) {
-                revert InvalidMinPrice();
-            }
-
-            minPriceByCurrency[currency] = minPrice;
-            emit MinPriceSet(currency, minPrice);
-        }
-
-        // configure the NFT and market
-        showtimeMT = IERC1155(_showtimeMT);
+        address[] memory payees,
+        uint256[] memory shares_
+    ) PaymentSplitter(payees, shares_) ShowtimeMTReceiver(_showtimeMT) {
+        IERC1155 showtimeMTERC1155 = IERC1155(_showtimeMT);
+        showtimeMT = showtimeMTERC1155;
         showtimeMarket = _showtimeMarket;
 
-        IERC1155(_showtimeMT).setApprovalForAll(address(_showtimeMarket), true);
+        showtimeMTERC1155.setApprovalForAll(address(_showtimeMarket), true);
     }
 
     function createSale(
@@ -85,14 +44,6 @@ contract ShowtimeSplitterSeller is PaymentSplitter, ShowtimeMTReceiver, Ownable 
         uint256 _price,
         address _currency
     ) external onlyOwner returns (uint256 listingId) {
-        uint256 minPrice = minPriceByCurrency[_currency];
-        if (minPrice == 0) {
-            revert CurrencyNotConfigured();
-        }
-        if (_price < minPrice) {
-            revert PriceTooLow();
-        }
-
         listingId = showtimeMarket.createSale(_tokenId, _quantity, _price, _currency);
     }
 
