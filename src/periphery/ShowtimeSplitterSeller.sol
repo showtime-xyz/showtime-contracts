@@ -26,16 +26,15 @@ contract ShowtimeSplitterSeller is PaymentSplitter, ShowtimeMTReceiver, Ownable 
     ShowtimeV1Market public immutable showtimeMarket;
 
     constructor(
-        address _showtimeMT,
+        IERC1155 _showtimeMT,
         ShowtimeV1Market _showtimeMarket,
         address[] memory payees,
         uint256[] memory shares_
-    ) PaymentSplitter(payees, shares_) ShowtimeMTReceiver(_showtimeMT) {
-        IERC1155 showtimeMTERC1155 = IERC1155(_showtimeMT);
-        showtimeMT = showtimeMTERC1155;
+    ) PaymentSplitter(payees, shares_) ShowtimeMTReceiver(address(_showtimeMT)) {
+        showtimeMT = _showtimeMT;
         showtimeMarket = _showtimeMarket;
 
-        showtimeMTERC1155.setApprovalForAll(address(_showtimeMarket), true);
+        _showtimeMT.setApprovalForAll(address(_showtimeMarket), true);
     }
 
     function createSale(
