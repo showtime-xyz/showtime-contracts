@@ -5,6 +5,7 @@ import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "hardhat-deploy";
 
 import "./tasks/accounts";
 import "./tasks/deploy";
@@ -38,6 +39,7 @@ const chainIds = {
   mainnet: 1,
   optimism: 10,
   polygon: 137,
+  "polygon-mumbai": 80001,
   rinkeby: 4,
   ropsten: 3,
 };
@@ -67,6 +69,7 @@ const config: HardhatUserConfig = {
       mainnet: process.env.ETHERSCAN_API_KEY,
       optimisticEthereum: process.env.OPTIMISM_API_KEY,
       polygon: process.env.POLYGONSCAN_API_KEY,
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY,
       rinkeby: process.env.ETHERSCAN_API_KEY,
       ropsten: process.env.ETHERSCAN_API_KEY,
     },
@@ -92,6 +95,7 @@ const config: HardhatUserConfig = {
     mainnet: getChainConfig("mainnet"),
     optimism: getChainConfig("optimism"),
     polygon: getChainConfig("polygon"),
+    mumbai: getChainConfig("polygon-mumbai"),
     rinkeby: getChainConfig("rinkeby"),
     ropsten: getChainConfig("ropsten"),
   },
