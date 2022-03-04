@@ -140,24 +140,24 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         new ShowtimeSplitterSeller(showtimeNFT, market, payees, shares);
     }
 
-    function testOnlyDeployerCanCreateSales() public {
+    function testOnlyOwnerCanCreateSales() public {
         hevm.expectRevert("Ownable: caller is not the owner");
 
         hevm.prank(address(alice));
         charitySeller.createSale(2, 2, 2, address(token));
     }
 
-    function testOnlyDeployerCanCancelSales() public {
+    function testOnlyOwnerCanCancelSales(address someRandomAddress) public {
         hevm.expectRevert("Ownable: caller is not the owner");
 
-        hevm.prank(address(charity));
+        hevm.prank(someRandomAddress);
         charitySeller.cancelSale(0);
     }
 
-    function testOnlyDeployerCanBurnRemainingSupply() public {
+    function testOnlyOwnerCanBurnRemainingSupply(address notTheOwner) public {
         hevm.expectRevert("Ownable: caller is not the owner");
 
-        hevm.prank(address(bob));
+        hevm.prank(notTheOwner);
         charitySeller.burn(42);
     }
 

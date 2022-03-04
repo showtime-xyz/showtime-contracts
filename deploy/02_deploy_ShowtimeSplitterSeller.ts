@@ -1,0 +1,39 @@
+import {HardhatRuntimeEnvironment} from 'hardhat/types';
+import {DeployFunction} from 'hardhat-deploy/types';
+import {ethers} from 'hardhat';
+
+const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+    const deployments = hre.deployments;
+    const ShowtimeMT = await deployments.get('ShowtimeMT');
+    const ShowtimeV1Market = await deployments.get('ShowtimeV1Market');
+    const namedAccounts = await hre.getNamedAccounts();
+
+    console.log("Deploying from address:", namedAccounts.deployer);
+
+    // FIXME: I hardcoded the gas price to avoid the weird "transaction underpriced" error on mumbai
+
+    // the following will only deploy "ShowtimeSplitterSeller" if the contract was never deployed
+    // or if the code changed since last deployment
+    const deployResult = await deployments.deploy(
+        'ShowtimeSplitterSeller',
+        {
+            from: namedAccounts.deployer,
+            // maxFeePerGas: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
+            // maxPriorityFeePerGas: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
+            gasPrice: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
+            gasLimit: 6000000,
+            args: [
+                ShowtimeMT.address,
+                ShowtimeV1Market.address,
+                [namedAccounts.ukraineDAO],
+                [100],
+            ],
+        }
+    );
+
+    // console.log({deployResult})
+    console.log("tx hash:", deployResult.transactionHash);
+    console.log("ShowtimeSplitterSeller deployed to:", deployResult.address);
+};
+
+module.exports = func;

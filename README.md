@@ -131,41 +131,31 @@ npm test test/ShowtimeV1Market.test.js
 it.only("does a thing", ...);
 ```
 
-## Deploy smart contracts
+## Deploy smart contracts with hardhat
 
-### on Ganache
+### on hardhat local network
 
 ```sh
-npm run deploy:ganache
+npx hardhat deploy
 ```
 
 ### on Mumbai Testnet
 
 ```sh
-npm run deploy:mumbai_testnet
+npx hardhat deploy --network mumbai
 ```
 
 ### on Polygon Mainnet
 
 ```sh
-npm run deploy:polygon_mainnet
-```
-
-### Running a single migration
-
-In package.json:
-
-```sh
-truffle migrate --network mumbai_testnet -f 3 --to 3
+npx hardhat deploy --network polygon
 ```
 
 ### Choosing the deployment address
 
-In truffle-config.js, set per network:
+In `hardhat.config.ts`, see `namedAccounts.deployer`
 
-```javascript
-from: "0xCC6440b74a95b5506B096A79c9D7Bd070E54E9Eb";
-```
+Docs for named accounts: https://github.com/wighawag/hardhat-deploy#1-namedaccounts-ability-to-name-addresses
 
 ### Verify a deployed contract
 
@@ -177,20 +167,21 @@ npx truffle run verify ShowtimeV1Market@0x3225125E0a853ac1326d0d589e7a4dec10bd64
 
 ### Mumbai
 
-| Contract         | Commit  | Address                                    | Comment                          |
-| ---------------- | ------- | ------------------------------------------ | -------------------------------- |
-| ShowtimeMT       | 0e4e654 | 0x09F3a26302e1c45f0d78Be5D592f52b6fca43811 |                                  |
-| ShowtimeV1Market | 0af4eae | 0x3225125E0a853ac1326d0d589e7a4dec10bd6479 | after 1st market-improvements PR |
-| ShowtimeV1Market | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version               |
-| ShowtimeV1Market | e3027cd | 0xB38a0Ed9d60CEa911E43DBbEC205cd3ddE0C51B6 | crowdsourced feedback            |
+| Contract                      | Commit        | Address                                           | Comment                           |
+| ----------------              | -------       | ------------------------------------------        | --------------------------------  |
+| **ShowtimeMT**                | **0e4e654**   | **0x09F3a26302e1c45f0d78Be5D592f52b6fca43811**    |                                   |
+| ShowtimeV1Market              | 0af4eae       | 0x3225125E0a853ac1326d0d589e7a4dec10bd6479        | after 1st market-improvements PR  |
+| ShowtimeV1Market              | e35192f       | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E        | non-escrow version                |
+| **ShowtimeV1Market**          | **e3027cd**   | **0xB38a0Ed9d60CEa911E43DBbEC205cd3ddE0C51B6**    | **crowdsourced feedback**         |
+| **ShowtimeSplitterSeller**    | **2ddb539**   | **0x21494B31025259bBc3B61aB41478005b4505e05D**    | **v1 test**                       |
 
 ### Polygon Mainnet
 
-| Contract         | Commit  | Address                                    | Comment               |
-| ---------------- | ------- | ------------------------------------------ | --------------------- |
-| ShowtimeMT       | 0e4e654 | 0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90 | Live in the app       |
-| ShowtimeV1Market | e35192f | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E | non-escrow version    |
-| ShowtimeV1Market | bee01b1 | 0x022F3C027572FE1b321ba7a7844ab77aC4193650 | crowdsourced feedback |
+| Contract                      | Commit        | Address                                           | Comment                           |
+| ----------------              | -------       | ------------------------------------------        | --------------------------------  |
+| **ShowtimeMT**                | **0e4e654**   | **0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90**    | **Live in the app**               |
+| ShowtimeV1Market              | e35192f       | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E        | non-escrow version                |
+| **ShowtimeV1Market**          | **bee01b1**   | **0x022F3C027572FE1b321ba7a7844ab77aC4193650**    | **live in the app**               |
 
 ## Troubleshooting
 
@@ -211,3 +202,4 @@ Seems to be an issue in node v17, workaround suggested in https://github.com/Sna
 Edit the command in `package.json`, for instance to run only the `2_deploy_mt.js` migration:
 
     truffle migrate -f 2 --to 2
+
