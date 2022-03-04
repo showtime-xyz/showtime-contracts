@@ -75,7 +75,7 @@ const config: HardhatUserConfig = {
     currency: "USD",
     enabled: process.env.REPORT_GAS ? true : false,
     excludeContracts: [],
-    src: "./contracts",
+    src: "./src",
   },
   networks: {
     hardhat: {
@@ -96,13 +96,13 @@ const config: HardhatUserConfig = {
     ropsten: getChainConfig("ropsten"),
   },
   paths: {
-    artifacts: "./artifacts",
+    artifacts: "./out",
     cache: "./cache",
-    sources: "./contracts",
+    sources: "./src",
     tests: "./test",
   },
   solidity: {
-    version: "0.8.9",
+    version: "0.8.7",
     settings: {
       metadata: {
         // Not including the metadata hash
