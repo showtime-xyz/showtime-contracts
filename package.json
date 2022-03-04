@@ -80,7 +80,6 @@
         "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
         "lint:sol": "solhint --config ./.solhint.json --max-warnings 0 \"src/**/*.sol\"",
         "lint:ts": "eslint --config ./.eslintrc.yaml --ignore-path ./.eslintignore --ext .js,.ts .",
-        "postinstall": "husky install",
         "postpublish": "pinst --enable",
         "prepublishOnly": "pinst --disable",
         "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
@@ -89,6 +88,5 @@
         "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain",
         "prepack": "pinst --disable",
         "postpack": "pinst --enable"
-    },
-    "packageManager": "yarn@3.2.0"
+    }
 }
