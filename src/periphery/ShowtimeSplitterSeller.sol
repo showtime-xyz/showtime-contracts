@@ -5,10 +5,19 @@ pragma solidity ^0.8.7;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { PaymentSplitter } from "@openzeppelin/contracts/finance/PaymentSplitter.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 
-import { ShowtimeV1Market } from "../ShowtimeV1Market.sol";
 import { ShowtimeMTReceiver } from "./ShowtimeMTReceiver.sol";
+
+interface IShowtimeV1Market {
+    function createSale(
+        uint256 _tokenId,
+        uint256 _quantity,
+        uint256 _price,
+        address _currency
+    ) external returns (uint256 listingId);
+
+    function cancelSale(uint256 _listingId) external;
+}
 
 /// This contract acts as a delegate for listings on the showtime.io marketplace.
 /// It allows trustless sales for 3rd parties such as charities.
@@ -23,18 +32,18 @@ import { ShowtimeMTReceiver } from "./ShowtimeMTReceiver.sol";
 /// 7. anybody can call `release(IERC20 token, address account)` to disperse the funds to the recipients
 contract ShowtimeSplitterSeller is PaymentSplitter, ShowtimeMTReceiver, Ownable {
     IERC1155 public immutable showtimeMT;
-    ShowtimeV1Market public immutable showtimeMarket;
+    IShowtimeV1Market public immutable showtimeMarket;
 
     constructor(
-        IERC1155 _showtimeMT,
-        ShowtimeV1Market _showtimeMarket,
+        address _showtimeMT,
+        address _showtimeMarket,
         address[] memory payees,
         uint256[] memory shares_
     ) PaymentSplitter(payees, shares_) ShowtimeMTReceiver(address(_showtimeMT)) {
-        showtimeMT = _showtimeMT;
-        showtimeMarket = _showtimeMarket;
+        showtimeMT = IERC1155(_showtimeMT);
+        showtimeMarket = IShowtimeV1Market(_showtimeMarket);
 
-        _showtimeMT.setApprovalForAll(address(_showtimeMarket), true);
+        IERC1155(_showtimeMT).setApprovalForAll(address(_showtimeMarket), true);
     }
 
     function createSale(
@@ -50,13 +59,8 @@ contract ShowtimeSplitterSeller is PaymentSplitter, ShowtimeMTReceiver, Ownable 
         showtimeMarket.cancelSale(listingId);
     }
 
-    /// @notice by design, the NFTs transferred to this contract can not be withdrawn
-    ///         so that the minter does not need to trust the contract deployer
-    function burn(uint256 _tokenId) external onlyOwner {
-        ERC1155Burnable(address(showtimeMT)).burn(
-            address(this),
-            _tokenId,
-            showtimeMT.balanceOf(address(this), _tokenId)
-        );
+    function withdraw(uint256 _tokenId, address to) external onlyOwner {
+        uint howMany = showtimeMT.balanceOf(address(this), _tokenId);
+        showtimeMT.safeTransferFrom(address(this), to, _tokenId, howMany, "");
     }
 }

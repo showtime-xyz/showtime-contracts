@@ -89,7 +89,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         token.approve(address(market), type(uint256).max);
 
         // deploy the normal splitter with 100% to charity
-        charitySeller = new ShowtimeSplitterSeller(showtimeNFT, market, justCharityPayees, just100Shares);
+        charitySeller = new ShowtimeSplitterSeller(address(showtimeNFT), address(market), justCharityPayees, just100Shares);
     }
 
     function testDeploySalesContractWithNoPayees() public {
@@ -98,7 +98,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         address[] memory payees = new address[](0);
         uint256[] memory shares = new uint256[](0);
 
-        new ShowtimeSplitterSeller(showtimeNFT, market, payees, shares);
+        new ShowtimeSplitterSeller(address(showtimeNFT), address(market), payees, shares);
     }
 
     function testDeploySalesContractWithBadShares() public {
@@ -110,7 +110,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         uint256[] memory shares = new uint256[](1);
         shares[0] = 0;
 
-        new ShowtimeSplitterSeller(showtimeNFT, market, payees, shares);
+        new ShowtimeSplitterSeller(address(showtimeNFT), address(market), payees, shares);
     }
 
     function testDeploySalesContractWithPayeesSharesMismatch() public {
@@ -123,7 +123,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         uint256[] memory shares = new uint256[](1);
         shares[0] = 100;
 
-        new ShowtimeSplitterSeller(showtimeNFT, market, payees, shares);
+        new ShowtimeSplitterSeller(address(showtimeNFT), address(market), payees, shares);
     }
 
     function testDeploySalesContractWithDuplicatePayees() public {
@@ -137,7 +137,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         shares[0] = 50;
         shares[1] = 50;
 
-        new ShowtimeSplitterSeller(showtimeNFT, market, payees, shares);
+        new ShowtimeSplitterSeller(address(showtimeNFT), address(market), payees, shares);
     }
 
     function testOnlyOwnerCanCreateSales() public {
@@ -147,18 +147,17 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         charitySeller.createSale(2, 2, 2, address(token));
     }
 
-    function testOnlyOwnerCanCancelSales(address someRandomAddress) public {
+    function testOnlyOwnerCanCancelSales() public {
         hevm.expectRevert("Ownable: caller is not the owner");
 
-        hevm.prank(someRandomAddress);
+        hevm.prank(address(alice));
         charitySeller.cancelSale(0);
     }
 
-    function testOnlyOwnerCanBurnRemainingSupply(address notTheOwner) public {
+    function testOnlyOwnerCanWithdraw() public {
         hevm.expectRevert("Ownable: caller is not the owner");
-
-        hevm.prank(notTheOwner);
-        charitySeller.burn(42);
+        hevm.prank(address(alice));
+        charitySeller.withdraw(42, address(alice));
     }
 
     function testHappyPathEndToEnd(uint16 price, uint8 quantity) public {
@@ -193,8 +192,9 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         uint256 salePrice = uint256(quantity) * uint256(price);
         uint256 royalties = salePrice / 10;
         uint256 saleProceeds = salePrice - royalties;
+        uint remainingSupply = INITIAL_NFT_SUPPLY - quantity;
         assertEq(quantity, showtimeNFT.balanceOf(address(bob), tokenId));
-        assertEq(INITIAL_NFT_SUPPLY - quantity, showtimeNFT.balanceOf(address(charitySeller), tokenId));
+        assertEq(remainingSupply, showtimeNFT.balanceOf(address(charitySeller), tokenId));
         assertEq(saleProceeds, token.balanceOf(address(charitySeller)));
         assertEq(royalties, token.balanceOf(address(alice)));
 
@@ -223,11 +223,12 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
             address(charitySeller),
             address(0),
             tokenId,
-            INITIAL_NFT_SUPPLY - quantity
+            remainingSupply
         );
-        charitySeller.burn(tokenId);
+        charitySeller.withdraw(tokenId, address(alice));
 
-        // then it really is gone
+        // then the transfer really happened
         assertEq(0, showtimeNFT.balanceOf(address(charitySeller), tokenId));
+        assertEq(remainingSupply, showtimeNFT.balanceOf(address(alice), tokenId));
     }
 }

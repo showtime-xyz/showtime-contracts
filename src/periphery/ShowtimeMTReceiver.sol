@@ -6,7 +6,6 @@ import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC
 
 contract ShowtimeMTReceiver is ERC1155Receiver {
     address private immutable showtimeMT;
-    mapping(address => uint256) public balancesReceived;
 
     error UnexpectedERC1155Transfer(address _nftContract, uint256 id);
     error UnexpectedERC1155BatchTransfer(address _nftContract, uint256[] ids);

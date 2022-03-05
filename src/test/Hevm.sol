@@ -67,4 +67,6 @@ interface Hevm {
 
     // Gets all accessed reads and write slot from a recording session, for a given address
     function accesses(address) external returns (bytes32[] memory reads, bytes32[] memory writes);
+
+    function assume(bool condition) external;
 }
