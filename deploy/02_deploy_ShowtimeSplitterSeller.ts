@@ -14,26 +14,31 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // the following will only deploy "ShowtimeSplitterSeller" if the contract was never deployed
     // or if the code changed since last deployment
-    const deployResult = await deployments.deploy(
-        'ShowtimeSplitterSeller',
-        {
-            from: namedAccounts.deployer,
-            // maxFeePerGas: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
-            // maxPriorityFeePerGas: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
-            gasPrice: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
-            gasLimit: 6000000,
-            args: [
-                ShowtimeMT.address,
-                ShowtimeV1Market.address,
-                [namedAccounts.ukraineDAO],
-                [100],
-            ],
-        }
-    );
+    try {
+        const deployResult = await deployments.deploy(
+            'ShowtimeSplitterSeller',
+            {
+                from: namedAccounts.deployer,
+                // maxFeePerGas: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
+                // maxPriorityFeePerGas: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
+                gasPrice: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
+                gasLimit: 6000000,
+                args: [
+                    ShowtimeMT.address,
+                    ShowtimeV1Market.address,
+                    [namedAccounts.ukraineDAO],
+                    [100],
+                ],
+            }
+        );
 
-    // console.log({deployResult})
-    console.log("tx hash:", deployResult.transactionHash);
-    console.log("ShowtimeSplitterSeller deployed to:", deployResult.address);
+        // console.log({deployResult})
+        console.log("tx hash:", deployResult.transactionHash);
+        console.log("ShowtimeSplitterSeller deployed to:", deployResult.address);
+    } catch (e: any) {
+        const errorMessage = e.message;
+        console.error({errorMessage});
+    }
 };
 
 module.exports = func;

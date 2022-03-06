@@ -33,6 +33,7 @@ export type { ShowtimeMTTransferTest } from "./ShowtimeMTTransferTest";
 export type { ShowtimeMTURITest } from "./ShowtimeMTURITest";
 export type { User } from "./User";
 export type { ShowtimeMTReceiver } from "./ShowtimeMTReceiver";
+export type { IShowtimeV1Market } from "./IShowtimeV1Market";
 export type { ShowtimeSplitterSeller } from "./ShowtimeSplitterSeller";
 export type { ShowtimeSplitterSellerTest } from "./ShowtimeSplitterSellerTest";
 export type { ShowtimeERC1155 } from "./ShowtimeERC1155";
@@ -72,6 +73,7 @@ export { ShowtimeMTTransferTest__factory } from "./factories/ShowtimeMTTransferT
 export { ShowtimeMTURITest__factory } from "./factories/ShowtimeMTURITest__factory";
 export { User__factory } from "./factories/User__factory";
 export { ShowtimeMTReceiver__factory } from "./factories/ShowtimeMTReceiver__factory";
+export { IShowtimeV1Market__factory } from "./factories/IShowtimeV1Market__factory";
 export { ShowtimeSplitterSeller__factory } from "./factories/ShowtimeSplitterSeller__factory";
 export { ShowtimeSplitterSellerTest__factory } from "./factories/ShowtimeSplitterSellerTest__factory";
 export { ShowtimeERC1155__factory } from "./factories/ShowtimeERC1155__factory";

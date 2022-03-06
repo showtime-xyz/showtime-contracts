@@ -22,6 +22,7 @@ export interface HevmInterface extends utils.Interface {
   functions: {
     "accesses(address)": FunctionFragment;
     "addr(uint256)": FunctionFragment;
+    "assume(bool)": FunctionFragment;
     "deal(address,uint256)": FunctionFragment;
     "etch(address,bytes)": FunctionFragment;
     "expectEmit(bool,bool,bool,bool)": FunctionFragment;
@@ -41,6 +42,7 @@ export interface HevmInterface extends utils.Interface {
 
   encodeFunctionData(functionFragment: "accesses", values: [string]): string;
   encodeFunctionData(functionFragment: "addr", values: [BigNumberish]): string;
+  encodeFunctionData(functionFragment: "assume", values: [boolean]): string;
   encodeFunctionData(
     functionFragment: "deal",
     values: [string, BigNumberish]
@@ -80,6 +82,7 @@ export interface HevmInterface extends utils.Interface {
 
   decodeFunctionResult(functionFragment: "accesses", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "addr", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "assume", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "deal", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "etch", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "expectEmit", data: BytesLike): Result;
@@ -137,6 +140,11 @@ export interface Hevm extends BaseContract {
 
     addr(
       arg0: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    assume(
+      condition: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -233,6 +241,11 @@ export interface Hevm extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  assume(
+    condition: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   deal(
     arg0: string,
     arg1: BigNumberish,
@@ -323,6 +336,8 @@ export interface Hevm extends BaseContract {
 
     addr(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
+    assume(condition: boolean, overrides?: CallOverrides): Promise<void>;
+
     deal(
       arg0: string,
       arg1: BigNumberish,
@@ -391,6 +406,11 @@ export interface Hevm extends BaseContract {
 
     addr(
       arg0: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    assume(
+      condition: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -485,6 +505,11 @@ export interface Hevm extends BaseContract {
 
     addr(
       arg0: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    assume(
+      condition: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

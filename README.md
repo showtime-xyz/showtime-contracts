@@ -160,7 +160,8 @@ Docs for named accounts: https://github.com/wighawag/hardhat-deploy#1-namedaccou
 ### Verify a deployed contract
 
 ```sh
-npx truffle run verify ShowtimeV1Market@0x3225125E0a853ac1326d0d589e7a4dec10bd6479 --network mumbai_testnet
+# will attempt to verify all the contracts tracked under deployments/<network>
+npx hardhat --network mumbai etherscan-verify
 ```
 
 ## Existing Deployments
@@ -173,7 +174,8 @@ npx truffle run verify ShowtimeV1Market@0x3225125E0a853ac1326d0d589e7a4dec10bd64
 | ShowtimeV1Market              | 0af4eae       | 0x3225125E0a853ac1326d0d589e7a4dec10bd6479        | after 1st market-improvements PR  |
 | ShowtimeV1Market              | e35192f       | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E        | non-escrow version                |
 | **ShowtimeV1Market**          | **e3027cd**   | **0xB38a0Ed9d60CEa911E43DBbEC205cd3ddE0C51B6**    | **crowdsourced feedback**         |
-| **ShowtimeSplitterSeller**    | **2ddb539**   | **0x21494B31025259bBc3B61aB41478005b4505e05D**    | **v1 test**                       |
+| ShowtimeSplitterSeller        | 2ddb539       | 0x21494B31025259bBc3B61aB41478005b4505e05D        | v1 test                           |
+| ShowtimeSplitterSeller        | 142fa9c       | **0xB38a0Ed9d60CEa911E43DBbEC205cd3ddE0C51B6**    | v2 test, after cleanup            |
 
 ### Polygon Mainnet
 

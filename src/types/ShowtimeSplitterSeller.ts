@@ -20,8 +20,6 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 export interface ShowtimeSplitterSellerInterface extends utils.Interface {
   contractName: "ShowtimeSplitterSeller";
   functions: {
-    "balancesReceived(address)": FunctionFragment;
-    "burn(uint256)": FunctionFragment;
     "cancelSale(uint256)": FunctionFragment;
     "createSale(uint256,uint256,uint256,address)": FunctionFragment;
     "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)": FunctionFragment;
@@ -38,13 +36,9 @@ export interface ShowtimeSplitterSellerInterface extends utils.Interface {
     "totalReleased(address)": FunctionFragment;
     "totalShares()": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
+    "withdraw(uint256,address)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "balancesReceived",
-    values: [string]
-  ): string;
-  encodeFunctionData(functionFragment: "burn", values: [BigNumberish]): string;
   encodeFunctionData(
     functionFragment: "cancelSale",
     values: [BigNumberish]
@@ -97,12 +91,11 @@ export interface ShowtimeSplitterSellerInterface extends utils.Interface {
     functionFragment: "transferOwnership",
     values: [string]
   ): string;
+  encodeFunctionData(
+    functionFragment: "withdraw",
+    values: [BigNumberish, string]
+  ): string;
 
-  decodeFunctionResult(
-    functionFragment: "balancesReceived",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "burn", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "cancelSale", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "createSale", data: BytesLike): Result;
   decodeFunctionResult(
@@ -143,6 +136,7 @@ export interface ShowtimeSplitterSellerInterface extends utils.Interface {
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
   events: {
     "ERC20PaymentReleased(address,address,uint256)": EventFragment;
@@ -224,16 +218,6 @@ export interface ShowtimeSplitterSeller extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    balancesReceived(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    burn(
-      _tokenId: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     cancelSale(
       listingId: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -319,14 +303,13 @@ export interface ShowtimeSplitterSeller extends BaseContract {
       newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    withdraw(
+      _tokenId: BigNumberish,
+      to: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
   };
-
-  balancesReceived(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-  burn(
-    _tokenId: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
 
   cancelSale(
     listingId: BigNumberish,
@@ -414,14 +397,13 @@ export interface ShowtimeSplitterSeller extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  withdraw(
+    _tokenId: BigNumberish,
+    to: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   callStatic: {
-    balancesReceived(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    burn(_tokenId: BigNumberish, overrides?: CallOverrides): Promise<void>;
-
     cancelSale(
       listingId: BigNumberish,
       overrides?: CallOverrides
@@ -505,6 +487,12 @@ export interface ShowtimeSplitterSeller extends BaseContract {
       newOwner: string,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    withdraw(
+      _tokenId: BigNumberish,
+      to: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
   };
 
   filters: {
@@ -548,16 +536,6 @@ export interface ShowtimeSplitterSeller extends BaseContract {
   };
 
   estimateGas: {
-    balancesReceived(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    burn(
-      _tokenId: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     cancelSale(
       listingId: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -643,19 +621,15 @@ export interface ShowtimeSplitterSeller extends BaseContract {
       newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    withdraw(
+      _tokenId: BigNumberish,
+      to: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    balancesReceived(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    burn(
-      _tokenId: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     cancelSale(
       listingId: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -745,6 +719,12 @@ export interface ShowtimeSplitterSeller extends BaseContract {
 
     transferOwnership(
       newOwner: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    withdraw(
+      _tokenId: BigNumberish,
+      to: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };

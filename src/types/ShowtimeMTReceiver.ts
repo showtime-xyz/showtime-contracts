@@ -18,16 +18,11 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 export interface ShowtimeMTReceiverInterface extends utils.Interface {
   contractName: "ShowtimeMTReceiver";
   functions: {
-    "balancesReceived(address)": FunctionFragment;
     "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)": FunctionFragment;
     "onERC1155Received(address,address,uint256,uint256,bytes)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "balancesReceived",
-    values: [string]
-  ): string;
   encodeFunctionData(
     functionFragment: "onERC1155BatchReceived",
     values: [string, string, BigNumberish[], BigNumberish[], BytesLike]
@@ -41,10 +36,6 @@ export interface ShowtimeMTReceiverInterface extends utils.Interface {
     values: [BytesLike]
   ): string;
 
-  decodeFunctionResult(
-    functionFragment: "balancesReceived",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "onERC1155BatchReceived",
     data: BytesLike
@@ -89,11 +80,6 @@ export interface ShowtimeMTReceiver extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    balancesReceived(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
     onERC1155BatchReceived(
       arg0: string,
       arg1: string,
@@ -117,8 +103,6 @@ export interface ShowtimeMTReceiver extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
   };
-
-  balancesReceived(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   onERC1155BatchReceived(
     arg0: string,
@@ -144,11 +128,6 @@ export interface ShowtimeMTReceiver extends BaseContract {
   ): Promise<boolean>;
 
   callStatic: {
-    balancesReceived(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     onERC1155BatchReceived(
       arg0: string,
       arg1: string,
@@ -176,11 +155,6 @@ export interface ShowtimeMTReceiver extends BaseContract {
   filters: {};
 
   estimateGas: {
-    balancesReceived(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     onERC1155BatchReceived(
       arg0: string,
       arg1: string,
@@ -206,11 +180,6 @@ export interface ShowtimeMTReceiver extends BaseContract {
   };
 
   populateTransaction: {
-    balancesReceived(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     onERC1155BatchReceived(
       arg0: string,
       arg1: string,

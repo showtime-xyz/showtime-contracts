@@ -53,6 +53,19 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "bool",
+        name: "condition",
+        type: "bool",
+      },
+    ],
+    name: "assume",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "address",
         name: "",
         type: "address",

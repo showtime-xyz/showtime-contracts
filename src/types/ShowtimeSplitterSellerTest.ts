@@ -31,9 +31,9 @@ export interface ShowtimeSplitterSellerTestInterface extends utils.Interface {
     "testDeploySalesContractWithNoPayees()": FunctionFragment;
     "testDeploySalesContractWithPayeesSharesMismatch()": FunctionFragment;
     "testHappyPathEndToEnd(uint16,uint8)": FunctionFragment;
-    "testOnlyDeployerCanBurnRemainingSupply()": FunctionFragment;
-    "testOnlyDeployerCanCancelSales()": FunctionFragment;
-    "testOnlyDeployerCanCreateSales()": FunctionFragment;
+    "testOnlyOwnerCanCancelSales()": FunctionFragment;
+    "testOnlyOwnerCanCreateSales()": FunctionFragment;
+    "testOnlyOwnerCanWithdraw()": FunctionFragment;
   };
 
   encodeFunctionData(functionFragment: "IS_TEST", values?: undefined): string;
@@ -72,15 +72,15 @@ export interface ShowtimeSplitterSellerTestInterface extends utils.Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "testOnlyDeployerCanBurnRemainingSupply",
+    functionFragment: "testOnlyOwnerCanCancelSales",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "testOnlyDeployerCanCancelSales",
+    functionFragment: "testOnlyOwnerCanCreateSales",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "testOnlyDeployerCanCreateSales",
+    functionFragment: "testOnlyOwnerCanWithdraw",
     values?: undefined
   ): string;
 
@@ -120,15 +120,15 @@ export interface ShowtimeSplitterSellerTestInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "testOnlyDeployerCanBurnRemainingSupply",
+    functionFragment: "testOnlyOwnerCanCancelSales",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "testOnlyDeployerCanCancelSales",
+    functionFragment: "testOnlyOwnerCanCreateSales",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "testOnlyDeployerCanCreateSales",
+    functionFragment: "testOnlyOwnerCanWithdraw",
     data: BytesLike
   ): Result;
 
@@ -400,15 +400,15 @@ export interface ShowtimeSplitterSellerTest extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    testOnlyDeployerCanBurnRemainingSupply(
+    testOnlyOwnerCanCancelSales(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    testOnlyDeployerCanCancelSales(
+    testOnlyOwnerCanCreateSales(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    testOnlyDeployerCanCreateSales(
+    testOnlyOwnerCanWithdraw(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
@@ -466,15 +466,15 @@ export interface ShowtimeSplitterSellerTest extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  testOnlyDeployerCanBurnRemainingSupply(
+  testOnlyOwnerCanCancelSales(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  testOnlyDeployerCanCancelSales(
+  testOnlyOwnerCanCreateSales(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  testOnlyDeployerCanCreateSales(
+  testOnlyOwnerCanWithdraw(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -530,13 +530,11 @@ export interface ShowtimeSplitterSellerTest extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    testOnlyDeployerCanBurnRemainingSupply(
-      overrides?: CallOverrides
-    ): Promise<void>;
+    testOnlyOwnerCanCancelSales(overrides?: CallOverrides): Promise<void>;
 
-    testOnlyDeployerCanCancelSales(overrides?: CallOverrides): Promise<void>;
+    testOnlyOwnerCanCreateSales(overrides?: CallOverrides): Promise<void>;
 
-    testOnlyDeployerCanCreateSales(overrides?: CallOverrides): Promise<void>;
+    testOnlyOwnerCanWithdraw(overrides?: CallOverrides): Promise<void>;
   };
 
   filters: {
@@ -738,15 +736,15 @@ export interface ShowtimeSplitterSellerTest extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    testOnlyDeployerCanBurnRemainingSupply(
+    testOnlyOwnerCanCancelSales(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    testOnlyDeployerCanCancelSales(
+    testOnlyOwnerCanCreateSales(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    testOnlyDeployerCanCreateSales(
+    testOnlyOwnerCanWithdraw(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
   };
@@ -805,15 +803,15 @@ export interface ShowtimeSplitterSellerTest extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    testOnlyDeployerCanBurnRemainingSupply(
+    testOnlyOwnerCanCancelSales(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    testOnlyDeployerCanCancelSales(
+    testOnlyOwnerCanCreateSales(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    testOnlyDeployerCanCreateSales(
+    testOnlyOwnerCanWithdraw(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };
