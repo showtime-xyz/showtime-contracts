@@ -21,7 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 from: namedAccounts.deployer,
                 // maxFeePerGas: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
                 // maxPriorityFeePerGas: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
-                gasPrice: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
+                gasPrice: ethers.BigNumber.from(35 * 10 ** 9), // 35 gwei
                 gasLimit: 6000000,
                 args: [
                     ShowtimeMT.address,

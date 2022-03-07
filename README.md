@@ -184,6 +184,8 @@ npx hardhat --network mumbai etherscan-verify
 | **ShowtimeMT**                | **0e4e654**   | **0x8A13628dD5D600Ca1E8bF9DBc685B735f615Cb90**    | **Live in the app**               |
 | ShowtimeV1Market              | e35192f       | 0x05D400564b7d65F1F89ec6deC55752f58EfA9F5E        | non-escrow version                |
 | **ShowtimeV1Market**          | **bee01b1**   | **0x022F3C027572FE1b321ba7a7844ab77aC4193650**    | **live in the app**               |
+| ShowtimeBakeSale              | 3a41e76       | **0x3a99ea152Dd2eAcc8E95aDdFb943e714Db9ECC22**    | showtime.io/ukraine               |
+
 
 ## Troubleshooting
 

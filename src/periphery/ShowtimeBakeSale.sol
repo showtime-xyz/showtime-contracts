@@ -28,7 +28,7 @@ interface IShowtimeV1Market {
 /// 3. the minter transfers (some or all of the editions of) the Showtime NFT to this contract
 /// 4. the deployer of the contract calls `createSale`
 /// 5. (optional) the deployer calls `renounceOwnership()`, proving that the listing and the remaining supply will be permanently left untouched
-/// 6. proceeds from primary sales and secondary sales will accrue in this contract
+/// 6. proceeds from primary sales will accrue in this contract (and secondary sales if it the NFTs use it as the royalties recipient address)
 /// 7. anybody can call `release(IERC20 token, address account)` to disperse the funds to the recipients
 contract ShowtimeBakeSale is PaymentSplitter, ShowtimeMTReceiver, Ownable {
     IERC1155 public immutable showtimeMT;

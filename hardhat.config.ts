@@ -46,13 +46,18 @@ const chainIds = {
   mainnet: 1,
   optimism: 10,
   polygon: 137,
-  "polygon-mumbai": 80001,
+  mumbai: 80001,
   rinkeby: 4,
   ropsten: 3,
 };
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = "https://" + network + ".infura.io/v3/" + infuraApiKey;
+  const infuraMapping: {[key: string]: any} = {
+    polygon: "polygon-mainnet",
+    mumbai: "polygon-mumbai",
+  };
+  const infuraSubdomain: string = infuraMapping[network] || network;
+  const url: string = "https://" + infuraSubdomain + ".infura.io/v3/" + infuraApiKey;
   return {
     accounts: {
       count: 10,
@@ -103,7 +108,7 @@ const config: HardhatUserConfig = {
     mainnet: getChainConfig("mainnet"),
     optimism: getChainConfig("optimism"),
     polygon: getChainConfig("polygon"),
-    mumbai: getChainConfig("polygon-mumbai"),
+    mumbai: getChainConfig("mumbai"),
     rinkeby: getChainConfig("rinkeby"),
     ropsten: getChainConfig("ropsten"),
   },
