@@ -12,11 +12,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // FIXME: I hardcoded the gas price to avoid the weird "transaction underpriced" error on mumbai
 
-    // the following will only deploy "ShowtimeSplitterSeller" if the contract was never deployed
+    // the following will only deploy "ShowtimeBakeSale" if the contract was never deployed
     // or if the code changed since last deployment
     try {
         const deployResult = await deployments.deploy(
-            'ShowtimeSplitterSeller',
+            'ShowtimeBakeSale',
             {
                 from: namedAccounts.deployer,
                 // maxFeePerGas: ethers.BigNumber.from(30 * 10 ** 9), // 30 gwei
@@ -34,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         // console.log({deployResult})
         console.log("tx hash:", deployResult.transactionHash);
-        console.log("ShowtimeSplitterSeller deployed to:", deployResult.address);
+        console.log("ShowtimeBakeSale deployed to:", deployResult.address);
     } catch (e: any) {
         const errorMessage = e.message;
         console.error({errorMessage});
