@@ -221,7 +221,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         emit TransferSingle(
             address(charitySeller),
             address(charitySeller),
-            address(0),
+            address(alice),
             tokenId,
             remainingSupply
         );
