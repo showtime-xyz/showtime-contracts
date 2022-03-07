@@ -30,7 +30,7 @@ interface IShowtimeV1Market {
 /// 5. (optional) the deployer calls `renounceOwnership()`, proving that the listing and the remaining supply will be permanently left untouched
 /// 6. proceeds from primary sales and secondary sales will accrue in this contract
 /// 7. anybody can call `release(IERC20 token, address account)` to disperse the funds to the recipients
-contract ShowtimeSplitterSeller is PaymentSplitter, ShowtimeMTReceiver, Ownable {
+contract ShowtimeBakeSale is PaymentSplitter, ShowtimeMTReceiver, Ownable {
     IERC1155 public immutable showtimeMT;
     IShowtimeV1Market public immutable showtimeMarket;
 

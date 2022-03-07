@@ -6,13 +6,13 @@ import "./TestToken.sol";
 import "../../lib/ds-test/src/test.sol";
 import "../ShowtimeMT.sol";
 import "../ShowtimeV1Market.sol";
-import "../periphery/ShowtimeSplitterSeller.sol";
+import "../periphery/ShowtimeBakeSale.sol";
 
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 contract User is ERC1155Holder {}
 
-contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
+contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
     uint256 constant INITIAL_NFT_SUPPLY = 1000;
     address constant BURN_ADDRESS = address(0xdEaD);
     address constant FORWARDER_ADDRESS = BURN_ADDRESS;
@@ -28,7 +28,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
     address[] justCharityPayees = [address(charity)];
     uint256[] just100Shares = [100];
 
-    ShowtimeSplitterSeller charitySeller;
+    ShowtimeBakeSale charitySeller;
 
     uint256 tokenId0PctRoyalty;
     uint256 tokenId10PctRoyaltyToAlice;
@@ -89,7 +89,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         token.approve(address(market), type(uint256).max);
 
         // deploy the normal splitter with 100% to charity
-        charitySeller = new ShowtimeSplitterSeller(address(showtimeNFT), address(market), justCharityPayees, just100Shares);
+        charitySeller = new ShowtimeBakeSale(address(showtimeNFT), address(market), justCharityPayees, just100Shares);
     }
 
     function testDeploySalesContractWithNoPayees() public {
@@ -98,7 +98,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         address[] memory payees = new address[](0);
         uint256[] memory shares = new uint256[](0);
 
-        new ShowtimeSplitterSeller(address(showtimeNFT), address(market), payees, shares);
+        new ShowtimeBakeSale(address(showtimeNFT), address(market), payees, shares);
     }
 
     function testDeploySalesContractWithBadShares() public {
@@ -110,7 +110,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         uint256[] memory shares = new uint256[](1);
         shares[0] = 0;
 
-        new ShowtimeSplitterSeller(address(showtimeNFT), address(market), payees, shares);
+        new ShowtimeBakeSale(address(showtimeNFT), address(market), payees, shares);
     }
 
     function testDeploySalesContractWithPayeesSharesMismatch() public {
@@ -123,7 +123,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         uint256[] memory shares = new uint256[](1);
         shares[0] = 100;
 
-        new ShowtimeSplitterSeller(address(showtimeNFT), address(market), payees, shares);
+        new ShowtimeBakeSale(address(showtimeNFT), address(market), payees, shares);
     }
 
     function testDeploySalesContractWithDuplicatePayees() public {
@@ -137,7 +137,7 @@ contract ShowtimeSplitterSellerTest is DSTest, ERC1155Holder {
         shares[0] = 50;
         shares[1] = 50;
 
-        new ShowtimeSplitterSeller(address(showtimeNFT), address(market), payees, shares);
+        new ShowtimeBakeSale(address(showtimeNFT), address(market), payees, shares);
     }
 
     function testOnlyOwnerCanCreateSales() public {
