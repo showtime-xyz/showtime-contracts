@@ -31,7 +31,6 @@ interface IShowtimeV1Market {
 /// 6. proceeds from primary sales will accrue in this contract (and secondary sales if it the NFTs use it as the royalties recipient address)
 /// 7. anybody can call `release(IERC20 token, address account)` to disperse the funds to the recipients
 contract ShowtimeBakeSale is PaymentSplitter, ShowtimeMTReceiver, Ownable {
-    IERC1155 public immutable showtimeMT;
     IShowtimeV1Market public immutable showtimeMarket;
 
     constructor(
@@ -39,11 +38,10 @@ contract ShowtimeBakeSale is PaymentSplitter, ShowtimeMTReceiver, Ownable {
         address _showtimeMarket,
         address[] memory payees,
         uint256[] memory shares_
-    ) PaymentSplitter(payees, shares_) ShowtimeMTReceiver(address(_showtimeMT)) {
-        showtimeMT = IERC1155(_showtimeMT);
+    ) PaymentSplitter(payees, shares_) ShowtimeMTReceiver(_showtimeMT) {
         showtimeMarket = IShowtimeV1Market(_showtimeMarket);
 
-        IERC1155(_showtimeMT).setApprovalForAll(address(_showtimeMarket), true);
+        IERC1155(_showtimeMT).setApprovalForAll(_showtimeMarket, true);
     }
 
     function createSale(
@@ -60,7 +58,7 @@ contract ShowtimeBakeSale is PaymentSplitter, ShowtimeMTReceiver, Ownable {
     }
 
     function withdraw(uint256 _tokenId, address to) external onlyOwner {
-        uint howMany = showtimeMT.balanceOf(address(this), _tokenId);
-        showtimeMT.safeTransferFrom(address(this), to, _tokenId, howMany, "");
+        uint howMany = IERC1155(showtimeMT).balanceOf(address(this), _tokenId);
+        IERC1155(showtimeMT).safeTransferFrom(address(this), to, _tokenId, howMany, "");
     }
 }

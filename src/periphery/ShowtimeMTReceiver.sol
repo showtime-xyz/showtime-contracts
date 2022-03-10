@@ -5,7 +5,7 @@ pragma solidity ^0.8.7;
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 
 contract ShowtimeMTReceiver is ERC1155Receiver {
-    address private immutable showtimeMT;
+    address public immutable showtimeMT;
 
     error UnexpectedERC1155Transfer(address _nftContract, uint256 id);
     error UnexpectedERC1155BatchTransfer(address _nftContract, uint256[] ids);
