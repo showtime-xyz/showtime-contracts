@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "./Hevm.sol";
-import "../../lib/ds-test/src/test.sol";
-
 import {SharedNFTLogic} from "@zora-nft-editions/SharedNFTLogic.sol";
 import {SingleEditionMintable} from "@zora-nft-editions/SingleEditionMintable.sol";
 import {SingleEditionMintableCreator} from "@zora-nft-editions/SingleEditionMintableCreator.sol";
+
+import "./Hevm.sol";
+import "../../lib/ds-test/src/test.sol";
+
+import {OnePerAddressEditionMinter} from "../periphery/OnePerAddressEditionMinter.sol";
 
 contract User {}
 
@@ -69,5 +71,58 @@ contract CreatorOwnedCollectionTest is DSTest {
         hevm.prank(address(charlieTheCreator));
         hevm.expectRevert("Sold out");
         edition.mintEdition(address(charlieTheCreator));
+    }
+
+    function testCreateMintableCollectionViaOnePerAddressContract() public {
+        // when charlieTheCreator calls `createEdition`
+        hevm.prank(address(charlieTheCreator));
+        uint newId = editionCreator.createEdition(
+            "The Collection",
+            "COLL",
+            "The best collection in the world",
+            "",     // _animationUrl
+            0x0,    // _animationHash
+            "http://example.com/image.png",
+            keccak256("http://example.com/image.png"),
+            3,      // _editionSize
+            1000);  // _royaltyBPS
+
+        SingleEditionMintable edition = editionCreator.getEditionAtId(newId);
+        assertEq(edition.owner(), address(charlieTheCreator));
+        assertEq(edition.name(), "The Collection");
+
+        OnePerAddressEditionMinter minter = new OnePerAddressEditionMinter(address(0));
+
+        // when charlieTheCreator opens up public minting
+        hevm.prank(address(charlieTheCreator));
+        edition.setApprovedMinter(address(minter), true);
+
+        // then anybody can mint
+        hevm.prank(address(alice));
+        minter.mintEdition(address(edition), address(alice));
+
+        hevm.prank(address(bob));
+        minter.mintEdition(address(edition), address(bob));
+
+        // but only via the contract
+        hevm.prank(address(alice));
+        hevm.expectRevert("Needs to be an allowed minter");
+        edition.mintEdition(address(alice));
+
+        // and only once per address
+        hevm.prank(address(alice));
+        try minter.mintEdition(address(edition), address(alice)) {
+            emit log("Call did not revert");
+            fail();
+        } catch (bytes memory revertMsg) {
+            assertEq(
+                bytes32(revertMsg),
+                bytes32(abi.encodeWithSignature(
+                    "AlreadyMinted(address,address)",
+                    address(edition),
+                    address(bob))
+                )
+            );
+        }
     }
 }
