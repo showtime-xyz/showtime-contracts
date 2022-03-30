@@ -9,7 +9,7 @@ import "./Hevm.sol";
 import "../../lib/ds-test/src/test.sol";
 
 import {OnePerAddressEditionMinter} from "../periphery/OnePerAddressEditionMinter.sol";
-import {MetaEditionFactory, ISingleEditionMintable} from "../periphery/MetaEditionFactory.sol";
+import {MetaSingleEditionMintableCreator, ISingleEditionMintable} from "../periphery/MetaSingleEditionMintableCreator.sol";
 
 contract User {}
 
@@ -105,11 +105,12 @@ contract CreatorOwnedCollectionTest is DSTest {
 
     function testCreateMintableCollectionViaMetaFactory() public {
         // setup
-        MetaEditionFactory factory = new MetaEditionFactory(address(0), address(editionCreator));
+        MetaSingleEditionMintableCreator metaEditionCreator =
+            new MetaSingleEditionMintableCreator(address(0), address(editionCreator));
 
         // when charlieTheCreator calls `createEdition`
         hevm.prank(address(charlieTheCreator));
-        uint newId = factory.createEdition(
+        uint newId = metaEditionCreator.createEdition(
             "The Collection",
             "DROP",
             "The best collection in the world",
@@ -123,7 +124,7 @@ contract CreatorOwnedCollectionTest is DSTest {
             address(minter));
 
         // then we get a properly configured collection
-        ISingleEditionMintable edition = factory.getEditionAtId(newId);
+        ISingleEditionMintable edition = metaEditionCreator.getEditionAtId(newId);
         assertEq(edition.owner(), address(charlieTheCreator));
         assertEq(edition.name(), "The Collection");
 

@@ -46,7 +46,7 @@ interface ISingleEditionMintable is IERC721Metadata, IERC2981 {
   function setApprovedMinter(address minter, bool allowed) external;
 }
 
-contract MetaEditionFactory is BaseRelayRecipient {
+contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
     ISingleEditionMintableCreator immutable editionCreator;
 
     constructor(address _trustedForwarder, address _editionCreator) {
