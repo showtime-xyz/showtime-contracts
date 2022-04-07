@@ -10,3 +10,6 @@
 [submodule "lib/base64"]
 	path = lib/base64
 	url = https://github.com/Brechtpd/base64
+[submodule "lib/gsn"]
+	path = lib/gsn
+	url = https://github.com/opengsn/gsn
