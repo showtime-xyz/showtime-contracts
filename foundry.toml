@@ -1,0 +1,15 @@
+[default]
+# The source directory
+src = 'src'
+# The test directory
+test = 'test'
+# The artifact directory
+out = 'out'
+# A list of paths to look for libraries in
+libs = ['lib']
+# Whether to cache builds or not
+cache = false
+# Whether to ignore the cache
+force = true
+# The verbosity of tests
+verbosity = 3
