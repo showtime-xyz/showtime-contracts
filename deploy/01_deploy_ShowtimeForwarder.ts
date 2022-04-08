@@ -11,6 +11,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // const artifact = await hre.artifacts.readArtifact('ShowtimeForwarder');
     // console.log("Will be using the following deployment bytecode:", artifact.bytecode);
 
+    // with the default deterministic deployment proxy (0x4e59b44847b379578588920cA78FbF26c0B4956C)
+    // and the bytecode at commit 3aa1bf9e, this salt gives us a nice address (0x50c001c88b59dc3b833E0F062EfC2271CE88Cb89)
     const salt = ethers.utils.hexlify(4142695);
     const {address, deploy} = await deployments.deterministic(
         'ShowtimeForwarder',

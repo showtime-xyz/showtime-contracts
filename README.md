@@ -176,6 +176,7 @@ npx hardhat --network mumbai etherscan-verify
 | **ShowtimeV1Market**          | **e3027cd**   | **0xB38a0Ed9d60CEa911E43DBbEC205cd3ddE0C51B6**    | **crowdsourced feedback**         |
 | ShowtimeSplitterSeller        | 2ddb539       | 0x21494B31025259bBc3B61aB41478005b4505e05D        | v1 test                           |
 | ShowtimeSplitterSeller        | 142fa9c       | **0xB38a0Ed9d60CEa911E43DBbEC205cd3ddE0C51B6**    | v2 test, after cleanup            |
+| ShowtimeForwarder             | 3aa1bf9e      | **0x50c001c88b59dc3b833E0F062EfC2271CE88Cb89**    |                                   |
 
 ### Polygon Mainnet
 
@@ -186,6 +187,26 @@ npx hardhat --network mumbai etherscan-verify
 | **ShowtimeV1Market**          | **bee01b1**   | **0x022F3C027572FE1b321ba7a7844ab77aC4193650**    | **live in the app**               |
 | ShowtimeBakeSale              | 3a41e76       | **0x3a99ea152Dd2eAcc8E95aDdFb943e714Db9ECC22**    | showtime.io/ukraine               |
 
+
+## Showtime Forwarder
+
+Has the default request type registered:
+
+```
+ForwardRequest(
+    address from,
+    address to,
+    uint256 value,
+    uint256 gas,
+    uint256 nonce,
+    bytes data,
+    uint256 validUntilTime)
+```
+
+Registered domain:
+- name: showtime.io
+- version: 1
+- domain hash: `0x5e5b00964aa6fad690fa48928347690e3f9a4ce056e98a45c10dd839e9aa77e7`
 
 ## Troubleshooting
 
