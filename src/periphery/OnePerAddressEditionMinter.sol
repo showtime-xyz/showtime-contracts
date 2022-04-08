@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import {IEditionSingleMintable} from "@zora-nft-editions/IEditionSingleMintable.sol";
+import {IEditionSingleMintable} from "@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol";
 
 import { BaseRelayRecipient } from "../utils/BaseRelayRecipient.sol";
 

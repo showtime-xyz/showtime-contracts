@@ -34,7 +34,7 @@
         "eslint": "^8.9.0",
         "eslint-config-prettier": "^8.3.0",
         "ethereum-waffle": "^3.4.0",
-        "ethers": "^5.5.4",
+        "ethers": "^5.6.2",
         "fs-extra": "^10.0.0",
         "hardhat": "^2.8.4",
         "hardhat-deploy": "^0.10.5",
@@ -57,7 +57,8 @@
         "typescript": "^4.5.5"
     },
     "dependencies": {
-        "@openzeppelin/contracts": "=4.5.0"
+        "@openzeppelin/contracts": "=4.5.0",
+        "@zoralabs/nft-editions-contracts": "github:ourzora/nft-editions"
     },
     "files": [
         "/src"

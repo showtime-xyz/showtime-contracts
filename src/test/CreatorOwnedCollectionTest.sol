@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import {SharedNFTLogic} from "@zora-nft-editions/SharedNFTLogic.sol";
-import {SingleEditionMintable} from "@zora-nft-editions/SingleEditionMintable.sol";
-import {SingleEditionMintableCreator} from "@zora-nft-editions/SingleEditionMintableCreator.sol";
+import {SharedNFTLogic} from "@zoralabs/nft-editions-contracts/contracts/SharedNFTLogic.sol";
+import {SingleEditionMintable} from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintable.sol";
+import {SingleEditionMintableCreator} from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintableCreator.sol";
 
 import "./Hevm.sol";
 import "../../lib/ds-test/src/test.sol";

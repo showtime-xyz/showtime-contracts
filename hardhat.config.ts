@@ -1,5 +1,6 @@
 // from https://github.com/paulrberg/solidity-template/blob/main/hardhat.config.ts @ 2186ed4
 
+import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
@@ -140,6 +141,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: {
+      "hardhat": process.env.ETH_FROM_MUMBAI || "0x0000000000000000000000000000000000000000",
       "mumbai": process.env.ETH_FROM_MUMBAI || "0x0000000000000000000000000000000000000000",
       "polygon": process.env.ETH_FROM_POLYGON || "0x0000000000000000000000000000000000000000",
     },

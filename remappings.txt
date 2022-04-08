@@ -1,5 +1,7 @@
 @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
+@zoralabs/=node_modules/@zoralabs/
+
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 ds-test/=lib/ds-test/src/
-@zora-nft-editions/=lib/nft-editions/contracts/
 base64-sol/=lib/base64/
+gsn/=lib/gsn/packages/contracts/src/

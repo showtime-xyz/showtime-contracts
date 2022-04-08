@@ -20,6 +20,7 @@ export interface ShowtimeMTReceiverInterface extends utils.Interface {
   functions: {
     "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)": FunctionFragment;
     "onERC1155Received(address,address,uint256,uint256,bytes)": FunctionFragment;
+    "showtimeMT()": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
   };
 
@@ -30,6 +31,10 @@ export interface ShowtimeMTReceiverInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "onERC1155Received",
     values: [string, string, BigNumberish, BigNumberish, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "showtimeMT",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
@@ -44,6 +49,7 @@ export interface ShowtimeMTReceiverInterface extends utils.Interface {
     functionFragment: "onERC1155Received",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "showtimeMT", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "supportsInterface",
     data: BytesLike
@@ -98,6 +104,8 @@ export interface ShowtimeMTReceiver extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string]>;
 
+    showtimeMT(overrides?: CallOverrides): Promise<[string]>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
@@ -122,6 +130,8 @@ export interface ShowtimeMTReceiver extends BaseContract {
     overrides?: CallOverrides
   ): Promise<string>;
 
+  showtimeMT(overrides?: CallOverrides): Promise<string>;
+
   supportsInterface(
     interfaceId: BytesLike,
     overrides?: CallOverrides
@@ -145,6 +155,8 @@ export interface ShowtimeMTReceiver extends BaseContract {
       arg4: BytesLike,
       overrides?: CallOverrides
     ): Promise<string>;
+
+    showtimeMT(overrides?: CallOverrides): Promise<string>;
 
     supportsInterface(
       interfaceId: BytesLike,
@@ -173,6 +185,8 @@ export interface ShowtimeMTReceiver extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    showtimeMT(overrides?: CallOverrides): Promise<BigNumber>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
@@ -197,6 +211,8 @@ export interface ShowtimeMTReceiver extends BaseContract {
       arg4: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    showtimeMT(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     supportsInterface(
       interfaceId: BytesLike,
