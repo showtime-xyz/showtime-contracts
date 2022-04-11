@@ -8,8 +8,8 @@ out = 'out'
 # A list of paths to look for libraries in
 libs = ['lib']
 # Whether to cache builds or not
-cache = false
+cache = true
 # Whether to ignore the cache
-force = true
+force = false
 # The verbosity of tests
 verbosity = 3
