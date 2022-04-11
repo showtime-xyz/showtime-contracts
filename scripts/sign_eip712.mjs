@@ -10,6 +10,16 @@ const ShowtimeForwarderContract = new ethers.Contract(
     forwarderABI);
 
 const NETWORKS = {
+    foundry: {
+        chainId: 99,
+        forwarder: {
+            address: "0xce71065d4017f316ec606fe4422e11eb2c47c246",
+            getNonce: async () => {
+                return 0;
+            }
+        }
+    },
+
     mumbai: {
         chainId: 80001,
         forwarder: ShowtimeForwarderContract.connect(new ethers.providers.JsonRpcProvider("https://rpc-mumbai.matic.today")),
@@ -21,7 +31,24 @@ const NETWORKS = {
     },
 }
 
-const network = NETWORKS.mumbai;
+var network;
+
+try {
+    const networkIndex = process.argv.findIndex(x => x === '--network');
+    if (networkIndex === -1) {
+        throw new Error("No --network specified");
+    }
+
+    const networkName = process.argv[networkIndex + 1];
+    network = NETWORKS[networkName];
+    if (!network) {
+        throw new Error("Invalid network: " + networkName);
+    }
+} catch (e) {
+    console.log("Usage: node {} --network <foundry|mumbai|polygon>".replace("{}", process.argv[1]));
+    console.log({e});
+    process.exit(1);
+}
 
 const domain = {
     name: 'showtime.io',
@@ -57,7 +84,7 @@ const value = {
     value: 0,
 
     // we can hardcode a sufficiently high value for now
-    gas: 1000000,
+    gas: 10000,
 
     // this is the one remote call we need to make before signing
     nonce: await network.forwarder.getNonce(USER_ADDRESS),

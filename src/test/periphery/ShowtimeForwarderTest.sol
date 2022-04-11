@@ -27,13 +27,17 @@ contract ShowtimeForwarderTest is DSTest {
         // emit log("chain id:");
         // emit log_uint(getChainId());
 
+        uint nonce = forwarder.getNonce(0xDE5E327cE4E7c1b64A757AaB8f2E699585977a34);
+        emit log("forwarder.getNonce(from):");
+        emit log_uint(nonce);
+
         bytes memory data = abi.encodeWithSignature("emitMessage(string)", "hello");
         // emit log("encoded function call data:");
         // emit log_bytes(data);
 
         // the domain separator depends on the address of the forwarder and the chain id, update accordingly
         forwarder.registerDomainSeparator("showtime.io", "1");
-        bytes32 domainSeparator = 0xd4902b142b24e322de5733208247036df197359c2cb2c333baf08873b47f56f1;
+        bytes32 domainSeparator = 0x746c83c5f7c38efbe7f186eb35eecdf1703391727880dc0b6999e50c81eb2434;
 
         // keccak256("ForwardRequest(address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data,uint256 validUntilTime)")
         bytes32 requestTypeHash = 0xb91ae508e6f0e8e33913dec60d2fdcb39fe037ce56198c70a7927d7cd813fd96;
@@ -45,20 +49,18 @@ contract ShowtimeForwarderTest is DSTest {
         req.to = address(target);
         req.value = 0;
         req.gas = 10000;
-        req.nonce = forwarder.getNonce(req.from); // initially 0
+        req.nonce = nonce;
         req.data = data;
         req.validUntilTime = 7697467249; // some arbitrary time in the year 2213
 
         bytes memory suffixData = "";
 
         // generate with `node scripts/sign_eip712.mjs`
-        bytes memory sig = hex"2933c598de4e399921331224f2964da4fbfc6708f0ca5b89c969b463416cd49035c9263317b71fdd993d893f15207ba1926c59b548fcfe9b268e69af73b7bd561c";
+        bytes memory sig = hex"317b4500265b302c2dbf937bbe7e5c31531aadbd8e6997bf00e234bd5c9b92fb5a3f1d8706dddc09d7e5b1b84bc28056d2c305e21427613a31f07381424b1d9c1c";
 
-        (bool success, bytes memory ret) = forwarder.execute(req, domainSeparator, requestTypeHash, suffixData, sig);
+        (bool success, ) = forwarder.execute(req, domainSeparator, requestTypeHash, suffixData, sig);
         assertTrue(success);
     }
-
-    function testDirectCall() public {}
 
     function getChainId() internal view returns (uint256 chainId) {
         /* solhint-disable-next-line no-inline-assembly */
