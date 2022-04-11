@@ -27,7 +27,7 @@ contract ShowtimeForwarderTest is DSTest {
         // emit log("chain id:");
         // emit log_uint(getChainId());
 
-        // bytes memory data = abi.encodeWithSignature("emitMessage(string)", "hello");
+        bytes memory data = abi.encodeWithSignature("emitMessage(string)", "hello");
         // emit log("encoded function call data:");
         // emit log_bytes(data);
 
@@ -56,9 +56,6 @@ contract ShowtimeForwarderTest is DSTest {
 
         (bool success, bytes memory ret) = forwarder.execute(req, domainSeparator, requestTypeHash, suffixData, sig);
         assertTrue(success);
-
-        emit log("ret:");
-        emit log_bytes(ret);
     }
 
     function testDirectCall() public {}
