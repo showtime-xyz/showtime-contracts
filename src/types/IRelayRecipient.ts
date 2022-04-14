@@ -14,18 +14,13 @@ import { FunctionFragment, Result } from "@ethersproject/abi";
 import { Listener, Provider } from "@ethersproject/providers";
 import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
-export interface BaseRelayRecipientInterface extends utils.Interface {
-  contractName: "BaseRelayRecipient";
+export interface IRelayRecipientInterface extends utils.Interface {
+  contractName: "IRelayRecipient";
   functions: {
-    "getTrustedForwarder()": FunctionFragment;
     "isTrustedForwarder(address)": FunctionFragment;
     "versionRecipient()": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "getTrustedForwarder",
-    values?: undefined
-  ): string;
   encodeFunctionData(
     functionFragment: "isTrustedForwarder",
     values: [string]
@@ -35,10 +30,6 @@ export interface BaseRelayRecipientInterface extends utils.Interface {
     values?: undefined
   ): string;
 
-  decodeFunctionResult(
-    functionFragment: "getTrustedForwarder",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "isTrustedForwarder",
     data: BytesLike
@@ -51,13 +42,13 @@ export interface BaseRelayRecipientInterface extends utils.Interface {
   events: {};
 }
 
-export interface BaseRelayRecipient extends BaseContract {
-  contractName: "BaseRelayRecipient";
+export interface IRelayRecipient extends BaseContract {
+  contractName: "IRelayRecipient";
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
 
-  interface: BaseRelayRecipientInterface;
+  interface: IRelayRecipientInterface;
 
   queryFilter<TEvent extends TypedEvent>(
     event: TypedEventFilter<TEvent>,
@@ -79,10 +70,6 @@ export interface BaseRelayRecipient extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    getTrustedForwarder(
-      overrides?: CallOverrides
-    ): Promise<[string] & { forwarder: string }>;
-
     isTrustedForwarder(
       forwarder: string,
       overrides?: CallOverrides
@@ -90,8 +77,6 @@ export interface BaseRelayRecipient extends BaseContract {
 
     versionRecipient(overrides?: CallOverrides): Promise<[string]>;
   };
-
-  getTrustedForwarder(overrides?: CallOverrides): Promise<string>;
 
   isTrustedForwarder(
     forwarder: string,
@@ -101,8 +86,6 @@ export interface BaseRelayRecipient extends BaseContract {
   versionRecipient(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
-    getTrustedForwarder(overrides?: CallOverrides): Promise<string>;
-
     isTrustedForwarder(
       forwarder: string,
       overrides?: CallOverrides
@@ -114,8 +97,6 @@ export interface BaseRelayRecipient extends BaseContract {
   filters: {};
 
   estimateGas: {
-    getTrustedForwarder(overrides?: CallOverrides): Promise<BigNumber>;
-
     isTrustedForwarder(
       forwarder: string,
       overrides?: CallOverrides
@@ -125,10 +106,6 @@ export interface BaseRelayRecipient extends BaseContract {
   };
 
   populateTransaction: {
-    getTrustedForwarder(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     isTrustedForwarder(
       forwarder: string,
       overrides?: CallOverrides
