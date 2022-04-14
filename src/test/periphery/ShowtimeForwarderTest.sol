@@ -2,18 +2,20 @@
 pragma solidity ^0.8.7;
 
 import {ShowtimeForwarder} from "../../periphery/ShowtimeForwarder.sol";
-import {TestForwarder} from "gsn/forwarder/test/TestForwarder.sol";
-import {TestForwarderTarget} from "gsn/forwarder/test/TestForwarderTarget.sol";
+// import {TestForwarder} from "gsn/forwarder/test/TestForwarder.sol";
+import {TestForwarder} from "../../../lib/gsn/packages/contracts/src/forwarder/test/TestForwarder.sol";
+// import {TestForwarderTarget} from "gsn/forwarder/test/TestForwarderTarget.sol";
+import {TestForwarderTarget} from "../../../lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol";
 
 import "../Hevm.sol";
 import "../../../lib/ds-test/src/test.sol";
 
 contract ShowtimeForwarderTest is DSTest {
+    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
     ShowtimeForwarder forwarder = new ShowtimeForwarder();
     TestForwarderTarget target = new TestForwarderTarget(address(forwarder));
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function testForward() public {
         // // verifying contract: 0xce71065d4017f316ec606fe4422e11eb2c47c246
@@ -60,6 +62,11 @@ contract ShowtimeForwarderTest is DSTest {
 
         (bool success, ) = forwarder.execute(req, domainSeparator, requestTypeHash, suffixData, sig);
         assertTrue(success);
+
+        // when we replay the call
+        // then it fails (because the nonce has incremented so we need to generate and sign a new request)
+        hevm.expectRevert("FWD: nonce mismatch");
+        forwarder.execute(req, domainSeparator, requestTypeHash, suffixData, sig);
     }
 
     function getChainId() internal view returns (uint256 chainId) {
