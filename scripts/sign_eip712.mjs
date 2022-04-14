@@ -13,16 +13,18 @@ const NETWORKS = {
     foundry: {
         chainId: 99,
         forwarder: {
-            address: "0xce71065d4017f316ec606fe4422e11eb2c47c246",
+            address: "0xCe71065D4017F316EC606Fe4422e11eB2c47c246",
             getNonce: async () => {
                 return 0;
             }
-        }
+        },
+        testForwarderTargetAddress: "0x185a4dc360CE69bDCceE33b3784B0282f7961aea",
     },
 
     mumbai: {
         chainId: 80001,
         forwarder: ShowtimeForwarderContract.connect(new ethers.providers.JsonRpcProvider("https://rpc-mumbai.matic.today")),
+        testForwarderTargetAddress: "0x7Fb382B775e2aA82Ee8fd523EffDc3807E7fa09C"
     },
 
     polygon: {
@@ -71,7 +73,7 @@ const types = {
 };
 
 // these values depend on the contract we are trying to call
-let targetAddress = '0x185a4dc360CE69bDCceE33b3784B0282f7961aea';
+let targetAddress = network.testForwarderTargetAddress;
 let targetInterface = new ethers.utils.Interface([
         "function emitMessage(string memory message)"
     ]);
