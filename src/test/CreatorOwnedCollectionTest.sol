@@ -154,10 +154,10 @@ contract CreatorOwnedCollectionTest is DSTest {
                 1000,   // _royaltyBPS
                 address(minter)
             ),
-            validUntilTime: 7697467249 // some arbitrary time in the year 2213
+            validUntilTime: block.timestamp + 1 minutes
         });
 
-        // look! no pranking!
+        // no pranking! address(this) is acting as a relayer
         (bool success, bytes memory ret) = signAndExecute(walletPrivateKey, req, "");
         assertTrue(success);
 
@@ -208,13 +208,12 @@ contract CreatorOwnedCollectionTest is DSTest {
         signAndExecute(walletPrivateKey, req, "FWD: nonce mismatch");
 
         // if we try to mint again...
-        req.nonce = 1;
+        req.nonce = forwarder.getNonce(walletAddress);
 
         // then we get an error because walletAddress has already claimed this edition
-        //   (can't get this expect revert to work for some reason)
-        // hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), walletAddress));
         (success, ret) = signAndExecute(walletPrivateKey, req, "");
         assertTrue(!success);
+        assertEq0(ret, abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), walletAddress));
 
         // can't try to be cute and go straight to the contract, bypassing the forwarder
         hevm.prank(walletAddress);
