@@ -1,0 +1,285 @@
+{
+  "address": "0x7Fb382B775e2aA82Ee8fd523EffDc3807E7fa09C",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "forwarder",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "message",
+          "type": "string"
+        }
+      ],
+      "name": "Reverting",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "message",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "realMsgData",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "realSender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "msgSender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "origin",
+          "type": "address"
+        }
+      ],
+      "name": "TestForwarderMessage",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "message",
+          "type": "string"
+        }
+      ],
+      "name": "emitMessage",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getTrustedForwarder",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "forwarder",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "forwarder",
+          "type": "address"
+        }
+      ],
+      "name": "isTrustedForwarder",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "mustReceiveEth",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "publicMsgData",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "publicMsgSender",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "testRevert",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "versionRecipient",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ],
+  "transactionHash": "0x2c3ca78921c2d0e958862d0f4082164e280d97144e8e3ca0207ff90ee25d48c9",
+  "receipt": {
+    "to": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "from": "0x515F7d84cEE53051b7ADF645fA2220f65BC25c68",
+    "contractAddress": null,
+    "transactionIndex": 17,
+    "gasUsed": "481779",
+    "logsBloom": "0x00000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000800000000000000000000100000000004000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000080000000100000000000200000000000000000400000000000000000000000000000000000000000004000000000000000000001000000000000000000000000000000100040000000000000000000000000000000000000000000000000000000000000000000100000",
+    "blockHash": "0x18ff517858352470eca4918d16cf40213eed64d18b21f4518ccbaa9f07bd151a",
+    "transactionHash": "0x2c3ca78921c2d0e958862d0f4082164e280d97144e8e3ca0207ff90ee25d48c9",
+    "logs": [
+      {
+        "transactionIndex": 17,
+        "blockNumber": 25895354,
+        "transactionHash": "0x2c3ca78921c2d0e958862d0f4082164e280d97144e8e3ca0207ff90ee25d48c9",
+        "address": "0x0000000000000000000000000000000000001010",
+        "topics": [
+          "0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63",
+          "0x0000000000000000000000000000000000000000000000000000000000001010",
+          "0x000000000000000000000000515f7d84cee53051b7adf645fa2220f65bc25c68",
+          "0x000000000000000000000000be188d6641e8b680743a4815dfa0f6208038960f"
+        ],
+        "data": "0x00000000000000000000000000000000000000000000000000223b824ac2a09c00000000000000000000000000000000000000000000000004ad04d073cef3180000000000000000000000000000000000000000000010184dbdfbe2dcdf1961000000000000000000000000000000000000000000000000048ac94e290c527c0000000000000000000000000000000000000000000010184de0376527a1b9fd",
+        "logIndex": 101,
+        "blockHash": "0x18ff517858352470eca4918d16cf40213eed64d18b21f4518ccbaa9f07bd151a"
+      }
+    ],
+    "blockNumber": 25895354,
+    "cumulativeGasUsed": "3334440",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x50c001c88b59dc3b833E0F062EfC2271CE88Cb89"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "9c9c5afc2904d4e06fd91f5cf7dab7b5",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.7+commit.e28d00a7\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"forwarder\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"Reverting\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"realMsgData\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"realSender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"msgSender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"origin\",\"type\":\"address\"}],\"name\":\"TestForwarderMessage\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"emitMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getTrustedForwarder\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"forwarder\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"forwarder\",\"type\":\"address\"}],\"name\":\"isTrustedForwarder\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"mustReceiveEth\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"publicMsgData\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"publicMsgSender\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"testRevert\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"versionRecipient\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"getTrustedForwarder()\":{\"returns\":{\"forwarder\":\"The address of the Forwarder contract that is being used.\"}},\"isTrustedForwarder(address)\":{\"params\":{\"forwarder\":\"The address of the Forwarder contract that is being used.\"},\"returns\":{\"_0\":\"isTrustedForwarder `true` if the Forwarder is trusted to forward relayed transactions by this Recipient.\"}}},\"stateVariables\":{\"versionRecipient\":{\"return\":\"version The SemVer string of this Recipient's version.\",\"returns\":{\"_0\":\"version The SemVer string of this Recipient's version.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"getTrustedForwarder()\":{\"notice\":\":warning: **Warning** :warning: The Forwarder can have a full control over your Recipient. Only trust verified Forwarder.Method is not a required method to allow Recipients to trust multiple Forwarders. Not recommended yet.\"},\"isTrustedForwarder(address)\":{\"notice\":\":warning: **Warning** :warning: The Forwarder can have a full control over your Recipient. Only trust verified Forwarder.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol\":\"TestForwarderTarget\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":800},\"remappings\":[]},\"sources\":{\"lib/gsn/packages/contracts/src/BaseRelayRecipient.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// solhint-disable no-inline-assembly\\npragma solidity >=0.6.9;\\n\\nimport \\\"./interfaces/IRelayRecipient.sol\\\";\\n\\n/**\\n * @title The Relay Recipient Base Abstract Class - Implementation\\n *\\n * @notice A base contract to be inherited by any contract that want to receive relayed transactions.\\n *\\n * @notice A subclass must use `_msgSender()` instead of `msg.sender`.\\n */\\nabstract contract BaseRelayRecipient is IRelayRecipient {\\n\\n    /*\\n     * Forwarder singleton we accept calls from\\n     */\\n    address private _trustedForwarder;\\n\\n    /**\\n     * :warning: **Warning** :warning: The Forwarder can have a full control over your Recipient. Only trust verified Forwarder.\\n     * @notice Method is not a required method to allow Recipients to trust multiple Forwarders. Not recommended yet.\\n     * @return forwarder The address of the Forwarder contract that is being used.\\n     */\\n    function getTrustedForwarder() public virtual view returns (address forwarder){\\n        return _trustedForwarder;\\n    }\\n\\n    function _setTrustedForwarder(address _forwarder) internal {\\n        _trustedForwarder = _forwarder;\\n    }\\n\\n    /// @inheritdoc IRelayRecipient\\n    function isTrustedForwarder(address forwarder) public virtual override view returns(bool) {\\n        return forwarder == _trustedForwarder;\\n    }\\n\\n    /// @inheritdoc IRelayRecipient\\n    function _msgSender() internal override virtual view returns (address ret) {\\n        if (msg.data.length >= 20 && isTrustedForwarder(msg.sender)) {\\n            // At this point we know that the sender is a trusted forwarder,\\n            // so we trust that the last bytes of msg.data are the verified sender address.\\n            // extract sender address from the end of msg.data\\n            assembly {\\n                ret := shr(96,calldataload(sub(calldatasize(),20)))\\n            }\\n        } else {\\n            ret = msg.sender;\\n        }\\n    }\\n\\n    /// @inheritdoc IRelayRecipient\\n    function _msgData() internal override virtual view returns (bytes calldata ret) {\\n        if (msg.data.length >= 20 && isTrustedForwarder(msg.sender)) {\\n            return msg.data[0:msg.data.length-20];\\n        } else {\\n            return msg.data;\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0xfc3f7fefe9b51e479f6762ba7f9d9104084cb8a196f93510955f627e475fe50b\",\"license\":\"MIT\"},\"lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0-only\\npragma solidity ^0.8.0;\\n\\nimport \\\"../../BaseRelayRecipient.sol\\\";\\n\\ncontract TestForwarderTarget is BaseRelayRecipient {\\n\\n    string public override versionRecipient = \\\"2.2.3+opengsn.test.recipient\\\";\\n\\n    constructor(address forwarder) {\\n        _setTrustedForwarder(forwarder);\\n    }\\n\\n    // solhint-disable-next-line no-empty-blocks\\n    receive() external payable {}\\n\\n    event TestForwarderMessage(string message, bytes realMsgData, address realSender, address msgSender, address origin);\\n\\n    function emitMessage(string memory message) public {\\n\\n        // solhint-disable-next-line avoid-tx-origin\\n        emit TestForwarderMessage(message, _msgData(), _msgSender(), msg.sender, tx.origin);\\n    }\\n\\n    function publicMsgSender() public view returns (address) {\\n        return _msgSender();\\n    }\\n\\n    function publicMsgData() public view returns (bytes memory) {\\n        return _msgData();\\n    }\\n\\n    function mustReceiveEth(uint256 value) public payable {\\n        require( msg.value == value, \\\"didn't receive value\\\");\\n    }\\n\\n    event Reverting(string message);\\n\\n    function testRevert() public {\\n        require(address(this) == address(0), \\\"always fail\\\");\\n        emit Reverting(\\\"if you see this revert failed...\\\");\\n    }\\n}\\n\",\"keccak256\":\"0x5275daa7b5d99ec4e6838adea62f7393cfe722ad9b51f9814bccc5aa96e97865\",\"license\":\"GPL-3.0-only\"},\"lib/gsn/packages/contracts/src/interfaces/IRelayRecipient.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity >=0.6.0;\\n\\n/**\\n * @title The Relay Recipient Base Abstract Class - Declarations\\n *\\n * @notice A contract must implement this interface in order to support relayed transaction.\\n *\\n * @notice It is recommended that your contract inherits from the BaseRelayRecipient contract.\\n */\\nabstract contract IRelayRecipient {\\n\\n    /**\\n     * :warning: **Warning** :warning: The Forwarder can have a full control over your Recipient. Only trust verified Forwarder.\\n     * @param forwarder The address of the Forwarder contract that is being used.\\n     * @return isTrustedForwarder `true` if the Forwarder is trusted to forward relayed transactions by this Recipient.\\n     */\\n    function isTrustedForwarder(address forwarder) public virtual view returns(bool);\\n\\n    /**\\n     * @notice Use this method the contract anywhere instead of msg.sender to support relayed transactions.\\n     * @return sender The real sender of this call.\\n     * For a call that came through the Forwarder the real sender is extracted from the last 20 bytes of the `msg.data`.\\n     * Otherwise simply returns `msg.sender`.\\n     */\\n    function _msgSender() internal virtual view returns (address);\\n\\n    /**\\n     * @notice Use this method in the contract instead of `msg.data` when difference matters (hashing, signature, etc.)\\n     * @return data The real `msg.data` of this call.\\n     * For a call that came through the Forwarder, the real sender address was appended as the last 20 bytes\\n     * of the `msg.data` - so this method will strip those 20 bytes off.\\n     * Otherwise (if the call was made directly and not through the forwarder) simply returns `msg.data`.\\n     */\\n    function _msgData() internal virtual view returns (bytes calldata);\\n\\n    /**\\n     * @return version The SemVer string of this Recipient's version.\\n     */\\n    function versionRecipient() external virtual view returns (string memory);\\n}\\n\",\"keccak256\":\"0x231a87c99530107e39a93981d3d3d14f9b3ea392d79d8af4d116ededfc68a708\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60c0604052601c60808190527f322e322e332b6f70656e67736e2e746573742e726563697069656e740000000060a090815261003e916001919061008b565b5034801561004b57600080fd5b5060405161087038038061087083398101604081905261006a91610124565b600080546001600160a01b0319166001600160a01b0383161790555061018f565b82805461009790610154565b90600052602060002090601f0160209004810192826100b957600085556100ff565b82601f106100d257805160ff19168380011785556100ff565b828001600101855582156100ff579182015b828111156100ff5782518255916020019190600101906100e4565b5061010b92915061010f565b5090565b5b8082111561010b5760008155600101610110565b60006020828403121561013657600080fd5b81516001600160a01b038116811461014d57600080fd5b9392505050565b600181811c9082168061016857607f821691505b6020821081141561018957634e487b7160e01b600052602260045260246000fd5b50919050565b6106d28061019e6000396000f3fe60806040526004361061007f5760003560e01c8063a26388bb1161004e578063a26388bb1461012a578063b6ffacf71461013f578063bf9587261461016c578063ce1b815f1461018157600080fd5b80632ac0df261461008b578063486ff0cd146100ad578063572b6c05146100d85780637a27578d1461011757600080fd5b3661008657005b600080fd5b34801561009757600080fd5b506100ab6100a6366004610491565b61019f565b005b3480156100b957600080fd5b506100c26101f0565b6040516100cf91906105a8565b60405180910390f35b3480156100e457600080fd5b506101076100f3366004610461565b6000546001600160a01b0391821691161490565b60405190151581526020016100cf565b6100ab610125366004610542565b61027e565b34801561013657600080fd5b506100ab6102d5565b34801561014b57600080fd5b5061015461038a565b6040516001600160a01b0390911681526020016100cf565b34801561017857600080fd5b506100c2610399565b34801561018d57600080fd5b506000546001600160a01b0316610154565b7f855af3b0567c81711540539ad042ef5a2a20d47d9d86ababf362a8e47058b5ef816101c96103dd565b6101d161042d565b33326040516101e5969594939291906105bb565b60405180910390a150565b600180546101fd90610674565b80601f016020809104026020016040519081016040528092919081815260200182805461022990610674565b80156102765780601f1061024b57610100808354040283529160200191610276565b820191906000526020600020905b81548152906001019060200180831161025957829003601f168201915b505050505081565b8034146102d25760405162461bcd60e51b815260206004820152601460248201527f6469646e277420726563656976652076616c756500000000000000000000000060448201526064015b60405180910390fd5b50565b30156103235760405162461bcd60e51b815260206004820152600b60248201527f616c77617973206661696c00000000000000000000000000000000000000000060448201526064016102c9565b7f3f110cf99894407239c5fa1bf0523ea12b54ef6eb3e88be600b6a7f0ff76eb0e604051610380906020808252818101527f696620796f7520736565207468697320726576657274206661696c65642e2e2e604082015260600190565b60405180910390a1565b600061039461042d565b905090565b60606103a36103dd565b8080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525092949350505050565b366000601482108015906103fb57506000546001600160a01b031633145b15610424576000803661040f60148261064f565b9261041c93929190610625565b915091509091565b50600091369150565b60006014361080159061044a57506000546001600160a01b031633145b1561045c575060131936013560601c90565b503390565b60006020828403121561047357600080fd5b81356001600160a01b038116811461048a57600080fd5b9392505050565b6000602082840312156104a357600080fd5b813567ffffffffffffffff808211156104bb57600080fd5b818401915084601f8301126104cf57600080fd5b8135818111156104e1576104e16106af565b604051601f8201601f19908116603f01168101908382118183101715610509576105096106af565b8160405282815287602084870101111561052257600080fd5b826020860160208301376000928101602001929092525095945050505050565b60006020828403121561055457600080fd5b5035919050565b6000815180845260005b8181101561058157602081850181015186830182015201610565565b81811115610593576000602083870101525b50601f01601f19169290920160200192915050565b60208152600061048a602083018461055b565b60a0815260006105ce60a083018961055b565b8281036020840152868152868860208301376000602088830101526020601f19601f8901168201019150506001600160a01b0380861660408401528085166060840152808416608084015250979650505050505050565b6000808585111561063557600080fd5b8386111561064257600080fd5b5050820193919092039150565b60008282101561066f57634e487b7160e01b600052601160045260246000fd5b500390565b600181811c9082168061068857607f821691505b602082108114156106a957634e487b7160e01b600052602260045260246000fd5b50919050565b634e487b7160e01b600052604160045260246000fdfea164736f6c6343000807000a",
+  "deployedBytecode": "0x60806040526004361061007f5760003560e01c8063a26388bb1161004e578063a26388bb1461012a578063b6ffacf71461013f578063bf9587261461016c578063ce1b815f1461018157600080fd5b80632ac0df261461008b578063486ff0cd146100ad578063572b6c05146100d85780637a27578d1461011757600080fd5b3661008657005b600080fd5b34801561009757600080fd5b506100ab6100a6366004610491565b61019f565b005b3480156100b957600080fd5b506100c26101f0565b6040516100cf91906105a8565b60405180910390f35b3480156100e457600080fd5b506101076100f3366004610461565b6000546001600160a01b0391821691161490565b60405190151581526020016100cf565b6100ab610125366004610542565b61027e565b34801561013657600080fd5b506100ab6102d5565b34801561014b57600080fd5b5061015461038a565b6040516001600160a01b0390911681526020016100cf565b34801561017857600080fd5b506100c2610399565b34801561018d57600080fd5b506000546001600160a01b0316610154565b7f855af3b0567c81711540539ad042ef5a2a20d47d9d86ababf362a8e47058b5ef816101c96103dd565b6101d161042d565b33326040516101e5969594939291906105bb565b60405180910390a150565b600180546101fd90610674565b80601f016020809104026020016040519081016040528092919081815260200182805461022990610674565b80156102765780601f1061024b57610100808354040283529160200191610276565b820191906000526020600020905b81548152906001019060200180831161025957829003601f168201915b505050505081565b8034146102d25760405162461bcd60e51b815260206004820152601460248201527f6469646e277420726563656976652076616c756500000000000000000000000060448201526064015b60405180910390fd5b50565b30156103235760405162461bcd60e51b815260206004820152600b60248201527f616c77617973206661696c00000000000000000000000000000000000000000060448201526064016102c9565b7f3f110cf99894407239c5fa1bf0523ea12b54ef6eb3e88be600b6a7f0ff76eb0e604051610380906020808252818101527f696620796f7520736565207468697320726576657274206661696c65642e2e2e604082015260600190565b60405180910390a1565b600061039461042d565b905090565b60606103a36103dd565b8080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525092949350505050565b366000601482108015906103fb57506000546001600160a01b031633145b15610424576000803661040f60148261064f565b9261041c93929190610625565b915091509091565b50600091369150565b60006014361080159061044a57506000546001600160a01b031633145b1561045c575060131936013560601c90565b503390565b60006020828403121561047357600080fd5b81356001600160a01b038116811461048a57600080fd5b9392505050565b6000602082840312156104a357600080fd5b813567ffffffffffffffff808211156104bb57600080fd5b818401915084601f8301126104cf57600080fd5b8135818111156104e1576104e16106af565b604051601f8201601f19908116603f01168101908382118183101715610509576105096106af565b8160405282815287602084870101111561052257600080fd5b826020860160208301376000928101602001929092525095945050505050565b60006020828403121561055457600080fd5b5035919050565b6000815180845260005b8181101561058157602081850181015186830182015201610565565b81811115610593576000602083870101525b50601f01601f19169290920160200192915050565b60208152600061048a602083018461055b565b60a0815260006105ce60a083018961055b565b8281036020840152868152868860208301376000602088830101526020601f19601f8901168201019150506001600160a01b0380861660408401528085166060840152808416608084015250979650505050505050565b6000808585111561063557600080fd5b8386111561064257600080fd5b5050820193919092039150565b60008282101561066f57634e487b7160e01b600052601160045260246000fd5b500390565b600181811c9082168061068857607f821691505b602082108114156106a957634e487b7160e01b600052602260045260246000fd5b50919050565b634e487b7160e01b600052604160045260246000fdfea164736f6c6343000807000a",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "getTrustedForwarder()": {
+        "returns": {
+          "forwarder": "The address of the Forwarder contract that is being used."
+        }
+      },
+      "isTrustedForwarder(address)": {
+        "params": {
+          "forwarder": "The address of the Forwarder contract that is being used."
+        },
+        "returns": {
+          "_0": "isTrustedForwarder `true` if the Forwarder is trusted to forward relayed transactions by this Recipient."
+        }
+      }
+    },
+    "stateVariables": {
+      "versionRecipient": {
+        "return": "version The SemVer string of this Recipient's version.",
+        "returns": {
+          "_0": "version The SemVer string of this Recipient's version."
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "getTrustedForwarder()": {
+        "notice": ":warning: **Warning** :warning: The Forwarder can have a full control over your Recipient. Only trust verified Forwarder.Method is not a required method to allow Recipients to trust multiple Forwarders. Not recommended yet."
+      },
+      "isTrustedForwarder(address)": {
+        "notice": ":warning: **Warning** :warning: The Forwarder can have a full control over your Recipient. Only trust verified Forwarder."
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 9113,
+        "contract": "lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol:TestForwarderTarget",
+        "label": "_trustedForwarder",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_address"
+      },
+      {
+        "astId": 9954,
+        "contract": "lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol:TestForwarderTarget",
+        "label": "versionRecipient",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_string_storage"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_string_storage": {
+        "encoding": "bytes",
+        "label": "string",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
