@@ -140,7 +140,7 @@ contract CreatorOwnedCollectionTest is DSTest {
             to: address(metaEditionCreator),
             value: 0,
             gas: 1000000,
-            nonce: 0,
+            nonce: forwarder.getNonce(walletAddress),
             data: abi.encodeWithSignature(
                 "createEdition(string,string,string,string,bytes32,string,bytes32,uint256,uint256,address)",
                 "The Collection",
@@ -189,13 +189,13 @@ contract CreatorOwnedCollectionTest is DSTest {
             to: address(metaMinter),
             value: 0,
             gas: 200000,
-            nonce: 0,
+            nonce: forwarder.getNonce(walletAddress),
             data: abi.encodeWithSignature(
                 "mintEdition(address,address)",
                 address(edition),
                 walletAddress
             ),
-            validUntilTime: 7697467249 // some arbitrary time in the year 2213
+            validUntilTime: block.timestamp + 1 minutes
         });
 
         // anybody can mint via a meta-tx, and the owner of the NFT is the meta-tx signer
