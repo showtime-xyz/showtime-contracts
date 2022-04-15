@@ -193,14 +193,14 @@ contract CreatorOwnedCollectionTest is DSTest {
             data: abi.encodeWithSignature(
                 "mintEdition(address,address)",
                 address(edition),
-                walletAddress
+                address(alice)    // alice is the recipient of the claim
             ),
             validUntilTime: block.timestamp + 1 minutes
         });
 
         // anybody can mint via a meta-tx, and the owner of the NFT is the meta-tx signer
         hevm.expectEmit(true, true, true, true);
-        emit Transfer(address(0), walletAddress, 1);
+        emit Transfer(address(0), address(alice), 1);
         (bool success, bytes memory ret) = signAndExecute(walletPrivateKey, req, "");
         assertTrue(success);
 
@@ -219,6 +219,16 @@ contract CreatorOwnedCollectionTest is DSTest {
         hevm.prank(walletAddress);
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), walletAddress));
         metaMinter.mintEdition(address(edition), walletAddress);
+
+        // alice has already claimed via a meta-tx, so she can't be the recipient of a claim again
+        hevm.prank(address(bob));
+        hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), address(alice)));
+        metaMinter.mintEdition(address(edition), address(alice));
+
+        // she also can't claim again for a 3rd party address (she's acting as the operator this time)
+        hevm.prank(address(alice));
+        hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), address(alice)));
+        metaMinter.mintEdition(address(edition), address(bob));
     }
 
     function sharedTestOnePerAddress(address _edition) internal {
@@ -262,7 +272,7 @@ contract CreatorOwnedCollectionTest is DSTest {
     function signAndExecute(
         uint256 privateKey,
         IForwarder.ForwardRequest memory req,
-        bytes memory expectedError) internal returns (bool, bytes memory)
+        bytes memory expectedError) internal returns (bool success, bytes memory ret)
     {
         bytes32 domainSeparator = getDomainSeparator("showtime.io", "1");
 
@@ -278,14 +288,12 @@ contract CreatorOwnedCollectionTest is DSTest {
             hevm.expectRevert(expectedError);
         }
 
-        (bool success, bytes memory ret) = forwarder.execute(
+        (success, ret) = forwarder.execute(
             req,
             domainSeparator,
             FORWARDREQUEST_TYPE_HASH,
             "",
             sig);
-
-        return (success, ret);
     }
 
     function createDummyEdition(address _minter)

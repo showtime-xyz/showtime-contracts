@@ -16,14 +16,22 @@ contract OnePerAddressEditionMinter is BaseRelayRecipient {
 
     function mintEdition(address collection, address _to) external {
         address operator = _msgSender();
-        bytes32 _mintId = mintId(collection, operator);
+        recordMint(collection, operator);
+        if (operator != _to) {
+            recordMint(collection, _to);
+        }
+
+        IEditionSingleMintable(collection).mintEdition(_to);
+    }
+
+    function recordMint(address collection, address minter) internal {
+        bytes32 _mintId = mintId(collection, minter);
 
         if (minted[_mintId]) {
-            revert AlreadyMinted(collection, operator);
+            revert AlreadyMinted(collection, minter);
         }
 
         minted[_mintId] = true;
-        IEditionSingleMintable(collection).mintEdition(_to);
     }
 
     function mintId(address collection, address operator) public pure returns (bytes32) {
