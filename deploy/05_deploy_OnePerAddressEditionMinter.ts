@@ -3,29 +3,38 @@ import {DeployFunction} from 'hardhat-deploy/types';
 import {ethers} from 'hardhat';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const contractName = 'ShowtimeForwarder';
-    // console.log("skipping " + contractName); return;
+    const contractName = 'OnePerAddressEditionMinter';
 
     const deployments = hre.deployments;
     const namedAccounts = await hre.getNamedAccounts();
+    const forwarderAddress = (await deployments.get('ShowtimeForwarder')).address;
 
     console.log("Deploying " + contractName + " from address:", namedAccounts.deployer);
 
     // const artifact = await hre.artifacts.readArtifact(contractName);
-    // console.log("Will be using the following deployment bytecode:", artifact.bytecode);
+    // console.log("Will be using the following deployment bytecode:",
+    //     // we take the init code
+    //     artifact.bytecode
 
-    // with the default deterministic deployment proxy (0x4e59b44847b379578588920cA78FbF26c0B4956C)
-    // and the bytecode at commit 3aa1bf9e, this salt gives us a nice address (0x50c001c88b59dc3b833E0F062EfC2271CE88Cb89)
-    const salt = ethers.utils.hexlify(4142695);
+    //     // and add the constructor arguments
+    //     // (slice to remove the 0x prefix)
+    //         + ethers.utils.hexZeroPad(forwarderAddress, 32).slice(2)
+    // );
+
+    const salt = ethers.utils.hexlify(29888296);
     const {address, deploy} = await deployments.deterministic(
         contractName,
         {
             from: namedAccounts.deployer,
+            args: [
+                forwarderAddress,
+            ],
             salt: salt
         }
     );
 
     console.log("It will be deployed at address:", address);
+    console.log("skipping " + contractName); return;
 
     try {
         const deployResult = await deploy();
