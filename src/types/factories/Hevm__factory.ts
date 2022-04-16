@@ -54,11 +54,18 @@ const _abi = [
     inputs: [
       {
         internalType: "bool",
-        name: "condition",
+        name: "",
         type: "bool",
       },
     ],
     name: "assume",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "clearMockedCalls",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -102,6 +109,24 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+      {
+        internalType: "bytes",
+        name: "",
+        type: "bytes",
+      },
+    ],
+    name: "expectCall",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "bool",
         name: "",
         type: "bool",
@@ -130,11 +155,31 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "bytes4",
+        name: "",
+        type: "bytes4",
+      },
+    ],
+    name: "expectRevert",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "bytes",
         name: "",
         type: "bytes",
       },
     ],
+    name: "expectRevert",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "expectRevert",
     outputs: [],
     stateMutability: "nonpayable",
@@ -175,6 +220,62 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "string",
+        name: "",
+        type: "string",
+      },
+    ],
+    name: "getCode",
+    outputs: [
+      {
+        internalType: "bytes",
+        name: "",
+        type: "bytes",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "getNonce",
+    outputs: [
+      {
+        internalType: "uint64",
+        name: "",
+        type: "uint64",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "addr",
+        type: "address",
+      },
+      {
+        internalType: "string",
+        name: "label",
+        type: "string",
+      },
+    ],
+    name: "label",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "address",
         name: "",
         type: "address",
@@ -193,6 +294,47 @@ const _abi = [
         type: "bytes32",
       },
     ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+      {
+        internalType: "bytes",
+        name: "",
+        type: "bytes",
+      },
+      {
+        internalType: "bytes",
+        name: "",
+        type: "bytes",
+      },
+    ],
+    name: "mockCall",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "prank",
+    outputs: [],
     stateMutability: "nonpayable",
     type: "function",
   },
@@ -225,6 +367,24 @@ const _abi = [
       },
     ],
     name: "roll",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+      {
+        internalType: "uint64",
+        name: "",
+        type: "uint64",
+      },
+    ],
+    name: "setNonce",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -265,6 +425,24 @@ const _abi = [
   },
   {
     inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "startPrank",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
       {
         internalType: "address",
         name: "",

@@ -23,16 +23,23 @@ export interface HevmInterface extends utils.Interface {
     "accesses(address)": FunctionFragment;
     "addr(uint256)": FunctionFragment;
     "assume(bool)": FunctionFragment;
+    "clearMockedCalls()": FunctionFragment;
     "deal(address,uint256)": FunctionFragment;
     "etch(address,bytes)": FunctionFragment;
+    "expectCall(address,bytes)": FunctionFragment;
     "expectEmit(bool,bool,bool,bool)": FunctionFragment;
-    "expectRevert(bytes)": FunctionFragment;
+    "expectRevert(bytes4)": FunctionFragment;
     "fee(uint256)": FunctionFragment;
     "ffi(string[])": FunctionFragment;
+    "getCode(string)": FunctionFragment;
+    "getNonce(address)": FunctionFragment;
+    "label(address,string)": FunctionFragment;
     "load(address,bytes32)": FunctionFragment;
-    "prank(address)": FunctionFragment;
+    "mockCall(address,bytes,bytes)": FunctionFragment;
+    "prank(address,address)": FunctionFragment;
     "record()": FunctionFragment;
     "roll(uint256)": FunctionFragment;
+    "setNonce(address,uint64)": FunctionFragment;
     "sign(uint256,bytes32)": FunctionFragment;
     "startPrank(address)": FunctionFragment;
     "stopPrank()": FunctionFragment;
@@ -44,11 +51,19 @@ export interface HevmInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "addr", values: [BigNumberish]): string;
   encodeFunctionData(functionFragment: "assume", values: [boolean]): string;
   encodeFunctionData(
+    functionFragment: "clearMockedCalls",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "deal",
     values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "etch",
+    values: [string, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "expectCall",
     values: [string, BytesLike]
   ): string;
   encodeFunctionData(
@@ -61,13 +76,30 @@ export interface HevmInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "fee", values: [BigNumberish]): string;
   encodeFunctionData(functionFragment: "ffi", values: [string[]]): string;
+  encodeFunctionData(functionFragment: "getCode", values: [string]): string;
+  encodeFunctionData(functionFragment: "getNonce", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "label",
+    values: [string, string]
+  ): string;
   encodeFunctionData(
     functionFragment: "load",
     values: [string, BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "prank", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "mockCall",
+    values: [string, BytesLike, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "prank",
+    values: [string, string]
+  ): string;
   encodeFunctionData(functionFragment: "record", values?: undefined): string;
   encodeFunctionData(functionFragment: "roll", values: [BigNumberish]): string;
+  encodeFunctionData(
+    functionFragment: "setNonce",
+    values: [string, BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "sign",
     values: [BigNumberish, BytesLike]
@@ -83,8 +115,13 @@ export interface HevmInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "accesses", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "addr", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "assume", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "clearMockedCalls",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "deal", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "etch", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "expectCall", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "expectEmit", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "expectRevert",
@@ -92,10 +129,15 @@ export interface HevmInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "fee", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ffi", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getCode", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getNonce", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "label", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "load", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "mockCall", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "prank", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "record", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "roll", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "setNonce", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "sign", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "startPrank", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "stopPrank", data: BytesLike): Result;
@@ -144,7 +186,11 @@ export interface Hevm extends BaseContract {
     ): Promise<ContractTransaction>;
 
     assume(
-      condition: boolean,
+      arg0: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    clearMockedCalls(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -160,6 +206,12 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    expectCall(
+      arg0: string,
+      arg1: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     expectEmit(
       arg0: boolean,
       arg1: boolean,
@@ -168,8 +220,17 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    expectRevert(
+    "expectRevert(bytes4)"(
       arg0: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    "expectRevert(bytes)"(
+      arg0: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    "expectRevert()"(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -183,13 +244,42 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    getCode(
+      arg0: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    getNonce(
+      arg0: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    label(
+      addr: string,
+      label: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     load(
       arg0: string,
       arg1: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    prank(
+    mockCall(
+      arg0: string,
+      arg1: BytesLike,
+      arg2: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    "prank(address,address)"(
+      arg0: string,
+      arg1: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    "prank(address)"(
       arg0: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -203,14 +293,26 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    setNonce(
+      arg0: string,
+      arg1: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     sign(
       arg0: BigNumberish,
       arg1: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    startPrank(
+    "startPrank(address)"(
       arg0: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    "startPrank(address,address)"(
+      arg0: string,
+      arg1: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -242,7 +344,11 @@ export interface Hevm extends BaseContract {
   ): Promise<ContractTransaction>;
 
   assume(
-    condition: boolean,
+    arg0: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  clearMockedCalls(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -258,6 +364,12 @@ export interface Hevm extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  expectCall(
+    arg0: string,
+    arg1: BytesLike,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   expectEmit(
     arg0: boolean,
     arg1: boolean,
@@ -266,8 +378,17 @@ export interface Hevm extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  expectRevert(
+  "expectRevert(bytes4)"(
     arg0: BytesLike,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  "expectRevert(bytes)"(
+    arg0: BytesLike,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  "expectRevert()"(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -281,13 +402,42 @@ export interface Hevm extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  getCode(
+    arg0: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  getNonce(
+    arg0: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  label(
+    addr: string,
+    label: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   load(
     arg0: string,
     arg1: BytesLike,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  prank(
+  mockCall(
+    arg0: string,
+    arg1: BytesLike,
+    arg2: BytesLike,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  "prank(address,address)"(
+    arg0: string,
+    arg1: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  "prank(address)"(
     arg0: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -301,14 +451,26 @@ export interface Hevm extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  setNonce(
+    arg0: string,
+    arg1: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   sign(
     arg0: BigNumberish,
     arg1: BytesLike,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  startPrank(
+  "startPrank(address)"(
     arg0: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  "startPrank(address,address)"(
+    arg0: string,
+    arg1: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -336,7 +498,9 @@ export interface Hevm extends BaseContract {
 
     addr(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
-    assume(condition: boolean, overrides?: CallOverrides): Promise<void>;
+    assume(arg0: boolean, overrides?: CallOverrides): Promise<void>;
+
+    clearMockedCalls(overrides?: CallOverrides): Promise<void>;
 
     deal(
       arg0: string,
@@ -350,6 +514,12 @@ export interface Hevm extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    expectCall(
+      arg0: string,
+      arg1: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     expectEmit(
       arg0: boolean,
       arg1: boolean,
@@ -358,11 +528,31 @@ export interface Hevm extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    expectRevert(arg0: BytesLike, overrides?: CallOverrides): Promise<void>;
+    "expectRevert(bytes4)"(
+      arg0: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "expectRevert(bytes)"(
+      arg0: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "expectRevert()"(overrides?: CallOverrides): Promise<void>;
 
     fee(arg0: BigNumberish, overrides?: CallOverrides): Promise<void>;
 
     ffi(arg0: string[], overrides?: CallOverrides): Promise<string>;
+
+    getCode(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+    getNonce(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    label(
+      addr: string,
+      label: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     load(
       arg0: string,
@@ -370,11 +560,30 @@ export interface Hevm extends BaseContract {
       overrides?: CallOverrides
     ): Promise<string>;
 
-    prank(arg0: string, overrides?: CallOverrides): Promise<void>;
+    mockCall(
+      arg0: string,
+      arg1: BytesLike,
+      arg2: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "prank(address,address)"(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "prank(address)"(arg0: string, overrides?: CallOverrides): Promise<void>;
 
     record(overrides?: CallOverrides): Promise<void>;
 
     roll(arg0: BigNumberish, overrides?: CallOverrides): Promise<void>;
+
+    setNonce(
+      arg0: string,
+      arg1: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     sign(
       arg0: BigNumberish,
@@ -382,7 +591,16 @@ export interface Hevm extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[number, string, string]>;
 
-    startPrank(arg0: string, overrides?: CallOverrides): Promise<void>;
+    "startPrank(address)"(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "startPrank(address,address)"(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     stopPrank(overrides?: CallOverrides): Promise<void>;
 
@@ -410,7 +628,11 @@ export interface Hevm extends BaseContract {
     ): Promise<BigNumber>;
 
     assume(
-      condition: boolean,
+      arg0: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    clearMockedCalls(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -426,6 +648,12 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    expectCall(
+      arg0: string,
+      arg1: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     expectEmit(
       arg0: boolean,
       arg1: boolean,
@@ -434,8 +662,17 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    expectRevert(
+    "expectRevert(bytes4)"(
       arg0: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    "expectRevert(bytes)"(
+      arg0: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    "expectRevert()"(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -449,13 +686,42 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    getCode(
+      arg0: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    getNonce(
+      arg0: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    label(
+      addr: string,
+      label: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     load(
       arg0: string,
       arg1: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    prank(
+    mockCall(
+      arg0: string,
+      arg1: BytesLike,
+      arg2: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    "prank(address,address)"(
+      arg0: string,
+      arg1: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    "prank(address)"(
       arg0: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -469,14 +735,26 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    setNonce(
+      arg0: string,
+      arg1: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     sign(
       arg0: BigNumberish,
       arg1: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    startPrank(
+    "startPrank(address)"(
       arg0: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    "startPrank(address,address)"(
+      arg0: string,
+      arg1: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -509,7 +787,11 @@ export interface Hevm extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     assume(
-      condition: boolean,
+      arg0: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    clearMockedCalls(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -525,6 +807,12 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    expectCall(
+      arg0: string,
+      arg1: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     expectEmit(
       arg0: boolean,
       arg1: boolean,
@@ -533,8 +821,17 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    expectRevert(
+    "expectRevert(bytes4)"(
       arg0: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    "expectRevert(bytes)"(
+      arg0: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    "expectRevert()"(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -548,13 +845,42 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    getCode(
+      arg0: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    getNonce(
+      arg0: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    label(
+      addr: string,
+      label: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     load(
       arg0: string,
       arg1: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    prank(
+    mockCall(
+      arg0: string,
+      arg1: BytesLike,
+      arg2: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    "prank(address,address)"(
+      arg0: string,
+      arg1: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    "prank(address)"(
       arg0: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
@@ -568,14 +894,26 @@ export interface Hevm extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    setNonce(
+      arg0: string,
+      arg1: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     sign(
       arg0: BigNumberish,
       arg1: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    startPrank(
+    "startPrank(address)"(
       arg0: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    "startPrank(address,address)"(
+      arg0: string,
+      arg1: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

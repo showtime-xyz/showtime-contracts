@@ -4,6 +4,7 @@
 import {
   BaseContract,
   BigNumber,
+  BigNumberish,
   BytesLike,
   CallOverrides,
   ContractTransaction,
@@ -22,8 +23,10 @@ export interface CreatorOwnedCollectionTestInterface extends utils.Interface {
     "IS_TEST()": FunctionFragment;
     "failed()": FunctionFragment;
     "setUp()": FunctionFragment;
+    "testClaimOnePerAddressViaMetaTransaction()": FunctionFragment;
     "testCreateMintableCollection()": FunctionFragment;
     "testCreateMintableCollectionViaMetaFactory()": FunctionFragment;
+    "testCreateMintableCollectionViaMetaTransaction()": FunctionFragment;
     "testCreateMintableCollectionViaOnePerAddressContract()": FunctionFragment;
   };
 
@@ -31,11 +34,19 @@ export interface CreatorOwnedCollectionTestInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "failed", values?: undefined): string;
   encodeFunctionData(functionFragment: "setUp", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "testClaimOnePerAddressViaMetaTransaction",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "testCreateMintableCollection",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "testCreateMintableCollectionViaMetaFactory",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "testCreateMintableCollectionViaMetaTransaction",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -47,6 +58,10 @@ export interface CreatorOwnedCollectionTestInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "failed", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "setUp", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "testClaimOnePerAddressViaMetaTransaction",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "testCreateMintableCollection",
     data: BytesLike
   ): Result;
@@ -55,11 +70,16 @@ export interface CreatorOwnedCollectionTestInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "testCreateMintableCollectionViaMetaTransaction",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "testCreateMintableCollectionViaOnePerAddressContract",
     data: BytesLike
   ): Result;
 
   events: {
+    "Transfer(address,address,uint256)": EventFragment;
     "log(string)": EventFragment;
     "log_address(address)": EventFragment;
     "log_bytes(bytes)": EventFragment;
@@ -78,6 +98,7 @@ export interface CreatorOwnedCollectionTestInterface extends utils.Interface {
     "logs(bytes)": EventFragment;
   };
 
+  getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "log"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "log_address"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "log_bytes"): EventFragment;
@@ -95,6 +116,13 @@ export interface CreatorOwnedCollectionTestInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "log_uint"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "logs"): EventFragment;
 }
+
+export type TransferEvent = TypedEvent<
+  [string, string, BigNumber],
+  { from: string; to: string; tokenId: BigNumber }
+>;
+
+export type TransferEventFilter = TypedEventFilter<TransferEvent>;
 
 export type logEvent = TypedEvent<[string], { arg0: string }>;
 
@@ -225,11 +253,19 @@ export interface CreatorOwnedCollectionTest extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    testClaimOnePerAddressViaMetaTransaction(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     testCreateMintableCollection(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     testCreateMintableCollectionViaMetaFactory(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    testCreateMintableCollectionViaMetaTransaction(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -246,11 +282,19 @@ export interface CreatorOwnedCollectionTest extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  testClaimOnePerAddressViaMetaTransaction(
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   testCreateMintableCollection(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   testCreateMintableCollectionViaMetaFactory(
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  testCreateMintableCollectionViaMetaTransaction(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -265,9 +309,17 @@ export interface CreatorOwnedCollectionTest extends BaseContract {
 
     setUp(overrides?: CallOverrides): Promise<void>;
 
+    testClaimOnePerAddressViaMetaTransaction(
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     testCreateMintableCollection(overrides?: CallOverrides): Promise<void>;
 
     testCreateMintableCollectionViaMetaFactory(
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    testCreateMintableCollectionViaMetaTransaction(
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -277,6 +329,17 @@ export interface CreatorOwnedCollectionTest extends BaseContract {
   };
 
   filters: {
+    "Transfer(address,address,uint256)"(
+      from?: string | null,
+      to?: string | null,
+      tokenId?: BigNumberish | null
+    ): TransferEventFilter;
+    Transfer(
+      from?: string | null,
+      to?: string | null,
+      tokenId?: BigNumberish | null
+    ): TransferEventFilter;
+
     "log(string)"(arg0?: null): logEventFilter;
     log(arg0?: null): logEventFilter;
 
@@ -369,11 +432,19 @@ export interface CreatorOwnedCollectionTest extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    testClaimOnePerAddressViaMetaTransaction(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     testCreateMintableCollection(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     testCreateMintableCollectionViaMetaFactory(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    testCreateMintableCollectionViaMetaTransaction(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -391,11 +462,19 @@ export interface CreatorOwnedCollectionTest extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    testClaimOnePerAddressViaMetaTransaction(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     testCreateMintableCollection(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     testCreateMintableCollectionViaMetaFactory(
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    testCreateMintableCollectionViaMetaTransaction(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

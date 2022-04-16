@@ -1,0 +1,224 @@
+{
+  "address": "0x50c001362FB06E2CB4D4e8138654267328a8B247",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_trustedForwarder",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "collection",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "operator",
+          "type": "address"
+        }
+      ],
+      "name": "AlreadyMinted",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "collection",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "operator",
+          "type": "address"
+        }
+      ],
+      "name": "hasMinted",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "forwarder",
+          "type": "address"
+        }
+      ],
+      "name": "isTrustedForwarder",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "collection",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        }
+      ],
+      "name": "mintEdition",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "collection",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "operator",
+          "type": "address"
+        }
+      ],
+      "name": "mintId",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "trustedForwarder",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xe7a4ec3060d7c618ffc6765c6a5a29e7431a5cec3df4bc21fda1514bc44d5338",
+  "receipt": {
+    "to": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "from": "0x515F7d84cEE53051b7ADF645fA2220f65BC25c68",
+    "contractAddress": null,
+    "transactionIndex": 12,
+    "gasUsed": "299907",
+    "logsBloom": "0x00000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000800000000000000000000100000000004000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000080000000100000000000200000000000000000400000000000000000000000000000000000000000004000000000000000000001000000000000000000000000000000100040000000000000000000000000000000000000000000000000000000000000000000100000",
+    "blockHash": "0x3bcdd93edb6f960a3a3c4de4745af04c2aa7792fb1f8a1bcf993098de0a65c7e",
+    "transactionHash": "0xe7a4ec3060d7c618ffc6765c6a5a29e7431a5cec3df4bc21fda1514bc44d5338",
+    "logs": [
+      {
+        "transactionIndex": 12,
+        "blockNumber": 25951633,
+        "transactionHash": "0xe7a4ec3060d7c618ffc6765c6a5a29e7431a5cec3df4bc21fda1514bc44d5338",
+        "address": "0x0000000000000000000000000000000000001010",
+        "topics": [
+          "0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63",
+          "0x0000000000000000000000000000000000000000000000000000000000001010",
+          "0x000000000000000000000000515f7d84cee53051b7adf645fa2220f65bc25c68",
+          "0x000000000000000000000000be188d6641e8b680743a4815dfa0f6208038960f"
+        ],
+        "data": "0x00000000000000000000000000000000000000000000000000154f46cbd594e20000000000000000000000000000000000000000000000000468cddc74d5794500000000000000000000000000000000000000000000111111fbf1915900762e00000000000000000000000000000000000000000000000004537e95a8ffe463000000000000000000000000000000000000000000001111121140d824d60b10",
+        "logIndex": 26,
+        "blockHash": "0x3bcdd93edb6f960a3a3c4de4745af04c2aa7792fb1f8a1bcf993098de0a65c7e"
+      }
+    ],
+    "blockNumber": 25951633,
+    "cumulativeGasUsed": "1754695",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x50c001c88b59dc3b833E0F062EfC2271CE88Cb89"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "ee375ee01832e46d149a4cceac0ecc23",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.7+commit.e28d00a7\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_trustedForwarder\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"collection\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"AlreadyMinted\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"collection\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"hasMinted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"forwarder\",\"type\":\"address\"}],\"name\":\"isTrustedForwarder\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"collection\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"}],\"name\":\"mintEdition\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"collection\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"mintId\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"trustedForwarder\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/periphery/OnePerAddressEditionMinter.sol\":\"OnePerAddressEditionMinter\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":800},\"remappings\":[]},\"sources\":{\"@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\npragma solidity ^0.8.6;\\n\\ninterface IEditionSingleMintable {\\n  function mintEdition(address to) external returns (uint256);\\n  function mintEditions(address[] memory to) external returns (uint256);\\n  function numberCanMint() external view returns (uint256);\\n  function owner() external view returns (address);\\n}\",\"keccak256\":\"0x04b73ddff10e4feb9297834b5550faecb1e63bfc8c4a513ecdf25796c49360db\",\"license\":\"GPL-3.0\"},\"src/periphery/OnePerAddressEditionMinter.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.7;\\n\\nimport {IEditionSingleMintable} from \\\"@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol\\\";\\n\\nimport { BaseRelayRecipient } from \\\"../utils/BaseRelayRecipient.sol\\\";\\n\\ncontract OnePerAddressEditionMinter is BaseRelayRecipient {\\n    error AlreadyMinted(address collection, address operator);\\n\\n    mapping(bytes32 => bool) minted;\\n\\n    constructor(address _trustedForwarder) {\\n        trustedForwarder = _trustedForwarder;\\n    }\\n\\n    function mintEdition(address collection, address _to) external {\\n        address operator = _msgSender();\\n        recordMint(collection, operator);\\n        if (operator != _to) {\\n            recordMint(collection, _to);\\n        }\\n\\n        IEditionSingleMintable(collection).mintEdition(_to);\\n    }\\n\\n    function recordMint(address collection, address minter) internal {\\n        bytes32 _mintId = mintId(collection, minter);\\n\\n        if (minted[_mintId]) {\\n            revert AlreadyMinted(collection, minter);\\n        }\\n\\n        minted[_mintId] = true;\\n    }\\n\\n    function mintId(address collection, address operator) public pure returns (bytes32) {\\n        return keccak256(abi.encodePacked(collection, operator));\\n    }\\n\\n    function hasMinted(address collection, address operator) public view returns (bool) {\\n        return minted[mintId(collection, operator)];\\n    }\\n}\",\"keccak256\":\"0xf1ef1b25635f0a6962c61d5b7b935a19aed6d2239d5377dcfbb667224240356f\",\"license\":\"MIT\"},\"src/utils/BaseRelayRecipient.sol\":{\"content\":\"// SPDX-License-Identifier:MIT\\npragma solidity =0.8.7;\\n\\n/**\\n * A base contract to be inherited by any contract that want to receive relayed transactions\\n * A subclass must use \\\"_msgSender()\\\" instead of \\\"msg.sender\\\"\\n */\\nabstract contract BaseRelayRecipient {\\n    /*\\n     * Forwarder singleton we accept calls from\\n     */\\n    address public trustedForwarder;\\n\\n    /*\\n     * require a function to be called through GSN only\\n     */\\n    modifier trustedForwarderOnly() {\\n        require(msg.sender == address(trustedForwarder), \\\"Function can only be called through the trusted Forwarder\\\");\\n        _;\\n    }\\n\\n    function isTrustedForwarder(address forwarder) public view returns (bool) {\\n        return forwarder == trustedForwarder;\\n    }\\n\\n    /**\\n     * return the sender of this call.\\n     * if the call came through our trusted forwarder, return the original sender.\\n     * otherwise, return `msg.sender`.\\n     * should be used in the contract anywhere instead of msg.sender\\n     */\\n    function _msgSender() internal view virtual returns (address ret) {\\n        if (msg.data.length >= 24 && isTrustedForwarder(msg.sender)) {\\n            // At this point we know that the sender is a trusted forwarder,\\n            // so we trust that the last bytes of msg.data are the verified sender address.\\n            // extract sender address from the end of msg.data\\n            assembly {\\n                ret := shr(96, calldataload(sub(calldatasize(), 20)))\\n            }\\n        } else {\\n            return msg.sender;\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x2443ea5711a4ef0831d9ace49edab0a567c46600577e21a853bcf9078079a905\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b5060405161049538038061049583398101604081905261002f91610054565b600080546001600160a01b0319166001600160a01b0392909216919091179055610084565b60006020828403121561006657600080fd5b81516001600160a01b038116811461007d57600080fd5b9392505050565b610402806100936000396000f3fe608060405234801561001057600080fd5b50600436106100675760003560e01c80637da0a877116100505780637da0a877146100b85780639a7ae5aa146100e3578063ea217b20146100f657600080fd5b8063331c14321461006c578063572b6c0514610081575b600080fd5b61007f61007a3660046103a9565b61015c565b005b6100a361008f366004610387565b6000546001600160a01b0391821691161490565b60405190151581526020015b60405180910390f35b6000546100cb906001600160a01b031681565b6040516001600160a01b0390911681526020016100af565b6100a36100f13660046103a9565b610216565b61014e6101043660046103a9565b6040516bffffffffffffffffffffffff19606084811b8216602084015283901b16603482015260009060480160405160208183030381529060405280519060200120905092915050565b6040519081526020016100af565b6000610166610286565b905061017283826102ba565b816001600160a01b0316816001600160a01b0316146101955761019583836102ba565b60405163a66ff0af60e01b81526001600160a01b03838116600483015284169063a66ff0af90602401602060405180830381600087803b1580156101d857600080fd5b505af11580156101ec573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061021091906103dc565b50505050565b60006001600061026b85856040516bffffffffffffffffffffffff19606084811b8216602084015283901b16603482015260009060480160405160208183030381529060405280519060200120905092915050565b815260208101919091526040016000205460ff169392505050565b6000601836108015906102a357506000546001600160a01b031633145b156102b5575060131936013560601c90565b503390565b60408051606084811b6bffffffffffffffffffffffff199081166020808501919091529185901b166034830152825160288184030181526048909201909252805191012060009060008181526001602052604090205490915060ff161561034b5760405163010bb71b60e31b81526001600160a01b0380851660048301528316602482015260440160405180910390fd5b6000908152600160208190526040909120805460ff191690911790555050565b80356001600160a01b038116811461038257600080fd5b919050565b60006020828403121561039957600080fd5b6103a28261036b565b9392505050565b600080604083850312156103bc57600080fd5b6103c58361036b565b91506103d36020840161036b565b90509250929050565b6000602082840312156103ee57600080fd5b505191905056fea164736f6c6343000807000a",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100675760003560e01c80637da0a877116100505780637da0a877146100b85780639a7ae5aa146100e3578063ea217b20146100f657600080fd5b8063331c14321461006c578063572b6c0514610081575b600080fd5b61007f61007a3660046103a9565b61015c565b005b6100a361008f366004610387565b6000546001600160a01b0391821691161490565b60405190151581526020015b60405180910390f35b6000546100cb906001600160a01b031681565b6040516001600160a01b0390911681526020016100af565b6100a36100f13660046103a9565b610216565b61014e6101043660046103a9565b6040516bffffffffffffffffffffffff19606084811b8216602084015283901b16603482015260009060480160405160208183030381529060405280519060200120905092915050565b6040519081526020016100af565b6000610166610286565b905061017283826102ba565b816001600160a01b0316816001600160a01b0316146101955761019583836102ba565b60405163a66ff0af60e01b81526001600160a01b03838116600483015284169063a66ff0af90602401602060405180830381600087803b1580156101d857600080fd5b505af11580156101ec573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061021091906103dc565b50505050565b60006001600061026b85856040516bffffffffffffffffffffffff19606084811b8216602084015283901b16603482015260009060480160405160208183030381529060405280519060200120905092915050565b815260208101919091526040016000205460ff169392505050565b6000601836108015906102a357506000546001600160a01b031633145b156102b5575060131936013560601c90565b503390565b60408051606084811b6bffffffffffffffffffffffff199081166020808501919091529185901b166034830152825160288184030181526048909201909252805191012060009060008181526001602052604090205490915060ff161561034b5760405163010bb71b60e31b81526001600160a01b0380851660048301528316602482015260440160405180910390fd5b6000908152600160208190526040909120805460ff191690911790555050565b80356001600160a01b038116811461038257600080fd5b919050565b60006020828403121561039957600080fd5b6103a28261036b565b9392505050565b600080604083850312156103bc57600080fd5b6103c58361036b565b91506103d36020840161036b565b90509250929050565b6000602082840312156103ee57600080fd5b505191905056fea164736f6c6343000807000a",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 19912,
+        "contract": "src/periphery/OnePerAddressEditionMinter.sol:OnePerAddressEditionMinter",
+        "label": "trustedForwarder",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_address"
+      },
+      {
+        "astId": 11552,
+        "contract": "src/periphery/OnePerAddressEditionMinter.sol:OnePerAddressEditionMinter",
+        "label": "minted",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_mapping(t_bytes32,t_bool)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_mapping(t_bytes32,t_bool)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => bool)",
+        "numberOfBytes": "32",
+        "value": "t_bool"
+      }
+    }
+  }
+}
