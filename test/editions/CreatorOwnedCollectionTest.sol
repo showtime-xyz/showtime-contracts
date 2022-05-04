@@ -13,24 +13,24 @@ import { ShowtimeForwarder } from "src/meta-tx/ShowtimeForwarder.sol";
 
 import { DSTest } from "ds-test/test.sol";
 import { Hevm } from "test/Hevm.sol";
+import { ForwarderTestUtil } from "test/meta-tx/ForwarderTestUtil.sol";
 
 contract User {}
 
-contract CreatorOwnedCollectionTest is DSTest {
+contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
     event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
-    bytes32 internal constant FORWARDREQUEST_TYPE_HASH = keccak256("ForwardRequest(address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data,uint256 validUntilTime)");
 
     User internal alice = new User();
     User internal bob = new User();
     User internal charlieTheCreator = new User();
     User internal relayer = new User();
 
-    SingleEditionMintableCreator editionCreator;
-    MetaSingleEditionMintableCreator metaEditionCreator;
-    OnePerAddressEditionMinter minter;
-    ShowtimeForwarder forwarder;
+    SingleEditionMintableCreator internal editionCreator;
+    MetaSingleEditionMintableCreator internal metaEditionCreator;
+    OnePerAddressEditionMinter internal minter;
+    ShowtimeForwarder internal forwarder;
 
     function setUp() public {
         SharedNFTLogic sharedNFTLogic = new SharedNFTLogic();
@@ -158,7 +158,7 @@ contract CreatorOwnedCollectionTest is DSTest {
         });
 
         // no pranking! address(this) is acting as a relayer
-        (bool success, bytes memory ret) = signAndExecute(walletPrivateKey, req, "");
+        (bool success, bytes memory ret) = signAndExecute(forwarder, walletPrivateKey, req, "");
         assertTrue(success);
 
         uint newId = uint(bytes32(ret));
@@ -201,17 +201,17 @@ contract CreatorOwnedCollectionTest is DSTest {
         // anybody can mint via a meta-tx, and the owner of the NFT is the meta-tx signer
         hevm.expectEmit(true, true, true, true);
         emit Transfer(address(0), address(alice), 1);
-        (bool success, bytes memory ret) = signAndExecute(walletPrivateKey, req, "");
+        (bool success, bytes memory ret) = signAndExecute(forwarder, walletPrivateKey, req, "");
         assertTrue(success);
 
         // can't straight up replay
-        signAndExecute(walletPrivateKey, req, "FWD: nonce mismatch");
+        signAndExecute(forwarder, walletPrivateKey, req, "FWD: nonce mismatch");
 
         // if we try to mint again...
         req.nonce = forwarder.getNonce(walletAddress);
 
         // then we get an error because walletAddress has already claimed this edition
-        (success, ret) = signAndExecute(walletPrivateKey, req, "");
+        (success, ret) = signAndExecute(forwarder, walletPrivateKey, req, "");
         assertTrue(!success);
         assertEq0(ret, abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), walletAddress));
 
@@ -248,50 +248,6 @@ contract CreatorOwnedCollectionTest is DSTest {
         hevm.prank(address(alice));
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), address(alice)));
         minter.mintEdition(edition, address(alice));
-    }
-
-    function getDomainSeparator(string memory name, string memory version)
-        internal view returns (bytes32 domainHash)
-    {
-        uint256 chainId;
-        /* solhint-disable-next-line no-inline-assembly */
-        assembly { chainId := chainid() }
-
-        bytes memory domainValue = abi.encode(
-            keccak256(bytes(forwarder.EIP712_DOMAIN_TYPE())),
-            keccak256(bytes(name)),
-            keccak256(bytes(version)),
-            chainId,
-            address(forwarder));
-
-        domainHash = keccak256(domainValue);
-    }
-
-    function signAndExecute(
-        uint256 privateKey,
-        IForwarder.ForwardRequest memory req,
-        bytes memory expectedError) internal returns (bool success, bytes memory ret)
-    {
-        bytes32 domainSeparator = getDomainSeparator("showtime.io", "1");
-
-        bytes32 digest = keccak256(abi.encodePacked(
-                "\x19\x01", domainSeparator,
-                keccak256(forwarder._getEncoded(req, FORWARDREQUEST_TYPE_HASH, ""))
-        ));
-
-        (uint8 v, bytes32 r, bytes32 s) = hevm.sign(privateKey, digest);
-        bytes memory sig = abi.encodePacked(r, s, v);
-
-        if (expectedError.length > 0) {
-            hevm.expectRevert(expectedError);
-        }
-
-        (success, ret) = forwarder.execute(
-            req,
-            domainSeparator,
-            FORWARDREQUEST_TYPE_HASH,
-            "",
-            sig);
     }
 
     function createDummyEdition(address _minter)

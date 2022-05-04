@@ -16,9 +16,9 @@ import { TestToken } from "test/TestToken.sol";
 contract User is ERC1155Holder {}
 
 contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
-    uint256 constant INITIAL_NFT_SUPPLY = 1000;
-    address constant BURN_ADDRESS = address(0xdEaD);
-    address constant FORWARDER_ADDRESS = BURN_ADDRESS;
+    uint256 internal constant INITIAL_NFT_SUPPLY = 1000;
+    address internal constant BURN_ADDRESS = address(0xdEaD);
+    address internal constant FORWARDER_ADDRESS = BURN_ADDRESS;
 
     User internal bob = new User();
     User internal alice = new User();
@@ -28,15 +28,15 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
     ShowtimeV1Market internal market;
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    address[] justCharityPayees = [address(charity)];
-    uint256[] just100Shares = [100];
+    address[] internal justCharityPayees = [address(charity)];
+    uint256[] internal just100Shares = [100];
 
-    ShowtimeBakeSale charitySeller;
+    ShowtimeBakeSale internal charitySeller;
 
-    uint256 tokenId0PctRoyalty;
-    uint256 tokenId10PctRoyaltyToAlice;
-    uint256 tokenId100PctRoyaltyToAlice;
-    uint256 tokenId10PctRoyaltyToZeroAddress;
+    uint256 internal tokenId0PctRoyalty;
+    uint256 internal tokenId10PctRoyaltyToAlice;
+    uint256 internal tokenId100PctRoyaltyToAlice;
+    uint256 internal tokenId10PctRoyaltyToZeroAddress;
 
     event ListingCreated(uint256 indexed listingId, address indexed seller, uint256 indexed tokenId);
     event ListingDeleted(uint256 indexed listingId, address indexed seller);

@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+import {TestForwarder} from "gsn/forwarder/test/TestForwarder.sol";
+// import { TestForwarder } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarder.sol";
+import {TestForwarderTarget} from "gsn/forwarder/test/TestForwarderTarget.sol";
+// import { TestForwarderTarget } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol";
+
 import { ShowtimeForwarder } from "src/meta-tx/ShowtimeForwarder.sol";
-// import {TestForwarder} from "gsn/forwarder/test/TestForwarder.sol";
-import { TestForwarder } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarder.sol";
-// import {TestForwarderTarget} from "gsn/forwarder/test/TestForwarderTarget.sol";
-import { TestForwarderTarget } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol";
 
 import { DSTest } from "ds-test/test.sol";
 import { Hevm } from "test/Hevm.sol";
+import { ForwarderTestUtil } from "test/meta-tx/ForwarderTestUtil.sol";
 
-contract ShowtimeForwarderTest is DSTest {
+contract ShowtimeForwarderTest is DSTest, ForwarderTestUtil {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
     ShowtimeForwarder forwarder = new ShowtimeForwarder();
     TestForwarderTarget target = new TestForwarderTarget(address(forwarder));
@@ -30,8 +32,8 @@ contract ShowtimeForwarderTest is DSTest {
         // emit log_uint(getChainId());
 
         uint nonce = forwarder.getNonce(0xDE5E327cE4E7c1b64A757AaB8f2E699585977a34);
-        emit log("forwarder.getNonce(from):");
-        emit log_uint(nonce);
+        // emit log("forwarder.getNonce(from):");
+        // emit log_uint(nonce);
 
         bytes memory data = abi.encodeWithSignature("emitMessage(string)", "hello");
         // emit log("encoded function call data:");
@@ -39,10 +41,10 @@ contract ShowtimeForwarderTest is DSTest {
 
         // the domain separator depends on the address of the forwarder and the chain id, update accordingly
         forwarder.registerDomainSeparator("showtime.io", "1");
-        bytes32 domainSeparator = 0x746c83c5f7c38efbe7f186eb35eecdf1703391727880dc0b6999e50c81eb2434;
+        bytes32 domainSeparator = getDomainSeparator(forwarder, "showtime.io", "1");
 
         // keccak256("ForwardRequest(address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data,uint256 validUntilTime)")
-        bytes32 requestTypeHash = 0xb91ae508e6f0e8e33913dec60d2fdcb39fe037ce56198c70a7927d7cd813fd96;
+        bytes32 requestTypeHash = FORWARDREQUEST_TYPE_HASH;
 
         ShowtimeForwarder.ForwardRequest memory req;
 
