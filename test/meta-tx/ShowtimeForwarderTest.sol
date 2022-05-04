@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import {ShowtimeForwarder} from "../../periphery/ShowtimeForwarder.sol";
+import { ShowtimeForwarder } from "src/meta-tx/ShowtimeForwarder.sol";
 // import {TestForwarder} from "gsn/forwarder/test/TestForwarder.sol";
-import {TestForwarder} from "../../../lib/gsn/packages/contracts/src/forwarder/test/TestForwarder.sol";
+import { TestForwarder } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarder.sol";
 // import {TestForwarderTarget} from "gsn/forwarder/test/TestForwarderTarget.sol";
-import {TestForwarderTarget} from "../../../lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol";
+import { TestForwarderTarget } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol";
 
-import "../Hevm.sol";
-import "../../../lib/ds-test/src/test.sol";
+import { DSTest } from "ds-test/test.sol";
+import { Hevm } from "test/Hevm.sol";
 
 contract ShowtimeForwarderTest is DSTest {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);

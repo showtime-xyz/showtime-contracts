@@ -5,3 +5,6 @@
 ds-test/=lib/ds-test/src/
 base64-sol/=lib/base64/
 gsn/=lib/gsn/packages/contracts/src/
+
+src/=src/
+test/=test/

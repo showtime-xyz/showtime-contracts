@@ -1,3 +1,5 @@
+pragma solidity ^0.8.7;
+
 interface Hevm {
     // Set block.timestamp (newTimestamp)
     function warp(uint256) external;

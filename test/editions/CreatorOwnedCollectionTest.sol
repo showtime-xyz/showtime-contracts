@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import {SharedNFTLogic} from "@zoralabs/nft-editions-contracts/contracts/SharedNFTLogic.sol";
-import {SingleEditionMintable} from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintable.sol";
-import {SingleEditionMintableCreator} from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintableCreator.sol";
+import { IForwarder } from "gsn/forwarder/IForwarder.sol";
+import { IERC721Upgradeable } from "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
+import { SharedNFTLogic } from "@zoralabs/nft-editions-contracts/contracts/SharedNFTLogic.sol";
+import { SingleEditionMintable } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintable.sol";
+import { SingleEditionMintableCreator } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintableCreator.sol";
 
-import "./Hevm.sol";
-import "../../lib/ds-test/src/test.sol";
-import "../../lib/gsn/packages/contracts/src/forwarder/IForwarder.sol";
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC721Upgradeable.sol";
+import { OnePerAddressEditionMinter, IEditionSingleMintable } from "src/editions/OnePerAddressEditionMinter.sol";
+import { MetaSingleEditionMintableCreator } from "src/editions/MetaSingleEditionMintableCreator.sol";
+import { ShowtimeForwarder } from "src/meta-tx/ShowtimeForwarder.sol";
 
-import {OnePerAddressEditionMinter} from "../periphery/OnePerAddressEditionMinter.sol";
-import {MetaSingleEditionMintableCreator, ISingleEditionMintable} from "../periphery/MetaSingleEditionMintableCreator.sol";
-import {ShowtimeForwarder} from "../periphery/ShowtimeForwarder.sol";
+import { DSTest } from "ds-test/test.sol";
+import { Hevm } from "test/Hevm.sol";
 
 contract User {}
 
@@ -113,20 +113,20 @@ contract CreatorOwnedCollectionTest is DSTest {
         edition.setApprovedMinter(address(minter), true);
 
         // then anybody can mint once via the minter contract
-        sharedTestOnePerAddress(address(edition));
+        sharedTestOnePerAddress(edition);
     }
 
     function testCreateMintableCollectionViaMetaFactory() public {
         // when charlieTheCreator calls `createEdition`
         hevm.prank(address(charlieTheCreator));
-        ISingleEditionMintable edition = createDummyEdition(address(minter));
+        SingleEditionMintable edition = createDummyEdition(address(minter));
 
         // then we get a properly configured collection
         assertEq(edition.owner(), address(charlieTheCreator));
         assertEq(edition.name(), "The Collection");
 
         // and anybody can mint once via the minter contract
-        sharedTestOnePerAddress(address(edition));
+        sharedTestOnePerAddress(edition);
     }
 
     function testCreateMintableCollectionViaMetaTransaction() public {
@@ -164,12 +164,12 @@ contract CreatorOwnedCollectionTest is DSTest {
         uint newId = uint(bytes32(ret));
 
         // then we get a properly configured collection
-        ISingleEditionMintable edition = metaEditionCreator.getEditionAtId(newId);
+        SingleEditionMintable edition = SingleEditionMintable(address(metaEditionCreator.getEditionAtId(newId)));
         assertEq(edition.owner(), walletAddress); // the owner is the address of the signer of the meta-tx
         assertEq(edition.name(), "The Collection");
 
         // and anybody can mint once via the minter contract
-        sharedTestOnePerAddress(address(edition));
+        sharedTestOnePerAddress(edition);
     }
 
     function testClaimOnePerAddressViaMetaTransaction() public {
@@ -178,7 +178,7 @@ contract CreatorOwnedCollectionTest is DSTest {
 
         // when charlieTheCreator calls `createEdition` (via a direct tx)
         hevm.prank(address(charlieTheCreator));
-        ISingleEditionMintable edition = createDummyEdition(address(metaMinter));
+        SingleEditionMintable edition = createDummyEdition(address(metaMinter));
 
         uint256 walletPrivateKey = 0xbfea5ee5076b0bff4a26f7e3b5a8b8093c664a330cb7ab024f041b9ae077fa2e;
         address walletAddress = hevm.addr(walletPrivateKey);
@@ -218,28 +218,26 @@ contract CreatorOwnedCollectionTest is DSTest {
         // can't try to be cute and go straight to the contract, bypassing the forwarder
         hevm.prank(walletAddress);
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), walletAddress));
-        metaMinter.mintEdition(address(edition), walletAddress);
+        metaMinter.mintEdition(edition, walletAddress);
 
         // alice has already claimed via a meta-tx, so she can't be the recipient of a claim again
         hevm.prank(address(bob));
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), address(alice)));
-        metaMinter.mintEdition(address(edition), address(alice));
+        metaMinter.mintEdition(edition, address(alice));
 
         // she also can't claim again for a 3rd party address (she's acting as the operator this time)
         hevm.prank(address(alice));
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), address(alice)));
-        metaMinter.mintEdition(address(edition), address(bob));
+        metaMinter.mintEdition(edition, address(bob));
     }
 
-    function sharedTestOnePerAddress(address _edition) internal {
-        ISingleEditionMintable edition = ISingleEditionMintable(_edition);
-
+    function sharedTestOnePerAddress(IEditionSingleMintable edition) internal {
         // and anybody can mint
         hevm.prank(address(alice));
-        minter.mintEdition(address(edition), address(alice));
+        minter.mintEdition(edition, address(alice));
 
         hevm.prank(address(bob));
-        minter.mintEdition(address(edition), address(bob));
+        minter.mintEdition(edition, address(bob));
 
         // but only via the contract (unless you're the owner of the edition)
         hevm.prank(address(alice));
@@ -249,7 +247,7 @@ contract CreatorOwnedCollectionTest is DSTest {
         // and only once per address
         hevm.prank(address(alice));
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), address(alice)));
-        minter.mintEdition(address(edition), address(alice));
+        minter.mintEdition(edition, address(alice));
     }
 
     function getDomainSeparator(string memory name, string memory version)
@@ -297,7 +295,7 @@ contract CreatorOwnedCollectionTest is DSTest {
     }
 
     function createDummyEdition(address _minter)
-        internal returns (ISingleEditionMintable edition)
+        internal returns (SingleEditionMintable edition)
     {
         uint newId = metaEditionCreator.createEdition(
             "The Collection",
@@ -312,6 +310,6 @@ contract CreatorOwnedCollectionTest is DSTest {
 
             _minter);
 
-        edition = metaEditionCreator.getEditionAtId(newId);
+        edition = SingleEditionMintable(address(metaEditionCreator.getEditionAtId(newId)));
     }
 }

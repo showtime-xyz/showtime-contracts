@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.7;
 
-import "./Hevm.sol";
-import "./TestToken.sol";
-import "../../lib/ds-test/src/test.sol";
-import "../ShowtimeMT.sol";
-import "../ShowtimeV1Market.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
+import { ShowtimeMT } from "src/ShowtimeMT.sol";
+import { ShowtimeV1Market, IERC20 } from "src/ShowtimeV1Market.sol";
+
+import { DSTest } from "ds-test/test.sol";
+import { Hevm } from "test/Hevm.sol";
+import { TestToken } from "test/TestToken.sol";
 
 contract User is ERC1155Holder {}
 

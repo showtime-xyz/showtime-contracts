@@ -5,8 +5,10 @@ import {IEditionSingleMintable} from "@zoralabs/nft-editions-contracts/contracts
 
 import { BaseRelayRecipient } from "../utils/BaseRelayRecipient.sol";
 
-contract OnePerAddressEditionMinter is BaseRelayRecipient {
-    error AlreadyMinted(address collection, address operator);
+import { IEditionMinter } from "./interfaces/IEditionMinter.sol";
+
+contract OnePerAddressEditionMinter is BaseRelayRecipient, IEditionMinter {
+    error AlreadyMinted(IEditionSingleMintable collection, address operator);
 
     mapping(bytes32 => bool) minted;
 
@@ -14,17 +16,17 @@ contract OnePerAddressEditionMinter is BaseRelayRecipient {
         trustedForwarder = _trustedForwarder;
     }
 
-    function mintEdition(address collection, address _to) external {
+    function mintEdition(IEditionSingleMintable collection, address _to) override external {
         address operator = _msgSender();
         recordMint(collection, operator);
         if (operator != _to) {
             recordMint(collection, _to);
         }
 
-        IEditionSingleMintable(collection).mintEdition(_to);
+        collection.mintEdition(_to);
     }
 
-    function recordMint(address collection, address minter) internal {
+    function recordMint(IEditionSingleMintable collection, address minter) internal {
         bytes32 _mintId = mintId(collection, minter);
 
         if (minted[_mintId]) {
@@ -34,11 +36,11 @@ contract OnePerAddressEditionMinter is BaseRelayRecipient {
         minted[_mintId] = true;
     }
 
-    function mintId(address collection, address operator) public pure returns (bytes32) {
+    function mintId(IEditionSingleMintable collection, address operator) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(collection, operator));
     }
 
-    function hasMinted(address collection, address operator) public view returns (bool) {
+    function hasMinted(IEditionSingleMintable collection, address operator) public view returns (bool) {
         return minted[mintId(collection, operator)];
     }
 }
