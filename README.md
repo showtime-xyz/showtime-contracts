@@ -2,45 +2,25 @@
 
 This repository contains the Solidity Smart Contracts for the Showtime NFT and its Marketplace.
 
-[![Truffle tests](https://github.com/tryshowtime/nonceblox-showtime-contracts/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tryshowtime/nonceblox-showtime-contracts/actions/workflows/ci.yml)
+[![Foundry tests](https://github.com/showtime-xyz/smart-contracts-private/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/showtime-xyz/smart-contracts-private/actions/workflows/ci.yml)
 
 ## Design
 
 ### ShowtimeMT.sol
 
-`ShowtimeMT` is the NFT contract used on the Showtime platform, it is an ERC1955 that implements ERC2981 royalties.
+`ShowtimeMT` is the NFT contract used on the Showtime platform, it is an ERC1155 that implements ERC2981 royalties.
 
-It is deployed at the following addresses:
-
--   [https://mumbai.polygonscan.com/address/0x09F3a26302e1c45f0d78Be5D592f52b6fca43811](https://mumbai.polygonscan.com/address/0x09F3a26302e1c45f0d78Be5D592f52b6fca43811)
-
--   [https://polygonscan.com/address/0x8a13628dd5d600ca1e8bf9dbc685b735f615cb90](https://polygonscan.com/address/0x8a13628dd5d600ca1e8bf9dbc685b735f615cb90)
-
-The Polygon mainnet deployment is the one that is currently in use by the showtime.io app.
-
-It has 3 admin addresses on Polygon mainnet:
-
--   0xD3e9D60e4E4De615124D5239219F32946d10151D (Alex Masmej)
--   0xE3fAC288a27fBdF947C234F39d6E45FB12807192 (Alex Masmej)
--   0xfa6E0aDDF68267b8b6fF2dA55Ce01a53Fad6D8e2 (Alex Kilkka)
-
-Admin addresses can set the trusted forwarder and enable or disable minting (for specific addresses and for everyone).
-
-The owner has been set to 0x0C7f6405Bf7299A9EBDcCFD6841feaC6c91e5541 (?)
-
-It uses 0x86C80a8aa58e0A4fa09A69624c31Ab2a6CAD56b8 as the trusted forwarder for meta transactions, which corresponds to the [BiconomyForwarder](https://docs.biconomy.io/misc/contract-addresses). Meta-transactions enable gas-less transactions (from the end user's point of view):
+It uses [BiconomyForwarder](https://docs.biconomy.io/misc/contract-addresses) (`0x86C80a8aa58e0A4fa09A69624c31Ab2a6CAD56b8`) as the trusted forwarder for EIP-2771 meta-transactions. Meta-transactions enable gas-less transactions (from the end user's point of view):
 
 -   a user wants to create an NFT
 -   the app can prompt users to sign a message with the appropriate parameters
 -   this message is sent to the Biconomy API
 -   the `BiconomyForwarder` contract then interacts with `ShowtimeMT` on behalf of the end user
--   this is why `ShowtimeMT` needs to rely on `BaseRelayRecipient._msgSender()` to get the address of the end user, `msg.sender` would return the address of the `BiconomyForwarder`
-
-⚠️ this method actually trusts `BiconomyForwarder` to send the correct address as the last bytes of `msg.data`, it does not verify
+-   `ShowtimeMT` calls `BaseRelayRecipient._msgSender()` to get the address of the end user, `msg.sender` would return the address of the `BiconomyForwarder`
 
 ### ShowtimeV1Market.sol
 
-`ShowtimeV1Market` is the marketplace for Showtime NFTs. It is currently being tested and is not deployed on Polygon mainnet.
+`ShowtimeV1Market` is the marketplace for Showtime NFTs.
 
 Users can either interact with the contract directly or through meta-transactions using the `BiconomyForwarder` method described above.
 
@@ -64,34 +44,17 @@ Some limitations:
 -   it only supports transactions in a configurable list of ERC20 tokens, no native currency
 -   it only supports buying and selling at a fixed price, no auctions
 -   listings don't have an expiration date
--   if we ever migrate to another NFT contract (or add support for more NFT contracts), we will need to migrate to a new marketplace
 -   the owner has no control over NFTs or any other balance owned by the `ShowtimeV1Market` contract
 
-## Prerequisites
-
--   git
--   npm
--   truffle
--   Ganache (optional)
 
 ## Getting started
 
 -   Clone the repository
 
-```sh
-git clone https://github.com/nonceblox/showtime-contracts
-```
-
--   Navigate to `showtime-contracts` directory
-
-```sh
-cd showtime-contracts
-```
-
 -   Install dependencies
 
 ```sh
-npm install
+yarn install
 ```
 
 ### Configure project
@@ -102,33 +65,30 @@ npm install
 cp .example.env .env
 ```
 
--   Add the matic vigil app ID & deployer private key to the `.env`
+-   Configure the appropriate values in `.env`
 
 ## Compile
 
 ```
-npx truffle compile --all
+forge build
 ```
 
 ## Run tests
 
--   Start ganache
--   Run Tests
-
 ```sh
-npm test
+forge test
 ```
 
 -   Run a single test file
 
 ```sh
-npm test test/ShowtimeV1Market.test.js
+forge test --match-contract ShowtimeV1MarketTest
 ```
 
 -   Run a single test:
 
-```js
-it.only("does a thing", ...);
+```sh
+forge test --match-test testCannotBuyWhenPaused
 ```
 
 ## Deploy smart contracts with hardhat
@@ -206,7 +166,7 @@ ForwardRequest(
 Registered domain:
 - name: showtime.io
 - version: 1
-- domain hash: `0x5e5b00964aa6fad690fa48928347690e3f9a4ce056e98a45c10dd839e9aa77e7`
+- domain hash on mumbai: `0x5e5b00964aa6fad690fa48928347690e3f9a4ce056e98a45c10dd839e9aa77e7`
 
 ## Troubleshooting
 
@@ -221,10 +181,4 @@ Error: error:0308010C:digital envelope routines::unsupported
 Seems to be an issue in node v17, workaround suggested in https://github.com/Snapmaker/Luban/issues/1250 is
 
     export NODE_OPTIONS=--openssl-legacy-provider
-
-### Running a single migration file
-
-Edit the command in `package.json`, for instance to run only the `2_deploy_mt.js` migration:
-
-    truffle migrate -f 2 --to 2
 
