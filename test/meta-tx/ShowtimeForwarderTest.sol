@@ -14,61 +14,56 @@ import { ForwarderTestUtil } from "test/meta-tx/ForwarderTestUtil.sol";
 
 contract ShowtimeForwarderTest is DSTest, ForwarderTestUtil {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
+    uint256 internal constant FROM_PRIVATE_KEY = 0xbfea5ee5076b0bff4a26f7e3b5a8b8093c664a330cb7ab024f041b9ae077fa2e;
+    address internal constant FROM_ADDRESS = 0xDE5E327cE4E7c1b64A757AaB8f2E699585977a34;
+
+
+
     ShowtimeForwarder forwarder = new ShowtimeForwarder();
     TestForwarderTarget target = new TestForwarderTarget(address(forwarder));
 
-    function setUp() public {}
-
-    function testForward() public {
-        // // verifying contract: 0xce71065d4017f316ec606fe4422e11eb2c47c246
-        // emit log("verifying contract:");
-        // emit log_address(address(forwarder));
-
-        // // target address: 0x185a4dc360ce69bdccee33b3784b0282f7961aea
-        // emit log("target address:");
-        // emit log_address(address(target));
-
-        // emit log("chain id:");
-        // emit log_uint(getChainId());
-
-        uint nonce = forwarder.getNonce(0xDE5E327cE4E7c1b64A757AaB8f2E699585977a34);
-        // emit log("forwarder.getNonce(from):");
-        // emit log_uint(nonce);
-
-        bytes memory data = abi.encodeWithSignature("emitMessage(string)", "hello");
-        // emit log("encoded function call data:");
-        // emit log_bytes(data);
-
-        // the domain separator depends on the address of the forwarder and the chain id, update accordingly
+    function setUp() public {
+        forwarder = new ShowtimeForwarder();
         forwarder.registerDomainSeparator("showtime.io", "1");
-        bytes32 domainSeparator = getDomainSeparator(forwarder, "showtime.io", "1");
+    }
 
-        // keccak256("ForwardRequest(address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data,uint256 validUntilTime)")
-        bytes32 requestTypeHash = FORWARDREQUEST_TYPE_HASH;
-
+    function testForwardFunctionCall() public {
         ShowtimeForwarder.ForwardRequest memory req;
-
-        // Private Key: bfea5ee5076b0bff4a26f7e3b5a8b8093c664a330cb7ab024f041b9ae077fa2e
-        req.from = 0xDE5E327cE4E7c1b64A757AaB8f2E699585977a34;
+        req.from = FROM_ADDRESS;
         req.to = address(target);
         req.value = 0;
         req.gas = 10000;
-        req.nonce = nonce;
-        req.data = data;
+        req.nonce = forwarder.getNonce(req.from);
+        req.data = abi.encodeWithSignature("emitMessage(string)", "hello");
         req.validUntilTime = 7697467249; // some arbitrary time in the year 2213
 
-        bytes memory suffixData = "";
-
-        // generate with `node scripts/sign_eip712.mjs`
-        bytes memory sig = hex"317b4500265b302c2dbf937bbe7e5c31531aadbd8e6997bf00e234bd5c9b92fb5a3f1d8706dddc09d7e5b1b84bc28056d2c305e21427613a31f07381424b1d9c1c";
-
-        (bool success, ) = forwarder.execute(req, domainSeparator, requestTypeHash, suffixData, sig);
+        (bool success, ) = signAndExecute(forwarder, FROM_PRIVATE_KEY, req, /* expectedError */ "");
         assertTrue(success);
 
         // when we replay the call
         // then it fails (because the nonce has incremented so we need to generate and sign a new request)
-        hevm.expectRevert("FWD: nonce mismatch");
-        forwarder.execute(req, domainSeparator, requestTypeHash, suffixData, sig);
+        signAndExecute(forwarder, FROM_PRIVATE_KEY, req, "FWD: nonce mismatch");
+    }
+
+    function testForwardTransfer() public {
+        hevm.deal(address(this), 1 ether);
+
+        // note: we can't call the receive() function of the target contract,
+        // because by definition of the forwarder we can't call the target with empty calldata
+
+        ShowtimeForwarder.ForwardRequest memory req;
+        req.from = FROM_ADDRESS;
+        req.to = address(target);
+        req.value = 0.05 ether;
+        req.gas = 10000;
+        req.nonce = forwarder.getNonce(req.from);
+        req.data = abi.encodeWithSignature("mustReceiveEth(uint256)", req.value);
+        req.validUntilTime = 7697467249; // some arbitrary time in the year 2213
+
+        uint256 balanceBefore = address(target).balance;
+        (bool success, ) = signAndExecute(forwarder, FROM_PRIVATE_KEY, req, /* expectedError */ "");
+        assertTrue(success);
+        assertEq(address(target).balance, balanceBefore + req.value);
     }
 
     function getChainId() internal view returns (uint256 chainId) {

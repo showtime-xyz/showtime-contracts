@@ -51,7 +51,7 @@ contract ForwarderTestUtil is DSTest {
             hevm.expectRevert(expectedError);
         }
 
-        (success, ret) = forwarder.execute(
+        (success, ret) = forwarder.execute{value: req.value}(
             req,
             domainSeparator,
             FORWARDREQUEST_TYPE_HASH,
