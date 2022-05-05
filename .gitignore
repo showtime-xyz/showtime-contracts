@@ -18,6 +18,9 @@
 out/
 .vscode/
 
+# can generate these with `yarn typechain` -- let's not commit them for now
+src/types/
+
 # files
 *.env
 *.log
