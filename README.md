@@ -73,6 +73,12 @@ cp .example.env .env
 forge build
 ```
 
+-   Lint with
+
+```sh
+yarn lint:sol
+```
+
 ## Run tests
 
 ```sh
