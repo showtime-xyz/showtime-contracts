@@ -6,8 +6,9 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 contract TimeCop {
     event DeadlineSet(address collection, uint256 deadline);
 
+    error InvalidDeadline(uint256 delta);
     error NotCollectionOwner();
-    error DeadlineTooBig(uint256 delta);
+    error NullAddress();
 
     uint256 public immutable MAX_DURATION_SECONDS;
 
@@ -24,12 +25,16 @@ contract TimeCop {
     /// @param collection The address to set the deadline for
     /// @param timeLimitSeconds a duration in seconds that will be used to set the deadline
     function setTimeLimit(address collection, uint256 timeLimitSeconds) external {
-        if (msg.sender != Ownable(collection).owner()) {
-            revert NotCollectionOwner();
+        if (timeLimitSeconds == 0) {
+            revert InvalidDeadline(timeLimitSeconds);
         }
 
         if (MAX_DURATION_SECONDS > 0 && timeLimitSeconds > MAX_DURATION_SECONDS) {
-            revert DeadlineTooBig(timeLimitSeconds);
+            revert InvalidDeadline(timeLimitSeconds);
+        }
+
+        if (msg.sender != Ownable(collection).owner()) {
+            revert NotCollectionOwner();
         }
 
         uint256 deadline = block.timestamp + timeLimitSeconds;
