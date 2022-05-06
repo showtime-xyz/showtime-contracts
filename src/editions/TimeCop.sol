@@ -15,7 +15,7 @@ contract TimeCop {
 
     /// @param _maxDurationSeconds maximum time limit
     /// @dev _maxDurationSeconds can be set to 0 to have no maximum time limit
-    constructor (uint256 _maxDurationSeconds) {
+    constructor(uint256 _maxDurationSeconds) {
         MAX_DURATION_SECONDS = _maxDurationSeconds;
     }
 

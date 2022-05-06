@@ -7,8 +7,9 @@ import { SharedNFTLogic } from "@zoralabs/nft-editions-contracts/contracts/Share
 import { SingleEditionMintable } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintable.sol";
 import { SingleEditionMintableCreator } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintableCreator.sol";
 
-import { OnePerAddressEditionMinter, IEditionSingleMintable } from "src/editions/OnePerAddressEditionMinter.sol";
+import { MetaEditionMinter, IEditionSingleMintable } from "src/editions/MetaEditionMinter.sol";
 import { MetaSingleEditionMintableCreator } from "src/editions/MetaSingleEditionMintableCreator.sol";
+import { TimeCop } from "src/editions/TimeCop.sol";
 import { ShowtimeForwarder } from "src/meta-tx/ShowtimeForwarder.sol";
 
 import { DSTest } from "ds-test/test.sol";
@@ -29,7 +30,8 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
 
     SingleEditionMintableCreator internal editionCreator;
     MetaSingleEditionMintableCreator internal metaEditionCreator;
-    OnePerAddressEditionMinter internal minter;
+    TimeCop internal timeCop;
+
     ShowtimeForwarder internal forwarder;
 
     function setUp() public {
@@ -38,8 +40,12 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
         editionCreator = new SingleEditionMintableCreator(address(editionImplementation));
 
         forwarder = new ShowtimeForwarder();
-        metaEditionCreator = new MetaSingleEditionMintableCreator(address(forwarder), address(editionCreator));
-        minter = new OnePerAddressEditionMinter(address(0), 0);
+        metaEditionCreator = new MetaSingleEditionMintableCreator(
+            address(forwarder),
+            address(editionCreator),
+            address(new MetaEditionMinter()),
+            address(new TimeCop(31 days))
+        );
 
         forwarder.registerDomainSeparator("showtime.io", "1");
     }
@@ -90,43 +96,17 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
         edition.mintEdition(address(charlieTheCreator));
     }
 
-    function testCreateMintableCollectionViaOnePerAddressContract() public {
-        // when charlieTheCreator calls `createEdition`
-        hevm.prank(address(charlieTheCreator));
-        uint newId = editionCreator.createEdition(
-            "The Collection",
-            "DROP",
-            "The best collection in the world",
-            "",     // _animationUrl
-            0x0,    // _animationHash
-            "ipfs://SOME_IMAGE_CID",
-            keccak256("this is not really used, is it?"),
-            0,      // _editionSize, 0 means unlimited
-            1000);  // _royaltyBPS
-
-        SingleEditionMintable edition = editionCreator.getEditionAtId(newId);
-        assertEq(edition.owner(), address(charlieTheCreator));
-        assertEq(edition.name(), "The Collection");
-
-        // when charlieTheCreator opens up public minting
-        hevm.prank(address(charlieTheCreator));
-        edition.setApprovedMinter(address(minter), true);
-
-        // then anybody can mint once via the minter contract
-        sharedTestOnePerAddress(edition);
-    }
-
     function testCreateMintableCollectionViaMetaFactory() public {
         // when charlieTheCreator calls `createEdition`
         hevm.prank(address(charlieTheCreator));
-        SingleEditionMintable edition = createDummyEdition(address(minter));
+        (SingleEditionMintable edition, MetaEditionMinter minter) = createDummyEdition();
 
         // then we get a properly configured collection
         assertEq(edition.owner(), address(charlieTheCreator));
         assertEq(edition.name(), "The Collection");
 
         // and anybody can mint once via the minter contract
-        sharedTestOnePerAddress(edition);
+        sharedTestOnePerAddress(edition, minter);
     }
 
     function testCreateMintableCollectionViaMetaTransaction() public {
@@ -142,7 +122,7 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
             gas: 1000000,
             nonce: forwarder.getNonce(walletAddress),
             data: abi.encodeWithSignature(
-                "createEdition(string,string,string,string,bytes32,string,bytes32,uint256,uint256,address)",
+                "createEdition(string,string,string,string,bytes32,string,bytes32,uint256,uint256,uint256)",
                 "The Collection",
                 "DROP",
                 "The best collection in the world",
@@ -152,7 +132,7 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
                 keccak256("this is not really used, is it?"),
                 0,      // _editionSize, 0 means unlimited
                 1000,   // _royaltyBPS
-                address(minter)
+                2 days  // _claimWindowDurationSeconds
             ),
             validUntilTime: block.timestamp + 1 minutes
         });
@@ -161,24 +141,22 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
         (bool success, bytes memory ret) = signAndExecute(forwarder, walletPrivateKey, req, "");
         assertTrue(success);
 
-        uint newId = uint(bytes32(ret));
+        address editionAddress = address(uint160(toUint256(ret, 0)));
+        address minterAddress =  address(uint160(toUint256(ret, 32)));
 
         // then we get a properly configured collection
-        SingleEditionMintable edition = SingleEditionMintable(address(metaEditionCreator.getEditionAtId(newId)));
+        SingleEditionMintable edition = SingleEditionMintable(editionAddress);
         assertEq(edition.owner(), walletAddress); // the owner is the address of the signer of the meta-tx
         assertEq(edition.name(), "The Collection");
 
         // and anybody can mint once via the minter contract
-        sharedTestOnePerAddress(edition);
+        sharedTestOnePerAddress(edition, MetaEditionMinter(minterAddress));
     }
 
     function testClaimOnePerAddressViaMetaTransaction() public {
-        // setup
-        OnePerAddressEditionMinter metaMinter = new OnePerAddressEditionMinter(address(forwarder), 0);
-
         // when charlieTheCreator calls `createEdition` (via a direct tx)
         hevm.prank(address(charlieTheCreator));
-        SingleEditionMintable edition = createDummyEdition(address(metaMinter));
+        (SingleEditionMintable edition, MetaEditionMinter metaMinter) = createDummyEdition();
 
         uint256 walletPrivateKey = 0xbfea5ee5076b0bff4a26f7e3b5a8b8093c664a330cb7ab024f041b9ae077fa2e;
         address walletAddress = hevm.addr(walletPrivateKey);
@@ -191,8 +169,7 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
             gas: 200000,
             nonce: forwarder.getNonce(walletAddress),
             data: abi.encodeWithSignature(
-                "mintEdition(address,address)",
-                address(edition),
+                "mintEdition(address)",
                 address(alice)    // alice is the recipient of the claim
             ),
             validUntilTime: block.timestamp + 1 minutes
@@ -218,26 +195,26 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
         // can't try to be cute and go straight to the contract, bypassing the forwarder
         hevm.prank(walletAddress);
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), walletAddress));
-        metaMinter.mintEdition(edition, walletAddress);
+        metaMinter.mintEdition(walletAddress);
 
         // alice has already claimed via a meta-tx, so she can't be the recipient of a claim again
         hevm.prank(address(bob));
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), address(alice)));
-        metaMinter.mintEdition(edition, address(alice));
+        metaMinter.mintEdition(address(alice));
 
         // she also can't claim again for a 3rd party address (she's acting as the operator this time)
         hevm.prank(address(alice));
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), address(alice)));
-        metaMinter.mintEdition(edition, address(bob));
+        metaMinter.mintEdition(address(bob));
     }
 
-    function sharedTestOnePerAddress(IEditionSingleMintable edition) internal {
+    function sharedTestOnePerAddress(IEditionSingleMintable edition, MetaEditionMinter minter) internal {
         // and anybody can mint
         hevm.prank(address(alice));
-        minter.mintEdition(edition, address(alice));
+        minter.mintEdition(address(alice));
 
         hevm.prank(address(bob));
-        minter.mintEdition(edition, address(bob));
+        minter.mintEdition(address(bob));
 
         // but only via the contract (unless you're the owner of the edition)
         hevm.prank(address(alice));
@@ -247,13 +224,13 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
         // and only once per address
         hevm.prank(address(alice));
         hevm.expectRevert(abi.encodeWithSignature("AlreadyMinted(address,address)", address(edition), address(alice)));
-        minter.mintEdition(edition, address(alice));
+        minter.mintEdition(address(alice));
     }
 
-    function createDummyEdition(address _minter)
-        internal returns (SingleEditionMintable edition)
+    function createDummyEdition()
+        internal returns (SingleEditionMintable edition, MetaEditionMinter metaMinter)
     {
-        uint newId = metaEditionCreator.createEdition(
+        (address editionAddress, address minterAddress) = metaEditionCreator.createEdition(
             "The Collection",
             "DROP",
             "The best collection in the world",
@@ -263,9 +240,10 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
             keccak256("this is not really used, is it?"),
             0,      // _editionSize, 0 means unlimited
             1000,   // _royaltyBPS
+            2 hours // _claimWindowDurationSeconds
+        );
 
-            _minter);
-
-        edition = SingleEditionMintable(address(metaEditionCreator.getEditionAtId(newId)));
+        edition = SingleEditionMintable(editionAddress);
+        metaMinter = MetaEditionMinter(minterAddress);
     }
 }

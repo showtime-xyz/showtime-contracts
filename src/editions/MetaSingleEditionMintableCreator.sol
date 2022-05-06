@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
-import { IERC721Metadata } from "@openzeppelin/contracts/interfaces/IERC721Metadata.sol";
+import { ClonesUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+import { IEditionSingleMintable } from "@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol";
 
-
-import { BaseRelayRecipient } from "../utils/BaseRelayRecipient.sol";
+import { BaseRelayRecipient } from "src/utils/BaseRelayRecipient.sol";
+import { MetaEditionMinter } from "./MetaEditionMinter.sol";
+import { TimeCop } from "./TimeCop.sol";
 
 interface ISingleEditionMintableCreator {
     /// Creates a new edition contract as a factory with a deterministic address
@@ -34,27 +35,26 @@ interface ISingleEditionMintableCreator {
     /// Get edition given the created ID
     /// @param editionId id of edition to get contract for
     /// @return SingleEditionMintable Edition NFT contract
-    function getEditionAtId(uint256 editionId) external view returns (ISingleEditionMintable);
+    function getEditionAtId(uint256 editionId) external view returns (IEditionSingleMintable);
 }
 
-interface ISingleEditionMintable is IERC721Metadata, IERC2981 {
-  function mintEdition(address to) external returns (uint256);
-  function mintEditions(address[] memory to) external returns (uint256);
-  function numberCanMint() external view returns (uint256);
-  function owner() external view returns (address);
-  function transferOwnership(address newOwner) external;
-  function setApprovedMinter(address minter, bool allowed) external;
+interface _IEditionSingleMintable {
+    function transferOwnership(address newOwner) external;
+    function setApprovedMinter(address minter, bool allowed) external;
 }
 
 contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
     ISingleEditionMintableCreator immutable editionCreator;
+    MetaEditionMinter immutable minterImplementation;
+    TimeCop immutable timeCop;
 
-    constructor(address _trustedForwarder, address _editionCreator) {
+    constructor(address _trustedForwarder, address _editionCreator, address _minterImplementation, address _timeCop) {
         trustedForwarder = _trustedForwarder;
         editionCreator = ISingleEditionMintableCreator(_editionCreator);
+        minterImplementation = MetaEditionMinter(_minterImplementation);
+        timeCop = TimeCop(_timeCop);
     }
 
-    /// @param minter the address of the minter contract to use for this edition, or 0 for an open mint
     function createEdition(
         // ISingleEditionMintableCreator parameters
         string memory _name,
@@ -68,23 +68,46 @@ contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
         uint256 _royaltyBPS,
 
         // additional parameters
-        address minter
-    ) external returns (uint256) {
+        uint256 _claimWindowDurationSeconds
+    ) external returns (address, address) {
         // deploy the new contract
         uint newId = editionCreator.createEdition(_name, _symbol, _description, _animationUrl, _animationHash,
             _imageUrl, _imageHash, _editionSize, _royaltyBPS);
 
         // configure it while we still own it
-        ISingleEditionMintable edition = editionCreator.getEditionAtId(newId);
-        edition.setApprovedMinter(minter, true);
+        IEditionSingleMintable edition = editionCreator.getEditionAtId(newId);
+
+        // deploy the minter for this collection
+        MetaEditionMinter newMinter = MetaEditionMinter(ClonesUpgradeable.cloneDeterministic(
+            address(minterImplementation),
+            bytes32(uint256(uint160(address(edition))))
+        ));
+
+        newMinter.initialize(
+            trustedForwarder,
+            edition,
+            timeCop,
+            _claimWindowDurationSeconds
+        );
+
+        timeCop.setTimeLimit(address(edition), _claimWindowDurationSeconds);
+
+        _IEditionSingleMintable(address(edition)).setApprovedMinter(address(newMinter), true);
 
         // and finally transfer ownership of the configured contract to the actual creator
-        edition.transferOwnership(_msgSender());
+        _IEditionSingleMintable(address(edition)).transferOwnership(_msgSender());
 
-        return newId;
+        return (address(edition), address(newMinter));
     }
 
-    function getEditionAtId(uint256 editionId) external view returns (ISingleEditionMintable) {
+    function getEditionAtId(uint256 editionId) external view returns (IEditionSingleMintable) {
         return editionCreator.getEditionAtId(editionId);
+    }
+
+    function getMinterForEdition(address edition) public returns (address) {
+        return ClonesUpgradeable.predictDeterministicAddress(
+            address(minterImplementation),
+            bytes32(uint256(uint160(edition)))
+        );
     }
 }
