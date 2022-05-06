@@ -39,7 +39,7 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
 
         forwarder = new ShowtimeForwarder();
         metaEditionCreator = new MetaSingleEditionMintableCreator(address(forwarder), address(editionCreator));
-        minter = new OnePerAddressEditionMinter(address(0));
+        minter = new OnePerAddressEditionMinter(address(0), 0);
 
         forwarder.registerDomainSeparator("showtime.io", "1");
     }
@@ -174,7 +174,7 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
 
     function testClaimOnePerAddressViaMetaTransaction() public {
         // setup
-        OnePerAddressEditionMinter metaMinter = new OnePerAddressEditionMinter(address(forwarder));
+        OnePerAddressEditionMinter metaMinter = new OnePerAddressEditionMinter(address(forwarder), 0);
 
         // when charlieTheCreator calls `createEdition` (via a direct tx)
         hevm.prank(address(charlieTheCreator));

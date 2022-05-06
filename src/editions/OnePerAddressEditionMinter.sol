@@ -6,17 +6,23 @@ import {IEditionSingleMintable} from "@zoralabs/nft-editions-contracts/contracts
 import { BaseRelayRecipient } from "../utils/BaseRelayRecipient.sol";
 
 import { IEditionMinter } from "./interfaces/IEditionMinter.sol";
+import { TimeCop } from "./TimeCop.sol";
 
-contract OnePerAddressEditionMinter is BaseRelayRecipient, IEditionMinter {
+contract OnePerAddressEditionMinter is BaseRelayRecipient, TimeCop, IEditionMinter {
     error AlreadyMinted(IEditionSingleMintable collection, address operator);
+    error TimeLimitReached(IEditionSingleMintable collection);
 
-    mapping(bytes32 => bool) minted;
+    mapping(IEditionSingleMintable => mapping(address => bool)) minted;
 
-    constructor(address _trustedForwarder) {
+    constructor(address _trustedForwarder, uint256 _maxDurationSeconds) TimeCop(_maxDurationSeconds) {
         trustedForwarder = _trustedForwarder;
     }
 
     function mintEdition(IEditionSingleMintable collection, address _to) override external {
+        if (timeLimitReached(address(collection))) {
+            revert TimeLimitReached(collection);
+        }
+
         address operator = _msgSender();
         recordMint(collection, operator);
         if (operator != _to) {
@@ -27,20 +33,25 @@ contract OnePerAddressEditionMinter is BaseRelayRecipient, IEditionMinter {
     }
 
     function recordMint(IEditionSingleMintable collection, address minter) internal {
-        bytes32 _mintId = mintId(collection, minter);
-
-        if (minted[_mintId]) {
+        if (hasMinted(collection, minter)) {
             revert AlreadyMinted(collection, minter);
         }
 
-        minted[_mintId] = true;
+        minted[collection][minter] = true;
     }
 
-    function mintId(IEditionSingleMintable collection, address operator) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(collection, operator));
+    function hasMinted(IEditionSingleMintable collection, address minter) public view returns (bool) {
+        return minted[collection][minter];
     }
 
-    function hasMinted(IEditionSingleMintable collection, address operator) public view returns (bool) {
-        return minted[mintId(collection, operator)];
+    /// @notice deletes the record of who minted for that collection if we are past the claim window
+    /// @notice no-op if there was no time limit set or it has not expired yet
+    function purgeStorage(IEditionSingleMintable collection) external returns (bool expired) {
+        expired = timeLimitReached(address(collection));
+        if (!expired) {
+            return false;
+        }
+
+        // TODO: do the thing
     }
 }
