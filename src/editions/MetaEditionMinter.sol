@@ -28,8 +28,7 @@ contract MetaEditionMinter is BaseRelayRecipient, IEditionMinter, Initializable 
     function initialize(
         address _trustedForwarder,
         IEditionSingleMintable _collection,
-        TimeCop _timeCop,
-        uint256 _timeLimitDurationSeconds
+        TimeCop _timeCop
     ) external initializer {
         if (address(_collection) == address(0)) {
             revert NullAddress();

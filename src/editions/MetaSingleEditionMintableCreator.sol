@@ -86,8 +86,7 @@ contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
         newMinter.initialize(
             trustedForwarder,
             edition,
-            timeCop,
-            _claimWindowDurationSeconds
+            timeCop
         );
 
         timeCop.setTimeLimit(address(edition), _claimWindowDurationSeconds);
@@ -104,7 +103,7 @@ contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
         return editionCreator.getEditionAtId(editionId);
     }
 
-    function getMinterForEdition(address edition) public returns (address) {
+    function getMinterForEdition(address edition) public view returns (address) {
         return ClonesUpgradeable.predictDeterministicAddress(
             address(minterImplementation),
             bytes32(uint256(uint160(edition)))
