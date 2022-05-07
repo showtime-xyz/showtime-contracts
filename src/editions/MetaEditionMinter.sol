@@ -10,9 +10,12 @@ import { IEditionMinter } from "./interfaces/IEditionMinter.sol";
 import { TimeCop } from "./TimeCop.sol";
 
 contract MetaEditionMinter is BaseRelayRecipient, IEditionMinter, Initializable {
+    event Destroyed(MetaEditionMinter minter, IEditionSingleMintable collection);
+
     error NullAddress();
     error AlreadyMinted(IEditionSingleMintable collection, address operator);
     error TimeLimitReached(IEditionSingleMintable collection);
+    error TimeLimitNotReached(IEditionSingleMintable collection);
 
     /// @dev these would be immutable if they were not set in the initializer
     IEditionSingleMintable public collection;
@@ -65,16 +68,18 @@ contract MetaEditionMinter is BaseRelayRecipient, IEditionMinter, Initializable 
 
     /// @notice deletes the record of who minted for that collection if we are past the claim window
     /// @notice no-op if there was no time limit set or it has not expired yet
-    function purge() external returns (bool expired) {
+    function purge() external {
         // collection is not set in the implementation contract
         if (address(collection) == address(0)) {
-            return false;
+            revert NullAddress();
         }
 
-        expired = timeCop.timeLimitReached(address(collection));
+        bool expired = timeCop.timeLimitReached(address(collection));
         if (!expired) {
-            return false;
+            revert TimeLimitNotReached(collection);
         }
+
+        emit Destroyed(this, collection);
 
         selfdestruct(payable(collection.owner()));
     }

@@ -20,6 +20,7 @@ contract User {}
 
 contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
     event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+    event Destroyed(MetaEditionMinter minter, IEditionSingleMintable collection);
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
@@ -30,6 +31,7 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
 
     SingleEditionMintableCreator internal editionCreator;
     MetaSingleEditionMintableCreator internal metaEditionCreator;
+    MetaEditionMinter internal minterImplementation;
     TimeCop internal timeCop;
 
     ShowtimeForwarder internal forwarder;
@@ -38,12 +40,12 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
         SharedNFTLogic sharedNFTLogic = new SharedNFTLogic();
         SingleEditionMintable editionImplementation = new SingleEditionMintable(sharedNFTLogic);
         editionCreator = new SingleEditionMintableCreator(address(editionImplementation));
-
+        minterImplementation = new MetaEditionMinter();
         forwarder = new ShowtimeForwarder();
         metaEditionCreator = new MetaSingleEditionMintableCreator(
             address(forwarder),
             address(editionCreator),
-            address(new MetaEditionMinter()),
+            address(minterImplementation),
             address(new TimeCop(31 days))
         );
 
@@ -167,11 +169,55 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
         hevm.prank(address(charlieTheCreator));
         (SingleEditionMintable edition, MetaEditionMinter minter) = createDummyEdition();
 
-        // a long time passes by
+        // and a long time passes by
         hevm.warp(block.timestamp + 500 weeks);
 
+        // then people can not claim anymore
         hevm.expectRevert(abi.encodeWithSignature("TimeLimitReached(address)", address(edition)));
         minter.mintEdition(address(alice));
+    }
+
+    function testPurgeBeforeTimeLimit() public {
+        // when charlieTheCreator calls `createEdition`
+        hevm.prank(address(charlieTheCreator));
+        (SingleEditionMintable edition, MetaEditionMinter minter) = createDummyEdition();
+
+        // and someone tries to purge right away
+        // then we get an error
+        hevm.expectRevert(abi.encodeWithSignature("TimeLimitNotReached(address)", address(edition)));
+        minter.purge();
+    }
+
+    function testPurgePastTimeLimit() public {
+        // when charlieTheCreator calls `createEdition`
+        hevm.prank(address(charlieTheCreator));
+        (SingleEditionMintable edition, MetaEditionMinter minter) = createDummyEdition();
+
+        // and a long time passes by
+        hevm.warp(block.timestamp + 500 weeks);
+
+        // then the minter can be destroyed for the greater good
+        hevm.expectEmit(true, true, true, true);
+        emit Destroyed(minter, edition);
+        minter.purge();
+
+        // minter's dead
+        hevm.prank(address(bob));
+        hevm.expectRevert(bytes(""));
+        minter.mintEdition(address(bob));
+
+        // the base implementation is intact though
+        assertEq(address(minterImplementation.collection()), address(0));
+
+        // and in fact, we can keep deploying
+        hevm.prank(address(charlieTheCreator));
+        (SingleEditionMintable freshEdition, MetaEditionMinter freshMinter) = createDummyEdition();
+
+        // and we can keep minting
+        hevm.prank(address(bob));
+        hevm.expectEmit(true, true, true, true);
+        emit Transfer(address(0), address(bob), 1);
+        freshMinter.mintEdition(address(bob));
     }
 
     function sharedTestOnePerAddress(IEditionSingleMintable edition, MetaEditionMinter minter) internal {
