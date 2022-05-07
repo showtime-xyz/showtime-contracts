@@ -54,12 +54,16 @@ contract TimeCopTest is DSTest {
 
     function testLargeTimeLimitWithNoMaxDuration(uint256 timeLimit) public {
         hevm.assume(timeLimit > MAX_DURATION_SECONDS);
+        hevm.assume(timeLimit < type(uint256).max - block.timestamp);
+
         timeCopNoMax.setTimeLimit(collection, timeLimit);
         assertEq(timeCopNoMax.timeLimits(collection) - block.timestamp, timeLimit);
     }
 
     function testLargeTimeLimitWithMaxDuration(uint256 timeLimit) public {
         hevm.assume(timeLimit > MAX_DURATION_SECONDS);
+        hevm.assume(timeLimit < type(uint256).max - block.timestamp);
+
         hevm.expectRevert(abi.encodeWithSignature(InvalidTimeLimit, timeLimit));
         timeCop.setTimeLimit(collection, timeLimit);
     }
