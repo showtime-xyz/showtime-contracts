@@ -44,11 +44,16 @@ interface _IEditionSingleMintable {
 }
 
 contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
-    ISingleEditionMintableCreator immutable editionCreator;
-    MetaEditionMinter immutable minterImplementation;
-    TimeCop immutable timeCop;
+    ISingleEditionMintableCreator public immutable editionCreator;
+    MetaEditionMinter public immutable minterImplementation;
+    TimeCop public immutable timeCop;
 
-    constructor(address _trustedForwarder, address _editionCreator, address _minterImplementation, address _timeCop) {
+    constructor(
+        address _trustedForwarder,
+        address _editionCreator,
+        address _minterImplementation,
+        address _timeCop
+    ) {
         trustedForwarder = _trustedForwarder;
         editionCreator = ISingleEditionMintableCreator(_editionCreator);
         minterImplementation = MetaEditionMinter(_minterImplementation);
@@ -66,28 +71,34 @@ contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
         bytes32 _imageHash,
         uint256 _editionSize,
         uint256 _royaltyBPS,
-
         // additional parameters
         uint256 _claimWindowDurationSeconds
     ) external returns (address, address) {
         // deploy the new contract
-        uint newId = editionCreator.createEdition(_name, _symbol, _description, _animationUrl, _animationHash,
-            _imageUrl, _imageHash, _editionSize, _royaltyBPS);
+        uint256 newId = editionCreator.createEdition(
+            _name,
+            _symbol,
+            _description,
+            _animationUrl,
+            _animationHash,
+            _imageUrl,
+            _imageHash,
+            _editionSize,
+            _royaltyBPS
+        );
 
         // configure it while we still own it
         IEditionSingleMintable edition = editionCreator.getEditionAtId(newId);
 
         // deploy the minter for this collection
-        MetaEditionMinter newMinter = MetaEditionMinter(ClonesUpgradeable.cloneDeterministic(
-            address(minterImplementation),
-            bytes32(uint256(uint160(address(edition))))
-        ));
-
-        newMinter.initialize(
-            trustedForwarder,
-            edition,
-            timeCop
+        MetaEditionMinter newMinter = MetaEditionMinter(
+            ClonesUpgradeable.cloneDeterministic(
+                address(minterImplementation),
+                bytes32(uint256(uint160(address(edition))))
+            )
         );
+
+        newMinter.initialize(trustedForwarder, edition, timeCop);
 
         timeCop.setTimeLimit(address(edition), _claimWindowDurationSeconds);
 

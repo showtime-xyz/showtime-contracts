@@ -41,7 +41,7 @@ contract MetaEditionMinter is BaseRelayRecipient, IEditionMinter, Initializable 
         collection = _collection;
     }
 
-    function mintEdition(address _to) override external {
+    function mintEdition(address _to) external override {
         if (timeCop.timeLimitReached(address(collection))) {
             revert TimeLimitReached(collection);
         }
