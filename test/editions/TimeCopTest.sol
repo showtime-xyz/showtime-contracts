@@ -15,6 +15,7 @@ contract TimeCopTest is DSTest {
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
     string internal constant InvalidTimeLimit = "InvalidTimeLimit(uint256)";
+    uint256 internal constant MAX_DURATION_SECONDS = 48 hours;
 
     address internal collection;
     TimeCop internal timeCopNoMax;
@@ -24,37 +25,43 @@ contract TimeCopTest is DSTest {
         collection = address(new Collection());
 
         timeCopNoMax = new TimeCop(0);
-        timeCop = new TimeCop(48 hours);
+        timeCop = new TimeCop(MAX_DURATION_SECONDS);
     }
 
-    function testZeroTimeLimit() public {
+    function testZeroTimeLimit(uint256 maxDuration) public {
+        TimeCop _timeCop = new TimeCop(maxDuration);
         hevm.expectRevert(abi.encodeWithSignature(InvalidTimeLimit, 0));
-        timeCopNoMax.setTimeLimit(collection, 0);
-
-        hevm.expectRevert(abi.encodeWithSignature(InvalidTimeLimit, 0));
-        timeCop.setTimeLimit(collection, 0);
+        _timeCop.setTimeLimit(collection, 0);
     }
 
-    function testValidLimitWithMaxDuration() public {
-        timeCop.setTimeLimit(collection, 2 hours);
-        assertEq(timeCop.timeLimits(collection) - block.timestamp, 2 hours);
+    function testValidLimitWithMaxDuration(uint256 timeLimit) public {
+        hevm.assume(timeLimit < MAX_DURATION_SECONDS);
+        hevm.assume(timeLimit != 0);
+
+        timeCop.setTimeLimit(collection, timeLimit);
+        assertEq(timeCop.timeLimits(collection) - block.timestamp, timeLimit);
     }
 
-    function testEventEmitted() public {
+    function testEventEmitted(uint256 timeLimit) public {
+        hevm.assume(timeLimit < MAX_DURATION_SECONDS);
+        hevm.assume(timeLimit != 0);
+
         hevm.expectEmit(true, true, true, true);
-        emit TimeLimitSet(collection, block.timestamp + 2 hours);
+        emit TimeLimitSet(collection, block.timestamp + timeLimit);
 
-        timeCop.setTimeLimit(collection, 2 hours);
+        timeCop.setTimeLimit(collection, timeLimit);
     }
 
-    function testLargeTimeLimitWithNoMaxDuration() public {
-        timeCopNoMax.setTimeLimit(collection, 500 weeks);
-        assertEq(timeCopNoMax.timeLimits(collection) - block.timestamp, 500 weeks);
+    function testLargeTimeLimitWithNoMaxDuration(uint256 timeLimit) public {
+        hevm.assume(timeLimit > MAX_DURATION_SECONDS);
+        timeCopNoMax.setTimeLimit(collection, timeLimit);
+        assertEq(timeCopNoMax.timeLimits(collection) - block.timestamp, timeLimit);
     }
 
-    function testLargeTimeLimitWithMaxDuration() public {
-        hevm.expectRevert(abi.encodeWithSignature(InvalidTimeLimit, 500 weeks));
-        timeCop.setTimeLimit(collection, 500 weeks);
+    function testLargeTimeLimitWithMaxDuration(uint256 timeLimit) public {
+        hevm.assume(timeLimit > MAX_DURATION_SECONDS);
+        hevm.expectRevert(abi.encodeWithSignature(InvalidTimeLimit, timeLimit));
+        timeCop.setTimeLimit(collection, timeLimit);
     }
 
     function testNotCollectionOwner() public {
