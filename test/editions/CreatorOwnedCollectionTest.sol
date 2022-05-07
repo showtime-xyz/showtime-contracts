@@ -162,6 +162,18 @@ contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
         metaMinter.mintEdition(address(bob));
     }
 
+    function testClaimPastTimeLimit() public {
+        // when charlieTheCreator calls `createEdition`
+        hevm.prank(address(charlieTheCreator));
+        (SingleEditionMintable edition, MetaEditionMinter minter) = createDummyEdition();
+
+        // a long time passes by
+        hevm.warp(block.timestamp + 500 weeks);
+
+        hevm.expectRevert(abi.encodeWithSignature("TimeLimitReached(address)", address(edition)));
+        minter.mintEdition(address(alice));
+    }
+
     function sharedTestOnePerAddress(IEditionSingleMintable edition, MetaEditionMinter minter) internal {
         // and anybody can mint
         hevm.prank(address(alice));
