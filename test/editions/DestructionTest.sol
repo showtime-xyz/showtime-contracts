@@ -10,6 +10,7 @@ import { Hevm } from "test/Hevm.sol";
 /// a minimal version of the MetaEditionMinter setup to let us test the cloning and destroying behavior
 
 contract Destroyable is Initializable {
+    error CanNotDestroyBaseImpl();
     event SelfDestructed(address);
     uint256 public value;
 
@@ -30,6 +31,8 @@ contract Destroyable is Initializable {
         if (isProxy()) {
             emit SelfDestructed(address(this));
             selfdestruct(payable(msg.sender));
+        } else {
+            revert CanNotDestroyBaseImpl();
         }
     }
 }
@@ -54,7 +57,7 @@ contract DestructionTest is DSTest {
     DestroyableFactory internal factory = new DestroyableFactory();
     Destroyable clone = factory.newDestroyable();
 
-    function testDestruction() public {
+    function testDestroyingClone() public {
         assertEq(clone.value(), 1);
         assertTrue(clone.isProxy());
         assertTrue(!factory.BASE_CONTRACT().isProxy());
@@ -63,5 +66,12 @@ contract DestructionTest is DSTest {
 
         // this stays at 45 for some reason
         // assertEq(address(clone).code.length, 0);
+    }
+
+    function testDestroyingBase() public {
+        Destroyable base = factory.BASE_CONTRACT();
+
+        hevm.expectRevert(abi.encodeWithSignature("CanNotDestroyBaseImpl()"));
+        base.purge();
     }
 }
