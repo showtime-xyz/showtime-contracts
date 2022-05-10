@@ -4,7 +4,7 @@
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 ds-test/=lib/ds-test/src/
 base64-sol/=lib/base64/
-gsn/=lib/gsn/packages/contracts/src/
 
+lib/=lib/
 src/=src/
 test/=test/

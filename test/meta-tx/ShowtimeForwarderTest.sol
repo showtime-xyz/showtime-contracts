@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import {TestForwarder} from "gsn/forwarder/test/TestForwarder.sol";
-// import { TestForwarder } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarder.sol";
-import {TestForwarderTarget} from "gsn/forwarder/test/TestForwarderTarget.sol";
-// import { TestForwarderTarget } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol";
+import { TestForwarder } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarder.sol";
+import { TestForwarderTarget } from "lib/gsn/packages/contracts/src/forwarder/test/TestForwarderTarget.sol";
 
 import { ShowtimeForwarder } from "src/meta-tx/ShowtimeForwarder.sol";
 
