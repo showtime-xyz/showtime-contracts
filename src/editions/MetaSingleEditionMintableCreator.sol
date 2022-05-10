@@ -44,6 +44,8 @@ interface _IEditionSingleMintable {
 }
 
 contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
+    error NullAddress();
+
     ISingleEditionMintableCreator public immutable editionCreator;
     MetaEditionMinter public immutable minterImplementation;
     TimeCop public immutable timeCop;
@@ -54,10 +56,17 @@ contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
         address _minterImplementation,
         address _timeCop
     ) {
-        trustedForwarder = _trustedForwarder;
+        if (_editionCreator == address(0)
+            || _minterImplementation == address(0)
+            || _timeCop == address(0))
+        {
+            revert NullAddress();
+        }
         editionCreator = ISingleEditionMintableCreator(_editionCreator);
         minterImplementation = MetaEditionMinter(_minterImplementation);
         timeCop = TimeCop(_timeCop);
+
+        trustedForwarder = _trustedForwarder;
     }
 
     function createEdition(

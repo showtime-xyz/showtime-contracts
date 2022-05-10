@@ -37,11 +37,14 @@ contract MetaEditionMinter is BaseRelayRecipient, IEditionMinter, Initializable 
             revert NullAddress();
         }
 
-        timeCop = _timeCop;
+        if (address(_timeCop) == address(0)) {
+            revert NullAddress();
+        }
 
         // we accept the null address for the trusted forwarder (meta-tx disabled)
         trustedForwarder = _trustedForwarder;
         collection = _collection;
+        timeCop = _timeCop;
     }
 
     function mintEdition(address _to) external override {
