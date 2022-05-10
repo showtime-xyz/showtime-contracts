@@ -18,7 +18,7 @@ import { ForwarderTestUtil } from "test/meta-tx/ForwarderTestUtil.sol";
 
 contract User {}
 
-contract CreatorOwnedCollectionTest is DSTest, ForwarderTestUtil {
+contract MetaSingleEditionMintableCreatorTest is DSTest, ForwarderTestUtil {
     event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
     event Destroyed(MetaEditionMinter minter, IEditionSingleMintable collection);
 
