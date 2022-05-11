@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { ClonesUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
 import { IEditionSingleMintable } from "@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol";
 
 import { BaseRelayRecipient } from "src/utils/BaseRelayRecipient.sol";
 import { MetaEditionMinter } from "./MetaEditionMinter.sol";
+import { MetaEditionMinterFactory } from "./MetaEditionMinterFactory.sol";
 import { TimeCop } from "./TimeCop.sol";
 
 interface ISingleEditionMintableCreator {
@@ -47,23 +47,23 @@ contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
     error NullAddress();
 
     ISingleEditionMintableCreator public immutable editionCreator;
-    MetaEditionMinter public immutable minterImplementation;
+    MetaEditionMinterFactory public immutable minterFactory;
     TimeCop public immutable timeCop;
 
     constructor(
         address _trustedForwarder,
         address _editionCreator,
-        address _minterImplementation,
+        address _minterFactory,
         address _timeCop
     ) {
         if (_editionCreator == address(0)
-            || _minterImplementation == address(0)
+            || _minterFactory == address(0)
             || _timeCop == address(0))
         {
             revert NullAddress();
         }
         editionCreator = ISingleEditionMintableCreator(_editionCreator);
-        minterImplementation = MetaEditionMinter(_minterImplementation);
+        minterFactory = MetaEditionMinterFactory(_minterFactory);
         timeCop = TimeCop(_timeCop);
 
         trustedForwarder = _trustedForwarder;
@@ -96,21 +96,16 @@ contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
             _royaltyBPS
         );
 
-        // configure it while we still own it
+        // deploy the edition
         IEditionSingleMintable edition = editionCreator.getEditionAtId(newId);
 
-        // deploy the minter for this collection
-        MetaEditionMinter newMinter = MetaEditionMinter(
-            ClonesUpgradeable.cloneDeterministic(
-                address(minterImplementation),
-                bytes32(uint256(uint160(address(edition))))
-            )
-        );
+        // deploy the minter for this edition
+        MetaEditionMinter newMinter = minterFactory.createMinter(edition);
 
-        newMinter.initialize(trustedForwarder, edition, timeCop);
-
+        // configure the time limit
         timeCop.setTimeLimit(address(edition), _claimWindowDurationSeconds);
 
+        // configure the edition (while we still own it)
         _IEditionSingleMintable(address(edition)).setApprovedMinter(address(newMinter), true);
 
         // and finally transfer ownership of the configured contract to the actual creator
@@ -121,12 +116,5 @@ contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
 
     function getEditionAtId(uint256 editionId) external view returns (IEditionSingleMintable) {
         return editionCreator.getEditionAtId(editionId);
-    }
-
-    function getMinterForEdition(address edition) public view returns (address) {
-        return ClonesUpgradeable.predictDeterministicAddress(
-            address(minterImplementation),
-            bytes32(uint256(uint160(edition)))
-        );
     }
 }

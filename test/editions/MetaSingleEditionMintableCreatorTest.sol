@@ -8,6 +8,7 @@ import { SingleEditionMintable } from "@zoralabs/nft-editions-contracts/contract
 import { SingleEditionMintableCreator } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintableCreator.sol";
 
 import { MetaEditionMinter, IEditionSingleMintable } from "src/editions/MetaEditionMinter.sol";
+import { MetaEditionMinterFactory } from "src/editions/MetaEditionMinterFactory.sol";
 import { MetaSingleEditionMintableCreator } from "src/editions/MetaSingleEditionMintableCreator.sol";
 import { TimeCop } from "src/editions/TimeCop.sol";
 import { ShowtimeForwarder } from "src/meta-tx/ShowtimeForwarder.sol";
@@ -31,7 +32,7 @@ contract MetaSingleEditionMintableCreatorTest is DSTest, ForwarderTestUtil {
 
     SingleEditionMintableCreator internal editionCreator;
     MetaSingleEditionMintableCreator internal metaEditionCreator;
-    MetaEditionMinter internal minterImplementation;
+    MetaEditionMinterFactory internal minterFactory;
     TimeCop internal timeCop;
 
     ShowtimeForwarder internal forwarder;
@@ -40,13 +41,14 @@ contract MetaSingleEditionMintableCreatorTest is DSTest, ForwarderTestUtil {
         SharedNFTLogic sharedNFTLogic = new SharedNFTLogic();
         SingleEditionMintable editionImplementation = new SingleEditionMintable(sharedNFTLogic);
         editionCreator = new SingleEditionMintableCreator(address(editionImplementation));
-        minterImplementation = new MetaEditionMinter();
         forwarder = new ShowtimeForwarder();
+        timeCop = new TimeCop(31 days);
+        minterFactory = new MetaEditionMinterFactory(address(forwarder), address(timeCop));
         metaEditionCreator = new MetaSingleEditionMintableCreator(
             address(forwarder),
             address(editionCreator),
-            address(minterImplementation),
-            address(new TimeCop(31 days))
+            address(minterFactory),
+            address(timeCop)
         );
 
         forwarder.registerDomainSeparator("showtime.io", "1");
@@ -207,11 +209,11 @@ contract MetaSingleEditionMintableCreatorTest is DSTest, ForwarderTestUtil {
         minter.mintEdition(address(bob));
 
         // the base implementation is intact though
-        assertEq(address(minterImplementation.collection()), address(0));
+        assertEq(address(minterFactory.minterImpl().collection()), address(0));
 
         // and in fact, we can keep deploying
         hevm.prank(address(charlieTheCreator));
-        (SingleEditionMintable freshEdition, MetaEditionMinter freshMinter) = createDummyEdition();
+        (, MetaEditionMinter freshMinter) = createDummyEdition();
 
         // and we can keep minting
         hevm.prank(address(bob));

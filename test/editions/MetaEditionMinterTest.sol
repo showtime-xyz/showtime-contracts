@@ -1,55 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { ClonesUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
-import { SharedNFTLogic } from "@zoralabs/nft-editions-contracts/contracts/SharedNFTLogic.sol";
-import { SingleEditionMintable } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintable.sol";
-import { SingleEditionMintableCreator } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintableCreator.sol";
+import { IEditionSingleMintable } from "@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol";
 
 import { MetaEditionMinter } from "src/editions/MetaEditionMinter.sol";
+import { MetaEditionMinterFactory } from "src/editions/MetaEditionMinterFactory.sol";
 import { TimeCop } from "src/editions/TimeCop.sol";
 
 import { DSTest } from "ds-test/test.sol";
 import { Hevm } from "test/Hevm.sol";
 
-contract User {}
+contract MockEdition {
+    address public owner;
+
+    constructor() {
+        owner = msg.sender;
+    }
+}
 
 contract MetaEditionMinterTest is DSTest {
     event Destroyed(address minter, address edition);
 
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
-    SingleEditionMintableCreator internal editionCreator;
-    SingleEditionMintable internal edition;
     TimeCop internal timeCop;
-
-    MetaEditionMinter minterImplementation;
+    MetaEditionMinterFactory internal minterFactory;
 
     function setUp() public {
-        SharedNFTLogic sharedNFTLogic = new SharedNFTLogic();
-        SingleEditionMintable editionImplementation = new SingleEditionMintable(sharedNFTLogic);
-        editionCreator = new SingleEditionMintableCreator(address(editionImplementation));
-
-        edition = editionCreator.getEditionAtId(
-            editionCreator.createEdition(
-                "The Collection",
-                "DROP",
-                "The best collection in the world",
-                "",     // _animationUrl
-                0x0,    // _animationHash
-                "ipfs://SOME_IMAGE_CID",
-                keccak256("this is not really used, is it?"),
-                0,      // _editionSize, 0 means unlimited
-                1000    // _royaltyBPS
-            )
-        );
-
         timeCop = new TimeCop(2 hours);
-
-        minterImplementation = new MetaEditionMinter();
+        minterFactory = new MetaEditionMinterFactory(address(0), address(timeCop));
     }
 
     function testCanNotInitializeBaseImpl() public {
+        MetaEditionMinter minterImplementation = new MetaEditionMinter();
+        IEditionSingleMintable edition = dummyEdition();
+
         hevm.expectRevert("Initializable: contract is already initialized");
         minterImplementation.initialize(
             address(0),
@@ -58,44 +43,34 @@ contract MetaEditionMinterTest is DSTest {
         );
     }
 
-    function testTimeCopNotNull() public {
-        MetaEditionMinter minter = createNewMinter("testTimeCopNotNull");
-
+    function testTimeCopCanNotBeNullInFactory() public {
         hevm.expectRevert(abi.encodeWithSignature("NullAddress()"));
-        minter.initialize(
-            address(0),
-            edition,
-            TimeCop(address(0))
-        );
+        new MetaEditionMinterFactory(address(0), address(0));
     }
 
-    function testEditionNotNull() public {
-        MetaEditionMinter minter = createNewMinter("testTimeCopNotNull");
-
+    function testEditionCanNotBeNull() public {
         hevm.expectRevert(abi.encodeWithSignature("NullAddress()"));
-        minter.initialize(
-            address(0),
-            SingleEditionMintable(address(0)),
-            timeCop
-        );
+        minterFactory.createMinter(IEditionSingleMintable(address(0)));
     }
 
     function testCanNotPurgeBaseImplementation() public {
+        MetaEditionMinter minterImplementation = new MetaEditionMinter();
+
         hevm.expectRevert(abi.encodeWithSignature("NullAddress()"));
         minterImplementation.purge();
     }
 
     function testPurgeBeforeExpiration() public {
-        MetaEditionMinter minter = createNewMinter("testTimeCopNotNull");
-        minter.initialize(address(0), edition, timeCop);
+        IEditionSingleMintable edition = dummyEdition();
+        MetaEditionMinter minter = minterFactory.createMinter(edition);
 
         hevm.expectRevert(abi.encodeWithSignature("TimeLimitNotReached(address)", edition));
         minter.purge();
     }
 
     function testPurgeWithNoTimeLimitSet() public {
-        MetaEditionMinter minter = createNewMinter("testTimeCopNotNull");
-        minter.initialize(address(0), edition, timeCop);
+        IEditionSingleMintable edition = dummyEdition();
+        MetaEditionMinter minter = minterFactory.createMinter(edition);
 
         hevm.warp(block.timestamp + 2812039812 days);
         hevm.expectRevert(abi.encodeWithSignature("TimeLimitNotReached(address)", edition));
@@ -103,8 +78,8 @@ contract MetaEditionMinterTest is DSTest {
     }
 
     function testPurgeAfterExpiration() public {
-        MetaEditionMinter minter = createNewMinter("testTimeCopNotNull");
-        minter.initialize(address(0), edition, timeCop);
+        IEditionSingleMintable edition = dummyEdition();
+        MetaEditionMinter minter = minterFactory.createMinter(edition);
 
         timeCop.setTimeLimit(address(edition), 2 hours);
         hevm.warp(block.timestamp + 2812039812 days);
@@ -115,12 +90,7 @@ contract MetaEditionMinterTest is DSTest {
         minter.purge();
     }
 
-    function createNewMinter(string memory name) internal returns (MetaEditionMinter newMinter) {
-        newMinter = MetaEditionMinter(
-            ClonesUpgradeable.cloneDeterministic(
-                address(minterImplementation),
-                keccak256(bytes(name))
-            )
-        );
+    function dummyEdition() public returns (IEditionSingleMintable) {
+        return IEditionSingleMintable(address(new MockEdition()));
     }
 }
