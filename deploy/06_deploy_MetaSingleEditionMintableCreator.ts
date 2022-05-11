@@ -8,6 +8,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const deployments = hre.deployments;
     const namedAccounts = await hre.getNamedAccounts();
     const forwarderAddress = (await deployments.get('ShowtimeForwarder')).address;
+    const minterFactoryAddress = (await deployments.get('MetaEditionMinterFactory')).address;
+    const timeCopAddress = (await deployments.get('TimeCop')).address;
 
     // see https://github.com/ourzora/nft-editions#where-is-the-factory-contract-deployed=
     const editionCreatorAddress = {
@@ -20,19 +22,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         throw new Error(`${hre.network.name} is not supported`);
     }
 
-    // const artifact = await hre.artifacts.readArtifact(contractName);
-    // console.log("Will be using the following deployment bytecode:",
-    //     // we take the init code
-    //     artifact.bytecode
+    console.log("\n\n### " + contractName + " ###");
+    console.log("from:", namedAccounts.deployer);
+    const artifact = await hre.artifacts.readArtifact(contractName);
+    console.log("deployment bytecode:",
+        // we take the init code
+        artifact.bytecode.slice(2)
 
-    //     // and add the constructor arguments
-    //     // (slice to remove the 0x prefix)
-    //     + ethers.utils.hexZeroPad(forwarderAddress, 32).slice(2)
-    //     + ethers.utils.hexZeroPad(editionCreatorAddress, 32).slice(2)
-    // );
+        // and add the constructor arguments
+        // (slice to remove the 0x prefix)
+        + ethers.utils.hexZeroPad(forwarderAddress, 32).slice(2)
+        + ethers.utils.hexZeroPad(editionCreatorAddress, 32).slice(2)
+        + ethers.utils.hexZeroPad(minterFactoryAddress, 32).slice(2)
+        + ethers.utils.hexZeroPad(timeCopAddress, 32).slice(2)
+    );
 
-    console.log("Deploying " + contractName + " from address:", namedAccounts.deployer);
-    const salt = ethers.utils.hexlify(13207453);
+    const salt = ethers.utils.hexlify(19269604);
     const {address, deploy} = await deployments.deterministic(
         contractName,
         {
@@ -40,6 +45,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             args: [
                 forwarderAddress,
                 editionCreatorAddress,
+                minterFactoryAddress,
+                timeCopAddress
             ],
             salt: salt
         }

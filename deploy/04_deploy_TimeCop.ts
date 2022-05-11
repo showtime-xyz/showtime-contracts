@@ -3,27 +3,30 @@ import {DeployFunction} from 'hardhat-deploy/types';
 import {ethers} from 'hardhat';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const contractName = 'ShowtimeForwarder';
+    const contractName = 'TimeCop';
 
     const deployments = hre.deployments;
     const namedAccounts = await hre.getNamedAccounts();
+    const _maxDurationSeconds = 31 * 24 * 3600; // 31 days
 
     console.log("\n\n### " + contractName + " ###");
     console.log("from:", namedAccounts.deployer);
     const artifact = await hre.artifacts.readArtifact(contractName);
     console.log("deployment bytecode:",
-        artifact.bytecode.slice(2));
+        // we take the init code
+        artifact.bytecode.slice(2)
 
-    // const artifact = await hre.artifacts.readArtifact(contractName);
-    // console.log("Will be using the following deployment bytecode:", artifact.bytecode);
+        // and add the constructor arguments
+        // (slice to remove the 0x prefix)
+        + ethers.utils.hexZeroPad(ethers.utils.hexlify(_maxDurationSeconds), 32).slice(2)
+    );
 
-    // with the default deterministic deployment proxy (0x4e59b44847b379578588920cA78FbF26c0B4956C)
-    // and the bytecode at commit 3aa1bf9e, this salt gives us a nice address (0x50c001c88b59dc3b833E0F062EfC2271CE88Cb89)
-    const salt = ethers.utils.hexlify(4142695);
+    const salt = ethers.utils.hexlify(427679);
     const {address, deploy} = await deployments.deterministic(
         contractName,
         {
             from: namedAccounts.deployer,
+            args: [_maxDurationSeconds],
             salt: salt
         }
     );

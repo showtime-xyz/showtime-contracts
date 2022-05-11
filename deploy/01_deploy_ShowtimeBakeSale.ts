@@ -4,6 +4,8 @@ import {ethers} from 'hardhat';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const contractName = 'ShowtimeBakeSale';
+
+    console.log("\n\n### " + contractName + " ###");
     console.log("skipping " + contractName); return;
 
     const deployments = hre.deployments;

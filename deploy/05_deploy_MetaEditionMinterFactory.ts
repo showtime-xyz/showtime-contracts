@@ -3,31 +3,34 @@ import {DeployFunction} from 'hardhat-deploy/types';
 import {ethers} from 'hardhat';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const contractName = 'OnePerAddressEditionMinter';
+    const contractName = 'MetaEditionMinterFactory';
 
     const deployments = hre.deployments;
     const namedAccounts = await hre.getNamedAccounts();
     const forwarderAddress = (await deployments.get('ShowtimeForwarder')).address;
+    const timeCopAddress = (await deployments.get('TimeCop')).address;
 
-    console.log("Deploying " + contractName + " from address:", namedAccounts.deployer);
+    console.log("\n\n### " + contractName + " ###");
+    console.log("from:", namedAccounts.deployer);
+    const artifact = await hre.artifacts.readArtifact(contractName);
+    console.log("deployment bytecode:",
+        // we take the init code
+        artifact.bytecode.slice(2)
 
-    // const artifact = await hre.artifacts.readArtifact(contractName);
-    // console.log("Will be using the following deployment bytecode:",
-    //     // we take the init code
-    //     artifact.bytecode
+        // and add the constructor arguments
+        // (slice to remove the 0x prefix)
+        + ethers.utils.hexZeroPad(forwarderAddress, 32).slice(2)
+        + ethers.utils.hexZeroPad(timeCopAddress, 32).slice(2)
+    );
 
-    //     // and add the constructor arguments
-    //     // (slice to remove the 0x prefix)
-    //         + ethers.utils.hexZeroPad(forwarderAddress, 32).slice(2)
-    // );
-
-    const salt = ethers.utils.hexlify(29888296);
+    const salt = ethers.utils.hexlify(3229371);
     const {address, deploy} = await deployments.deterministic(
         contractName,
         {
             from: namedAccounts.deployer,
             args: [
                 forwarderAddress,
+                timeCopAddress,
             ],
             salt: salt
         }
