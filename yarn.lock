@@ -1068,7 +1068,7 @@ __metadata:
     "@types/node": ^17.0.18
     "@typescript-eslint/eslint-plugin": ^5.12.0
     "@typescript-eslint/parser": ^5.12.0
-    "@zoralabs/nft-editions-contracts": "github:ourzora/nft-editions"
+    "@zoralabs/nft-editions-contracts": "https://github.com/ourzora/nft-editions.git"
     chai: ^4.3.6
     commitizen: ^4.2.4
     cross-env: ^7.0.3
@@ -1803,9 +1803,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@zoralabs/nft-editions-contracts@github:ourzora/nft-editions":
+"@zoralabs/nft-editions-contracts@https://github.com/ourzora/nft-editions.git":
   version: 1.0.1
-  resolution: "@zoralabs/nft-editions-contracts@git+ssh://git@github.com/ourzora/nft-editions.git#commit=980061e1e183d52886b190d128da987d1a144917"
+  resolution: "@zoralabs/nft-editions-contracts@https://github.com/ourzora/nft-editions.git#commit=980061e1e183d52886b190d128da987d1a144917"
   dependencies:
     "@openzeppelin/contracts-upgradeable": ^4.3.2
     base64-sol: ^1.0.1
