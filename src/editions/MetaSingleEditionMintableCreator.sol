@@ -9,17 +9,7 @@ import { MetaEditionMinterFactory } from "./MetaEditionMinterFactory.sol";
 import { TimeCop } from "./TimeCop.sol";
 
 interface ISingleEditionMintableCreator {
-    /// Creates a new edition contract as a factory with a deterministic address
-    /// Important: None of these fields (except the Url fields with the same hash) can be changed after calling
-    /// @param _name Name of the edition contract
-    /// @param _symbol Symbol of the edition contract
-    /// @param _description Metadata: Description of the edition entry
-    /// @param _animationUrl Metadata: Animation url (optional) of the edition entry
-    /// @param _animationHash Metadata: SHA-256 Hash of the animation (if no animation url, can be 0x0)
-    /// @param _imageUrl Metadata: Image url (semi-required) of the edition entry
-    /// @param _imageHash Metadata: SHA-256 hash of the Image of the edition entry (if not image, can be 0x0)
-    /// @param _editionSize Total size of the edition (number of possible editions)
-    /// @param _royaltyBPS BPS amount of royalty
+    /// @return The ID of the created edition
     function createEdition(
         string memory _name,
         string memory _symbol,
@@ -69,6 +59,19 @@ contract MetaSingleEditionMintableCreator is BaseRelayRecipient {
         trustedForwarder = _trustedForwarder;
     }
 
+    /// Creates a new edition contract as a factory with a deterministic address
+    /// Important: None of these fields (except the Url fields with the same hash) can be changed after calling
+    /// @param _name Name of the edition contract
+    /// @param _symbol Symbol of the edition contract
+    /// @param _description Metadata: Description of the edition entry
+    /// @param _animationUrl Metadata: Animation url (optional) of the edition entry
+    /// @param _animationHash Metadata: SHA-256 Hash of the animation (if no animation url, can be 0x0)
+    /// @param _imageUrl Metadata: Image url (semi-required) of the edition entry
+    /// @param _imageHash Metadata: SHA-256 hash of the Image of the edition entry (if not image, can be 0x0)
+    /// @param _editionSize Total size of the edition (number of possible editions)
+    /// @param _royaltyBPS BPS amount of royalty
+    /// @param _claimWindowDurationSeconds How long after deployment the edition can be claimed, in seconds
+    /// @return (edition, newMinter) the address of the created edition and the minter contract for that edition
     function createEdition(
         // ISingleEditionMintableCreator parameters
         string memory _name,
