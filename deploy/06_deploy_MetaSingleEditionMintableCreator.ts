@@ -37,7 +37,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         + ethers.utils.hexZeroPad(timeCopAddress, 32).slice(2)
     );
 
-    const salt = ethers.utils.hexlify(19269604);
+    const saltByNetwork = {
+        hardhat: 19269604,
+        mumbai: 19269604,
+        polygon: 17416505,
+    }
+
+    const salt = ethers.utils.hexlify(saltByNetwork[hre.network.name]);
     const {address, deploy} = await deployments.deterministic(
         contractName,
         {

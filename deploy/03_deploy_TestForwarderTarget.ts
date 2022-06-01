@@ -3,6 +3,7 @@ import {DeployFunction} from 'hardhat-deploy/types';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const contractName = 'TestForwarderTarget';
+    console.log("skipping " + contractName); return;
 
     const deployments = hre.deployments;
     const namedAccounts = await hre.getNamedAccounts();
@@ -20,7 +21,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
 
     console.log("It will be deployed at address:", address);
-    console.log("skipping " + contractName); return;
 
     try {
         const deployResult = await deploy();
