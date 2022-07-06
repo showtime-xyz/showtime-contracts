@@ -134,6 +134,11 @@ Docs for named accounts: https://github.com/wighawag/hardhat-deploy#1-namedaccou
 npx hardhat --network mumbai etherscan-verify
 ```
 
+```sh
+# verify a specific contract, e.g. an implementation or internal contract
+npx hardhat --network polygon verify 0xF67Ce0322C440140F79C2edd6d5d850EAdC39ab5
+```
+
 ## Existing Deployments
 
 ### Mumbai
@@ -174,9 +179,9 @@ ForwardRequest(
 ```
 
 Registered domain:
-- name: showtime.io
-- version: 1
-- domain hash on mumbai: `0x5e5b00964aa6fad690fa48928347690e3f9a4ce056e98a45c10dd839e9aa77e7`
+- name: showtime.xyz
+- version: v1
+
 
 ## Troubleshooting
 
