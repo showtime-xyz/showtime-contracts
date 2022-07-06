@@ -54,7 +54,11 @@ Some limitations:
 -   Install dependencies
 
 ```sh
+# fetch the dependencies under node_modules/
 yarn install
+
+# fetch the dependencies under lib/
+git submodule update
 ```
 
 ### Configure project
