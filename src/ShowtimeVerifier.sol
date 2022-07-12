@@ -50,7 +50,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /// @param attestation the attestation to verify
     /// @param signature the signature of the attestation
     /// @return true if the attestation is valid, reverts otherwise
-    function verify(Attestation calldata attestation, bytes calldata signature) external view returns (bool) {
+    function verify(Attestation calldata attestation, bytes calldata signature) external override view returns (bool) {
         uint256 signedAt = attestation.signedAt;
         uint256 validUntil = attestation.validUntil;
 
@@ -89,14 +89,14 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
 
     /// Delegates the signer management to another address
     /// @param _signerManager the address that will be authorized to add and remove signers (use address 0 to disable)
-    function setSignerManager(address _signerManager) external onlyOwner {
+    function setSignerManager(address _signerManager) external override onlyOwner {
         signerManager = _signerManager;
     }
 
     /// Registers an authorized signer
     /// @param signer the new signer to register
     /// @param validityDays how long the signer will be valid starting from the moment of registration
-    function registerSigner(address signer, uint256 validityDays) external onlyAdmin {
+    function registerSigner(address signer, uint256 validityDays) external override onlyAdmin {
         if (validityDays > MAX_SIGNER_VALIDITY_DAYS) {
             revert DeadlineTooLong();
         }
@@ -105,7 +105,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     }
 
     /// Remove an authorized signer
-    function revokeSigner(address signer) external onlyAdmin {
+    function revokeSigner(address signer) external override onlyAdmin {
         signerValidity[signer] = 0;
     }
 }

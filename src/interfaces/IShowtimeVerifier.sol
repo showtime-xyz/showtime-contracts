@@ -19,6 +19,6 @@ interface IShowtimeVerifier {
 
     function verify(Attestation calldata attestation, bytes calldata signature) external view returns (bool);
     function setSignerManager(address _signerManager) external;
-    function allowSigner(address signer, uint256 validityDays) external;
+    function registerSigner(address signer, uint256 validityDays) external;
     function revokeSigner(address signer) external;
 }
