@@ -11,10 +11,12 @@ import { TimeCop } from "./TimeCop.sol";
 contract GatedEditionMinter is IGatedEditionMinter, Initializable {
     event Destroyed(GatedEditionMinter minter, IEditionSingleMintable collection);
 
-    error NullAddress();
     error AlreadyMinted(IEditionSingleMintable collection, address operator);
-    error TimeLimitReached(IEditionSingleMintable collection);
+    error BeneficiaryMismatch();
+    error CollectionMismatch();
+    error NullAddress();
     error TimeLimitNotReached(IEditionSingleMintable collection);
+    error TimeLimitReached(IEditionSingleMintable collection);
     error VerificationFailed();
 
     /// @dev these would be immutable if they were not set in the initializer
@@ -61,8 +63,15 @@ contract GatedEditionMinter is IGatedEditionMinter, Initializable {
             revert VerificationFailed();
         }
 
-        recordMint(_to);
+        if (_to != attestation.beneficiary) {
+            revert BeneficiaryMismatch();
+        }
 
+        if (address(collection) != attestation.context) {
+            revert CollectionMismatch();
+        }
+
+        recordMint(_to);
         collection.mintEdition(_to);
     }
 
