@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { EIP712, ECDSA } from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-import { IShowtimeVerifier } from "./interfaces/IShowtimeVerifier.sol";
+import { IShowtimeVerifier, Attestation } from "./interfaces/IShowtimeVerifier.sol";
 
 contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /*//////////////////////////////////////////////////////////////
@@ -29,7 +29,6 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /*//////////////////////////////////////////////////////////////
                             MISE EN BOUCHE
     //////////////////////////////////////////////////////////////*/
-
     constructor() EIP712("showtime.xyz", "v1") Ownable() {
         // no-op
     }
@@ -50,7 +49,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /// @param attestation the attestation to verify
     /// @param signature the signature of the attestation
     /// @return true if the attestation is valid, reverts otherwise
-    function verify(Attestation calldata attestation, bytes calldata signature) external override view returns (bool) {
+    function verify(Attestation calldata attestation, bytes calldata signature) external view override returns (bool) {
         uint256 signedAt = attestation.signedAt;
         uint256 validUntil = attestation.validUntil;
 

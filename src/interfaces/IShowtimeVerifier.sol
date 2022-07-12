@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-interface IShowtimeVerifier {
-    struct Attestation {
-        address beneficiary;
-        address context;
-        uint256 signedAt;
-        uint256 validUntil;
-    }
+struct Attestation {
+    address beneficiary;
+    address context;
+    uint256 signedAt;
+    uint256 validUntil;
+}
 
+interface IShowtimeVerifier {
     error DeadlineTooLong();
     error Expired();
     error NullAddress();
