@@ -53,8 +53,6 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         uint256 signedAt = attestation.signedAt;
         uint256 validUntil = attestation.validUntil;
 
-        /// we want to enforce the following invariant:
-        ///     signedAt <= block.timestamp <= validUntil
         if (signedAt > block.timestamp) {
             revert TemporalAnomaly();
         }
@@ -67,7 +65,20 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
             revert DeadlineTooLong();
         }
 
-        bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(REQUEST_TYPE_HASH, attestation)));
+        // what we want is EIP712 encoding, not ABI encoding
+        // but `abi.encode` should work as long as Attestation does not contain dynamic types
+        return verify(REQUEST_TYPE_HASH, abi.encode(attestation), signature);
+    }
+
+
+    /// @notice Verifies arbitrary typed data
+    /// @dev see https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct
+    /// @param typeHash the EIP712 type hash for the struct data to be verified
+    /// @param encodedData the EIP712-encoded struct data to be verified (32 bytes long members, hashed dynamic types)
+    /// @param signature the signature of the hashed struct
+    /// @return true if the signature is valid, reverts otherwise
+    function verify(bytes32 typeHash, bytes memory encodedData, bytes calldata signature) public view returns (bool) {
+        bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(typeHash, encodedData)));
         address signer = ECDSA.recover(digest, signature);
         uint256 signerExpirationTimestamp = signerValidity[signer];
 
