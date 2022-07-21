@@ -15,9 +15,7 @@ contract ShowtimeForwarderTest is DSTest, ForwarderTestUtil {
     uint256 internal constant FROM_PRIVATE_KEY = 0xbfea5ee5076b0bff4a26f7e3b5a8b8093c664a330cb7ab024f041b9ae077fa2e;
     address internal constant FROM_ADDRESS = 0xDE5E327cE4E7c1b64A757AaB8f2E699585977a34;
 
-
-
-    ShowtimeForwarder forwarder = new ShowtimeForwarder();
+    ShowtimeForwarder forwarder;
     TestForwarderTarget target = new TestForwarderTarget(address(forwarder));
 
     function setUp() public {
