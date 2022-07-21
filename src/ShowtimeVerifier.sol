@@ -40,9 +40,22 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         _;
     }
 
+    function domainSeparator() public view returns(bytes32) {
+        return _domainSeparatorV4();
+    }
+
     /*//////////////////////////////////////////////////////////////
                             VERIFICATION LOGIC
     //////////////////////////////////////////////////////////////*/
+
+    function encode(Attestation memory attestation) public pure returns (bytes memory) {
+        return abi.encode(
+            attestation.beneficiary,
+            attestation.context,
+            attestation.signedAt,
+            attestation.validUntil
+        );
+    }
 
     /// @notice Verifies the given attestation
     /// @notice Attestations contain no nonces, so it is up to the calling contract to ensure replay-safety
@@ -66,8 +79,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         }
 
         // what we want is EIP712 encoding, not ABI encoding
-        // but `abi.encode` should work as long as Attestation does not contain dynamic types
-        return verify(REQUEST_TYPE_HASH, abi.encode(attestation), signature);
+        return verify(REQUEST_TYPE_HASH, encode(attestation), signature);
     }
 
 
@@ -78,7 +90,8 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /// @param signature the signature of the hashed struct
     /// @return true if the signature is valid, reverts otherwise
     function verify(bytes32 typeHash, bytes memory encodedData, bytes calldata signature) public view returns (bool) {
-        bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(typeHash, encodedData)));
+        bytes32 structHash = keccak256(abi.encodePacked(typeHash, encodedData));
+        bytes32 digest = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(digest, signature);
         uint256 signerExpirationTimestamp = signerValidity[signer];
 
