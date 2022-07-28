@@ -47,7 +47,7 @@ contract ShowtimeVerifierTest is Test {
         (badActorPrivateKey, badActor) = mkaddr("badActor");
 
         vm.startPrank(owner);
-        verifier = new ShowtimeVerifier();
+        verifier = new ShowtimeVerifier(owner);
         verifier.registerSigner(signer, 1);
         verifier.setSignerManager(signerManager);
         vm.stopPrank();

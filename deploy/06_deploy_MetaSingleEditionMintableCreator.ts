@@ -2,6 +2,10 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import {ethers} from 'hardhat';
 
+interface NumberDictionary {
+    [index: string]: number;
+}
+
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const contractName = 'MetaSingleEditionMintableCreator';
 
@@ -37,7 +41,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         + ethers.utils.hexZeroPad(timeCopAddress, 32).slice(2)
     );
 
-    const saltByNetwork = {
+    const saltByNetwork: NumberDictionary = {
         hardhat: 19269604,
         mumbai: 19269604,
         polygon: 17416505,

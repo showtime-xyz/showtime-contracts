@@ -29,8 +29,8 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /*//////////////////////////////////////////////////////////////
                             MISE EN BOUCHE
     //////////////////////////////////////////////////////////////*/
-    constructor() EIP712("showtime.xyz", "v1") Ownable() {
-        // no-op
+    constructor(address _owner) EIP712("showtime.xyz", "v1") Ownable() {
+        transferOwnership(_owner);
     }
 
     modifier onlyAdmin() {
@@ -114,6 +114,8 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /// @param _signerManager the address that will be authorized to add and remove signers (use address 0 to disable)
     function setSignerManager(address _signerManager) external override onlyOwner {
         signerManager = _signerManager;
+
+        // TODO: emit event
     }
 
     /// Registers an authorized signer
@@ -125,10 +127,14 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         }
 
         signerValidity[signer] = block.timestamp + validityDays * 24 * 60 * 60;
+
+        // TODO: emit event
     }
 
     /// Remove an authorized signer
     function revokeSigner(address signer) external override onlyAdmin {
         signerValidity[signer] = 0;
+
+        // TODO: emit event
     }
 }
