@@ -17,6 +17,10 @@ interface IShowtimeVerifier {
     error Unauthorized();
     error UnknownSigner(address signer);
 
+    event SignerAdded(address signer, uint256 validUntil);
+    event SignerRevoked(address signer);
+    event SignerManagerUpdated(address newSignerManager);
+
     function verify(Attestation calldata attestation, bytes calldata signature) external view returns (bool);
     function setSignerManager(address _signerManager) external;
     function registerSigner(address signer, uint256 validityDays) external;

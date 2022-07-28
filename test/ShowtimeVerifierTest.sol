@@ -10,6 +10,10 @@ import { Attestation } from "src/interfaces/IShowtimeVerifier.sol";
 import { ShowtimeVerifier } from "src/ShowtimeVerifier.sol";
 
 contract ShowtimeVerifierTest is Test {
+    event SignerAdded(address signer, uint256 validUntil);
+    event SignerRevoked(address signer);
+    event SignerManagerUpdated(address newSignerManager);
+
     address internal owner;
     address internal signerManager;
     address internal alice;
@@ -48,7 +52,13 @@ contract ShowtimeVerifierTest is Test {
 
         vm.startPrank(owner);
         verifier = new ShowtimeVerifier(owner);
+
+        vm.expectEmit(true, false, false, false);
+        emit SignerAdded(signer, 0);
         verifier.registerSigner(signer, 1);
+
+        vm.expectEmit(true, true, true, true);
+        emit SignerManagerUpdated(signerManager);
         verifier.setSignerManager(signerManager);
         vm.stopPrank();
 
@@ -108,6 +118,8 @@ contract ShowtimeVerifierTest is Test {
 
         // when the signer is revoked
         vm.prank(signerManager);
+        vm.expectEmit(true, true, true, true);
+        emit SignerRevoked(signer);
         verifier.revokeSigner(signer);
 
         // then verification fails
@@ -139,7 +151,7 @@ contract ShowtimeVerifierTest is Test {
 
     function testSignedAtInTheFuture() public {
         // when the signedAt timestamp is in the future
-        attestation.signedAt = block.timestamp + 1;
+        attestation.signedAt = block.timestamp + 30;
 
         // then the verification fails
         vm.expectRevert(abi.encodeWithSignature("TemporalAnomaly()"));

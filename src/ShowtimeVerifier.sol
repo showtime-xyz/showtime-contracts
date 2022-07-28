@@ -66,7 +66,8 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         uint256 signedAt = attestation.signedAt;
         uint256 validUntil = attestation.validUntil;
 
-        if (signedAt > block.timestamp) {
+        // add 10s of wiggle room, in case the clocks of the signer and the validators don't match exactly
+        if (signedAt > block.timestamp + 10) {
             revert TemporalAnomaly();
         }
 
@@ -115,7 +116,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     function setSignerManager(address _signerManager) external override onlyOwner {
         signerManager = _signerManager;
 
-        // TODO: emit event
+        emit SignerManagerUpdated(signerManager);
     }
 
     /// Registers an authorized signer
@@ -126,15 +127,16 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
             revert DeadlineTooLong();
         }
 
-        signerValidity[signer] = block.timestamp + validityDays * 24 * 60 * 60;
+        uint256 validUntil = block.timestamp + validityDays * 24 * 60 * 60;
+        signerValidity[signer] = validUntil;
 
-        // TODO: emit event
+        emit SignerAdded(signer, validUntil);
     }
 
     /// Remove an authorized signer
     function revokeSigner(address signer) external override onlyAdmin {
         signerValidity[signer] = 0;
 
-        // TODO: emit event
+        emit SignerRevoked(signer);
     }
 }
