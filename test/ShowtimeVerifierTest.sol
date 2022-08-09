@@ -62,12 +62,12 @@ contract ShowtimeVerifierTest is Test {
         verifier.setSignerManager(signerManager);
         vm.stopPrank();
 
-        attestation = Attestation(
-            bob,
-            address(0),
-            block.timestamp,
-            block.timestamp + verifier.MAX_ATTESTATION_VALIDITY_SECONDS() / 2
-        );
+        attestation = Attestation({
+            beneficiary: bob,
+            context: address(0),
+            nonce: 0,
+            validUntil: block.timestamp + verifier.MAX_ATTESTATION_VALIDITY_SECONDS() / 2
+        });
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -142,22 +142,19 @@ contract ShowtimeVerifierTest is Test {
         bytes32 _digest = keccak256(abi.encodePacked("\x19\x01", verifier.domainSeparator(), structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, _digest);
-        assertTrue(verifier.verify(newTypeHash, encodedStruct, abi.encodePacked(r, s, v)));
+
+        Attestation memory _attestation = Attestation({
+            beneficiary: bob,
+            context: address(0),
+            nonce: 0,
+            validUntil: 0
+        });
+        assertTrue(verifier.verify(_attestation, newTypeHash, encodedStruct, abi.encodePacked(r, s, v)));
     }
 
     /*//////////////////////////////////////////////////////////////
                     ATTESTATION VALIDATION TESTS
     //////////////////////////////////////////////////////////////*/
-
-    function testSignedAtInTheFuture() public {
-        // when the signedAt timestamp is in the future
-        attestation.signedAt = block.timestamp + 30;
-
-        // then the verification fails
-        vm.expectRevert(abi.encodeWithSignature("TemporalAnomaly()"));
-        verifier.verify(attestation, "");
-    }
-
 
     function testExpired() public {
         // when the attestation validUntil timestamp is in the past

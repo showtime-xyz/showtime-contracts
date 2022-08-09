@@ -11,7 +11,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
     bytes public constant requestType =
-        "Attestation(address beneficiary,address context,uint256 signedAt,uint256 validUntil)";
+        "Attestation(address beneficiary,address context,uint256 nonce,uint256 validUntil)";
 
     bytes32 public constant REQUEST_TYPE_HASH = keccak256(requestType);
 
@@ -22,7 +22,11 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /*//////////////////////////////////////////////////////////////
                             MUTABLE STORAGE
     //////////////////////////////////////////////////////////////*/
+
     mapping(address => uint256) public signerValidity;
+
+    /// maps contexts to beneficiaries to their nonces
+    mapping(address => mapping(address => uint256)) public nonces;
 
     address public signerManager;
 
@@ -52,50 +56,58 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         return abi.encode(
             attestation.beneficiary,
             attestation.context,
-            attestation.signedAt,
+            attestation.nonce,
             attestation.validUntil
         );
     }
 
     /// @notice Verifies the given attestation
-    /// @notice Attestations contain no nonces, so it is up to the calling contract to ensure replay-safety
+    /// @notice This method does not increment the nonce so it provides no replay safety
     /// @param attestation the attestation to verify
     /// @param signature the signature of the attestation
     /// @return true if the attestation is valid, reverts otherwise
-    function verify(Attestation calldata attestation, bytes calldata signature) external view override returns (bool) {
-        uint256 signedAt = attestation.signedAt;
+    function verify(
+        Attestation calldata attestation,
+        bytes calldata signature
+    ) public view override returns (bool) {
         uint256 validUntil = attestation.validUntil;
-
-        // add 10s of wiggle room, in case the clocks of the signer and the validators don't match exactly
-        if (signedAt > block.timestamp + 10) {
-            revert TemporalAnomaly();
-        }
 
         if (block.timestamp > validUntil) {
             revert Expired();
         }
 
-        if ((validUntil - signedAt) > MAX_ATTESTATION_VALIDITY_SECONDS) {
+        if ((validUntil - block.timestamp) > MAX_ATTESTATION_VALIDITY_SECONDS) {
             revert DeadlineTooLong();
         }
 
         // what we want is EIP712 encoding, not ABI encoding
-        return verify(REQUEST_TYPE_HASH, encode(attestation), signature);
+        return verify(attestation, REQUEST_TYPE_HASH, encode(attestation), signature);
     }
 
 
     /// @notice Verifies arbitrary typed data
+    /// @notice This method does not increment the nonce so it provides no replay safety
     /// @dev see https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct
+    /// @dev nonce MUST be part of the encodedData
     /// @param typeHash the EIP712 type hash for the struct data to be verified
     /// @param encodedData the EIP712-encoded struct data to be verified (32 bytes long members, hashed dynamic types)
     /// @param signature the signature of the hashed struct
     /// @return true if the signature is valid, reverts otherwise
-    function verify(bytes32 typeHash, bytes memory encodedData, bytes calldata signature) public view returns (bool) {
+    function verify(
+        Attestation calldata attestation,
+        bytes32 typeHash,
+        bytes memory encodedData,
+        bytes calldata signature
+    ) public view override returns (bool) {
+        uint256 expectedNonce = nonces[attestation.context][attestation.beneficiary];
+        if (expectedNonce != attestation.nonce) {
+            revert BadNonce(expectedNonce, attestation.nonce);
+        }
+
         bytes32 structHash = keccak256(abi.encodePacked(typeHash, encodedData));
         bytes32 digest = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(digest, signature);
         uint256 signerExpirationTimestamp = signerValidity[signer];
-
         if (signerExpirationTimestamp == 0) {
             revert UnknownSigner(signer);
         }
@@ -106,6 +118,33 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
 
         return true;
     }
+
+    function verifyAndBurn(
+        Attestation calldata attestation,
+        bytes calldata signature
+    ) external override returns (bool) {
+        if (!verify(attestation, signature)) {
+            return false;
+        }
+
+        nonces[attestation.context][attestation.beneficiary]++;
+        return true;
+    }
+
+    function verifyAndBurn(
+        Attestation calldata attestation,
+        bytes32 typeHash,
+        bytes memory encodedData,
+        bytes calldata signature
+    ) external override returns (bool) {
+        if (!verify(attestation, typeHash, encodedData, signature)) {
+            return false;
+        }
+
+        nonces[attestation.context][attestation.beneficiary]++;
+        return true;
+    }
+
 
     /*//////////////////////////////////////////////////////////////
                         SIGNER MANAGEMENT LOGIC
