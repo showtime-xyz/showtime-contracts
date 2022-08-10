@@ -19,7 +19,7 @@ interface IShowtimeVerifier {
 
     event SignerAdded(address signer, uint256 validUntil);
     event SignerRevoked(address signer);
-    event SignerManagerUpdated(address newSignerManager);
+    event ManagerUpdated(address newManager);
 
     function verify(Attestation calldata attestation, bytes calldata signature) external view returns (bool);
     function verifyAndBurn(Attestation calldata attestation, bytes calldata signature) external returns (bool);
@@ -38,7 +38,7 @@ interface IShowtimeVerifier {
         bytes calldata signature
     ) external returns (bool);
 
-    function setSignerManager(address _signerManager) external;
+    function setManager(address _manager) external;
     function registerSigner(address signer, uint256 validityDays) external;
     function revokeSigner(address signer) external;
 }

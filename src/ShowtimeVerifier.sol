@@ -28,7 +28,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /// maps contexts to beneficiaries to their nonces
     mapping(address => mapping(address => uint256)) public nonces;
 
-    address public signerManager;
+    address public manager;
 
     /*//////////////////////////////////////////////////////////////
                             MISE EN BOUCHE
@@ -38,7 +38,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     }
 
     modifier onlyAdmin() {
-        if (msg.sender != owner() && msg.sender != signerManager) {
+        if (msg.sender != owner() && msg.sender != manager) {
             revert Unauthorized();
         }
         _;
@@ -161,11 +161,11 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     //////////////////////////////////////////////////////////////*/
 
     /// Delegates the signer management to another address
-    /// @param _signerManager the address that will be authorized to add and remove signers (use address 0 to disable)
-    function setSignerManager(address _signerManager) external override onlyOwner {
-        signerManager = _signerManager;
+    /// @param _manager the address that will be authorized to add and remove signers (use address 0 to disable)
+    function setManager(address _manager) external override onlyOwner {
+        manager = _manager;
 
-        emit SignerManagerUpdated(signerManager);
+        emit ManagerUpdated(manager);
     }
 
     /// Registers an authorized signer

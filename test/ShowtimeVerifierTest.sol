@@ -12,10 +12,10 @@ import { ShowtimeVerifier } from "src/ShowtimeVerifier.sol";
 contract ShowtimeVerifierTest is Test {
     event SignerAdded(address signer, uint256 validUntil);
     event SignerRevoked(address signer);
-    event SignerManagerUpdated(address newSignerManager);
+    event ManagerUpdated(address newmanager);
 
     address internal owner;
-    address internal signerManager;
+    address internal manager;
     address internal alice;
     address internal bob;
 
@@ -44,7 +44,7 @@ contract ShowtimeVerifierTest is Test {
 
     function setUp() public {
         (, owner) = mkaddr("owner");
-        (, signerManager) = mkaddr("signerManager");
+        (, manager) = mkaddr("manager");
         (, alice) = mkaddr("alice");
         (, bob) = mkaddr("bob");
         (signerKey, signer) = mkaddr("signer");
@@ -58,8 +58,8 @@ contract ShowtimeVerifierTest is Test {
         verifier.registerSigner(signer, 1);
 
         vm.expectEmit(true, true, true, true);
-        emit SignerManagerUpdated(signerManager);
-        verifier.setSignerManager(signerManager);
+        emit ManagerUpdated(manager);
+        verifier.setManager(manager);
         vm.stopPrank();
 
         attestation = Attestation({
@@ -125,7 +125,7 @@ contract ShowtimeVerifierTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, digest(attestation));
 
         // when the signer is revoked
-        vm.prank(signerManager);
+        vm.prank(manager);
         vm.expectEmit(true, true, true, true);
         emit SignerRevoked(signer);
         verifier.revokeSigner(signer);
@@ -221,9 +221,9 @@ contract ShowtimeVerifierTest is Test {
     }
 
 
-    function testBadActorCanNotSetSignerManager() public {
+    function testBadActorCanNotSetmanager() public {
         vm.prank(badActor);
         vm.expectRevert("Ownable: caller is not the owner");
-        verifier.setSignerManager(badActor);
+        verifier.setManager(badActor);
     }
 }
