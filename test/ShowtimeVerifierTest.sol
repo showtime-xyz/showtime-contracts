@@ -226,4 +226,15 @@ contract ShowtimeVerifierTest is Test {
         vm.expectRevert("Ownable: caller is not the owner");
         verifier.setManager(badActor);
     }
+
+    function testExtendingSignerValidity() public {
+        uint startingValidUntil = verifier.signerValidity(signer);
+
+        // when we register the signer again with a new validity period
+        vm.prank(manager);
+        verifier.registerSigner(signer, 365);
+
+        // then the new validity period is used
+        assertLt(startingValidUntil, verifier.signerValidity(signer));
+    }
 }
