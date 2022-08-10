@@ -171,12 +171,15 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /// Registers an authorized signer
     /// @param signer the new signer to register
     /// @param validityDays how long the signer will be valid starting from the moment of registration
-    function registerSigner(address signer, uint256 validityDays) external override onlyAdmin {
+    /// @return validUntil the timestamp in seconds after which the signer expires
+    function registerSigner(address signer, uint256 validityDays)
+        external override onlyAdmin returns (uint256 validUntil)
+    {
         if (validityDays > MAX_SIGNER_VALIDITY_DAYS) {
             revert DeadlineTooLong();
         }
 
-        uint256 validUntil = block.timestamp + validityDays * 24 * 60 * 60;
+        validUntil = block.timestamp + validityDays * 24 * 60 * 60;
         signerValidity[signer] = validUntil;
 
         emit SignerAdded(signer, validUntil);

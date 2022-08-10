@@ -55,7 +55,7 @@ contract ShowtimeVerifierTest is Test {
 
         vm.expectEmit(true, false, false, false);
         emit SignerAdded(signer, 0);
-        verifier.registerSigner(signer, 1);
+        verifier.registerSigner(signer, 42);
 
         vm.expectEmit(true, true, true, true);
         emit ManagerUpdated(manager);
@@ -227,14 +227,20 @@ contract ShowtimeVerifierTest is Test {
         verifier.setManager(badActor);
     }
 
-    function testExtendingSignerValidity() public {
+    function testOverridingSignerValidity() public {
         uint startingValidUntil = verifier.signerValidity(signer);
 
-        // when we register the signer again with a new validity period
+        // when we register the signer again with a bigger validity period
         vm.prank(manager);
         verifier.registerSigner(signer, 365);
 
         // then the new validity period is used
-        assertLt(startingValidUntil, verifier.signerValidity(signer));
+        uint extendedValidUntil = verifier.signerValidity(signer);
+        assertLt(startingValidUntil, extendedValidUntil);
+
+        // when we register the signer again with a smaller validity period
+        vm.prank(manager);
+        uint restrictedValidUntil = verifier.registerSigner(signer, 1);
+        assertLt(restrictedValidUntil, extendedValidUntil);
     }
 }
