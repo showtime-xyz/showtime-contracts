@@ -12,7 +12,7 @@ from eth_account.account import Account
 
 KEYFILE_NAME = "keyfile.json"
 KEYFILE_PASSWORD = "hunter2"
-VERIFIER_MUMBAI_ADDRESS = "0xefb210C93388F50b4611664C97b12f61c2c04F7f"
+VERIFIER_MUMBAI_ADDRESS = "0x4712e57fF5e4d053Dca30F76024dFE2792D6D2A9"
 
 
 def load_keyfile():
@@ -39,6 +39,25 @@ def get_verifier_abi():
         {
             "inputs": [
                 {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "name": "nonces",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
                     "components": [
                         {
                             "internalType": "address",
@@ -52,7 +71,7 @@ def get_verifier_abi():
                         },
                         {
                             "internalType": "uint256",
-                            "name": "signedAt",
+                            "name": "nonce",
                             "type": "uint256"
                         },
                         {
@@ -93,6 +112,13 @@ def main():
 
     print("Loaded account with address", account.address)
 
+    w3 = Web3(Web3.HTTPProvider("https://matic-mumbai.chainstacklabs.com"))
+    verifier = w3.eth.contract(
+        address=VERIFIER_MUMBAI_ADDRESS, abi=get_verifier_abi())
+
+    beneficiary = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+    nonce = verifier.functions.nonces(beneficiary).call()
+
     structured_data = {
         "domain": {
             "chainId": 80001,  # mumbai
@@ -111,26 +137,22 @@ def main():
             "Attestation": [
                 {"name": 'beneficiary', "type": 'address'},
                 {"name": 'context', "type": 'address'},
-                {"name": 'signedAt', "type": 'uint256'},
+                {"name": 'nonce', "type": 'uint256'},
                 {"name": 'validUntil', "type": 'uint256'},
             ]
         },
 
         "primaryType": "Attestation",
         "message": {
-            "beneficiary": "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+            "beneficiary": beneficiary,
             "context": "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
-            "signedAt": int(time.time()) - 5,
+            "nonce": nonce,
             "validUntil": int(time.time()) + 120,
         }
     }
 
     signable_message = encode_structured_data(structured_data)
     signed_message = account.sign_message(signable_message)
-
-    w3 = Web3(Web3.HTTPProvider("https://matic-mumbai.chainstacklabs.com"))
-    verifier = w3.eth.contract(
-        address=VERIFIER_MUMBAI_ADDRESS, abi=get_verifier_abi())
 
     print("Verifying attestation:")
     print(structured_data["message"])
@@ -139,12 +161,15 @@ def main():
     print(signed_message)
 
     print("Result:")
-    attestation = tuple((structured_data["message"][x] for x in ('beneficiary', 'context', 'signedAt', 'validUntil')))
+    attestation = tuple((structured_data["message"][x] for x in (
+        'beneficiary', 'context', 'nonce', 'validUntil')))
 
     try:
-        print(verifier.functions.verify(attestation, signed_message.signature).call())
+        print(verifier.functions.verify(
+            attestation, signed_message.signature).call())
     except ContractLogicError as e:
         print("Error:", e)
+
 
 if __name__ == '__main__':
     main()
