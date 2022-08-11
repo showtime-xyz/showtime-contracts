@@ -181,13 +181,13 @@ contract ShowtimeVerifierTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testBurnIncrementsNonce() public {
-        assertEq(verifier.nonces(attestation.context, attestation.beneficiary), 0);
+        assertEq(verifier.nonces(attestation.beneficiary), 0);
 
         // when we call verifyAndBurn
         verifier.verifyAndBurn(attestation, sign(signerKey, attestation));
 
         // then the nonce is incremented
-        assertEq(verifier.nonces(attestation.context, attestation.beneficiary), 1);
+        assertEq(verifier.nonces(attestation.beneficiary), 1);
 
         // if we try to reuse the same attestation, nonce verification fails
         bytes memory signature = sign(signerKey, attestation);
@@ -199,17 +199,18 @@ contract ShowtimeVerifierTest is Test {
         for (uint160 i = 0; i < 100; i++) {
             address context = address(i);
             attestation.context = context;
-            assertEq(verifier.nonces(attestation.context, attestation.beneficiary), 0);
+            attestation.nonce = i;
+            assertEq(verifier.nonces(attestation.beneficiary), i);
 
             // when we call verifyAndBurn
             verifier.verifyAndBurn(attestation, sign(signerKey, attestation));
 
             // then the nonce is incremented
-            assertEq(verifier.nonces(attestation.context, attestation.beneficiary), 1);
+            assertEq(verifier.nonces(attestation.beneficiary), i + 1);
 
             // if we try to reuse the same attestation, nonce verification fails
             bytes memory signature = sign(signerKey, attestation);
-            vm.expectRevert(abi.encodeWithSignature("BadNonce(uint256,uint256)", 1, 0));
+            vm.expectRevert(abi.encodeWithSignature("BadNonce(uint256,uint256)", i + 1, i));
             verifier.verify(attestation, signature);
         }
     }

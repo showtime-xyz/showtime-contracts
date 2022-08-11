@@ -25,8 +25,8 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
 
     mapping(address => uint256) public signerValidity;
 
-    /// maps contexts to beneficiaries to their nonces
-    mapping(address => mapping(address => uint256)) public nonces;
+    /// maps addresses to their nonces
+    mapping(address => uint256) public nonces;
 
     address public manager;
 
@@ -44,7 +44,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         _;
     }
 
-    function domainSeparator() public view returns(bytes32) {
+    function domainSeparator() public view returns (bytes32) {
         return _domainSeparatorV4();
     }
 
@@ -53,12 +53,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     //////////////////////////////////////////////////////////////*/
 
     function encode(Attestation memory attestation) public pure returns (bytes memory) {
-        return abi.encode(
-            attestation.beneficiary,
-            attestation.context,
-            attestation.nonce,
-            attestation.validUntil
-        );
+        return abi.encode(attestation.beneficiary, attestation.context, attestation.nonce, attestation.validUntil);
     }
 
     /// @notice Verifies the given attestation
@@ -66,14 +61,10 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /// @param attestation the attestation to verify
     /// @param signature the signature of the attestation
     /// @return true if the attestation is valid, reverts otherwise
-    function verify(
-        Attestation calldata attestation,
-        bytes calldata signature
-    ) public view override returns (bool) {
+    function verify(Attestation calldata attestation, bytes calldata signature) public view override returns (bool) {
         // what we want is EIP712 encoding, not ABI encoding
         return verify(attestation, REQUEST_TYPE_HASH, encode(attestation), signature);
     }
-
 
     /// @notice Verifies arbitrary typed data
     /// @notice This method does not increment the nonce so it provides no replay safety
@@ -90,7 +81,6 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         bytes memory encodedData,
         bytes calldata signature
     ) public view override returns (bool) {
-
         /// TIMESTAMP VERIFICATION
         uint256 validUntil = attestation.validUntil;
         if (block.timestamp > validUntil) {
@@ -102,7 +92,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         }
 
         /// NONCE VERIFICATION
-        uint256 expectedNonce = nonces[attestation.context][attestation.beneficiary];
+        uint256 expectedNonce = nonces[attestation.beneficiary];
         if (expectedNonce != attestation.nonce) {
             revert BadNonce(expectedNonce, attestation.nonce);
         }
@@ -123,21 +113,22 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         return true;
     }
 
-    function incrementNonce(address context, address beneficiary) internal {
+    function incrementNonce(address beneficiary) private {
         unchecked {
-            ++nonces[context][beneficiary];
+            ++nonces[beneficiary];
         }
     }
 
-    function verifyAndBurn(
-        Attestation calldata attestation,
-        bytes calldata signature
-    ) external override returns (bool) {
+    function verifyAndBurn(Attestation calldata attestation, bytes calldata signature)
+        external
+        override
+        returns (bool)
+    {
         if (!verify(attestation, signature)) {
             return false;
         }
 
-        incrementNonce(attestation.context, attestation.beneficiary);
+        incrementNonce(attestation.beneficiary);
         return true;
     }
 
@@ -151,10 +142,9 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
             return false;
         }
 
-        incrementNonce(attestation.context, attestation.beneficiary);
+        incrementNonce(attestation.beneficiary);
         return true;
     }
-
 
     /*//////////////////////////////////////////////////////////////
                         SIGNER MANAGEMENT LOGIC
@@ -184,7 +174,10 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /// @param validityDays how long the signer will be valid starting from the moment of registration
     /// @return validUntil the timestamp in seconds after which the signer expires
     function registerSigner(address signer, uint256 validityDays)
-        external override onlyAdmin returns (uint256 validUntil)
+        external
+        override
+        onlyAdmin
+        returns (uint256 validUntil)
     {
         validUntil = _registerSigner(signer, validityDays);
     }
@@ -200,10 +193,12 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     }
 
     /// @notice Convenience function for the workflow where one expects a single active signer
-    function registerAndRevoke(address signerToRegister, address signerToRevoke, uint256 validityDays)
-        external override onlyAdmin returns (uint256 validUntil)
-    {
+    function registerAndRevoke(
+        address signerToRegister,
+        address signerToRevoke,
+        uint256 validityDays
+    ) external override onlyAdmin returns (uint256 validUntil) {
         _revokeSigner(signerToRevoke);
-        validUntil = _registerSigner(signerToRegister, validityDays);
+        return _registerSigner(signerToRegister, validityDays);
     }
 }
