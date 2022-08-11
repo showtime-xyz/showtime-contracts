@@ -168,13 +168,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         emit ManagerUpdated(manager);
     }
 
-    /// Registers an authorized signer
-    /// @param signer the new signer to register
-    /// @param validityDays how long the signer will be valid starting from the moment of registration
-    /// @return validUntil the timestamp in seconds after which the signer expires
-    function registerSigner(address signer, uint256 validityDays)
-        external override onlyAdmin returns (uint256 validUntil)
-    {
+    function _registerSigner(address signer, uint256 validityDays) private returns (uint256 validUntil) {
         if (validityDays > MAX_SIGNER_VALIDITY_DAYS) {
             revert DeadlineTooLong();
         }
@@ -185,10 +179,31 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         emit SignerAdded(signer, validUntil);
     }
 
+    /// Registers an authorized signer
+    /// @param signer the new signer to register
+    /// @param validityDays how long the signer will be valid starting from the moment of registration
+    /// @return validUntil the timestamp in seconds after which the signer expires
+    function registerSigner(address signer, uint256 validityDays)
+        external override onlyAdmin returns (uint256 validUntil)
+    {
+        validUntil = _registerSigner(signer, validityDays);
+    }
+
+    function _revokeSigner(address signer) private {
+        signerValidity[signer] = 0;
+        emit SignerRevoked(signer);
+    }
+
     /// Remove an authorized signer
     function revokeSigner(address signer) external override onlyAdmin {
-        signerValidity[signer] = 0;
+        _revokeSigner(signer);
+    }
 
-        emit SignerRevoked(signer);
+    /// @notice Convenience function for the workflow where one expects a single active signer
+    function registerAndRevoke(address signerToRegister, address signerToRevoke, uint256 validityDays)
+        external override onlyAdmin returns (uint256 validUntil)
+    {
+        _revokeSigner(signerToRevoke);
+        validUntil = _registerSigner(signerToRegister, validityDays);
     }
 }

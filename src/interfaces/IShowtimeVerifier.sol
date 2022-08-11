@@ -41,4 +41,6 @@ interface IShowtimeVerifier {
     function setManager(address _manager) external;
     function registerSigner(address signer, uint256 validityDays) external returns (uint256 validUntil);
     function revokeSigner(address signer) external;
+    function registerAndRevoke(address signerToRegister, address signerToRevoke, uint256 validityDays)
+        external returns (uint256 validUntil);
 }

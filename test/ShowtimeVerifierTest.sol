@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-
 import { console2 } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
@@ -30,7 +29,7 @@ contract ShowtimeVerifierTest is Test {
     Attestation internal attestation;
 
     // inspired by https://twitter.com/eth_call/status/1549792921976803328
-    function mkaddr(string memory name) public returns(uint256 Key, address addr) {
+    function mkaddr(string memory name) public returns (uint256 Key, address addr) {
         Key = uint256(keccak256(bytes(name)));
         addr = vm.addr(Key);
         vm.label(addr, name);
@@ -87,7 +86,6 @@ contract ShowtimeVerifierTest is Test {
         assertTrue(verifier.verify(attestation, sign(signerKey, attestation)));
     }
 
-
     function testSignerNotRegistered() public {
         // when signed by a non-registered signer
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(badActorKey, digest(attestation));
@@ -96,7 +94,6 @@ contract ShowtimeVerifierTest is Test {
         vm.expectRevert(abi.encodeWithSignature("UnknownSigner(address)", badActor));
         verifier.verify(attestation, abi.encodePacked(r, s, v));
     }
-
 
     function testFailSignatureTamperedWith() public {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, digest(attestation));
@@ -108,7 +105,6 @@ contract ShowtimeVerifierTest is Test {
         verifier.verify(attestation, abi.encodePacked(r, s, v));
     }
 
-
     function testExpiredSigner() public {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, digest(attestation));
 
@@ -119,7 +115,6 @@ contract ShowtimeVerifierTest is Test {
         vm.expectRevert(abi.encodeWithSignature("Expired()"));
         verifier.verify(attestation, abi.encodePacked(r, s, v));
     }
-
 
     function testRevokedSigner() public {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, digest(attestation));
@@ -134,7 +129,6 @@ contract ShowtimeVerifierTest is Test {
         vm.expectRevert(abi.encodeWithSignature("UnknownSigner(address)", signer));
         verifier.verify(attestation, abi.encodePacked(r, s, v));
     }
-
 
     function testArbitraryTypeHash() public {
         string memory newType = "ValentineCard(address from,address to,string message)";
@@ -173,7 +167,6 @@ contract ShowtimeVerifierTest is Test {
         verifier.verify(attestation, "");
     }
 
-
     function testDeadlineTooLong() public {
         // when the attestation validUntil timestamp is too far in the future
         attestation.validUntil = block.timestamp + verifier.MAX_ATTESTATION_VALIDITY_SECONDS() + 1;
@@ -202,6 +195,24 @@ contract ShowtimeVerifierTest is Test {
         verifier.verify(attestation, signature);
     }
 
+    function testBurnIncrementsNonce100Times() public {
+        for (uint160 i = 0; i < 100; i++) {
+            address context = address(i);
+            attestation.context = context;
+            assertEq(verifier.nonces(attestation.context, attestation.beneficiary), 0);
+
+            // when we call verifyAndBurn
+            verifier.verifyAndBurn(attestation, sign(signerKey, attestation));
+
+            // then the nonce is incremented
+            assertEq(verifier.nonces(attestation.context, attestation.beneficiary), 1);
+
+            // if we try to reuse the same attestation, nonce verification fails
+            bytes memory signature = sign(signerKey, attestation);
+            vm.expectRevert(abi.encodeWithSignature("BadNonce(uint256,uint256)", 1, 0));
+            verifier.verify(attestation, signature);
+        }
+    }
 
     /*//////////////////////////////////////////////////////////////
                             ADMIN TESTS
@@ -213,13 +224,11 @@ contract ShowtimeVerifierTest is Test {
         verifier.registerSigner(badActor, 365);
     }
 
-
     function testBadActorCanNotRevokeSigner() public {
         vm.prank(badActor);
         vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
         verifier.revokeSigner(signer);
     }
-
 
     function testBadActorCanNotSetmanager() public {
         vm.prank(badActor);
@@ -228,19 +237,40 @@ contract ShowtimeVerifierTest is Test {
     }
 
     function testOverridingSignerValidity() public {
-        uint startingValidUntil = verifier.signerValidity(signer);
+        uint256 startingValidUntil = verifier.signerValidity(signer);
 
         // when we register the signer again with a bigger validity period
         vm.prank(manager);
         verifier.registerSigner(signer, 365);
 
         // then the new validity period is used
-        uint extendedValidUntil = verifier.signerValidity(signer);
+        uint256 extendedValidUntil = verifier.signerValidity(signer);
         assertLt(startingValidUntil, extendedValidUntil);
 
         // when we register the signer again with a smaller validity period
         vm.prank(manager);
-        uint restrictedValidUntil = verifier.registerSigner(signer, 1);
+        uint256 restrictedValidUntil = verifier.registerSigner(signer, 1);
         assertLt(restrictedValidUntil, extendedValidUntil);
+    }
+
+    function testBadActorCanNotRegisterAndRevoke() public {
+        vm.prank(badActor);
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
+        verifier.registerAndRevoke(badActor, signer, 365);
+    }
+
+    function testRegisterAndRevoke() public {
+        (, address newSigner) = mkaddr("newSigner");
+
+        // when the manager calls registerAndRevoke
+        vm.expectEmit(true, false, false, false);
+        emit SignerAdded(newSigner, 0);
+        emit SignerRevoked(signer);
+        vm.prank(manager);
+        verifier.registerAndRevoke(newSigner, signer, 365);
+
+        // then the old signer is revoked and the new signer is registered
+        assertEq(verifier.signerValidity(signer), 0);
+        assertGt(verifier.signerValidity(newSigner), 0);
     }
 }
