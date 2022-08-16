@@ -1,0 +1,177 @@
+{
+  "address": "0xd93d362c0024dc3b8020043FD70c0D0fC01576EB",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IShowtimeVerifier",
+          "name": "_showtimeVerifier",
+          "type": "address"
+        },
+        {
+          "internalType": "contract TimeCop",
+          "name": "_timeCop",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "NullAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IEditionSingleMintable",
+          "name": "collection",
+          "type": "address"
+        }
+      ],
+      "name": "TimeLimitReached",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "VerificationFailed",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "beneficiary",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "context",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "nonce",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "validUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct Attestation",
+              "name": "attestation",
+              "type": "tuple"
+            },
+            {
+              "internalType": "bytes",
+              "name": "signature",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct SignedAttestation",
+          "name": "signedAttestation",
+          "type": "tuple"
+        }
+      ],
+      "name": "mintEdition",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "showtimeVerifier",
+      "outputs": [
+        {
+          "internalType": "contract IShowtimeVerifier",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "timeCop",
+      "outputs": [
+        {
+          "internalType": "contract TimeCop",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xee67b97d5a85961e910252b28ff61c028ece9f1ed5c94973cbb55cfd18f91409",
+  "receipt": {
+    "to": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "from": "0x515F7d84cEE53051b7ADF645fA2220f65BC25c68",
+    "contractAddress": null,
+    "transactionIndex": 2,
+    "gasUsed": "400291",
+    "logsBloom": "0x00000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000800000000000000000000100000000004000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000080000000100000000000200000000000000000400000000000000000000000000000000000000000004000000000000000000001000000000000000000000000000000100040000000000000000000000000000000000000000000000000000000000000000000100000",
+    "blockHash": "0x535361803f2be0636a7ab74bc162792678f32579c04e7eb9b3f7e4fa8b22a26b",
+    "transactionHash": "0xee67b97d5a85961e910252b28ff61c028ece9f1ed5c94973cbb55cfd18f91409",
+    "logs": [
+      {
+        "transactionIndex": 2,
+        "blockNumber": 27650077,
+        "transactionHash": "0xee67b97d5a85961e910252b28ff61c028ece9f1ed5c94973cbb55cfd18f91409",
+        "address": "0x0000000000000000000000000000000000001010",
+        "topics": [
+          "0x4dfe1bbbcf077ddc3e01291eea2d5c70c2b422b415d95645b9adcfd678cb1d63",
+          "0x0000000000000000000000000000000000000000000000000000000000001010",
+          "0x000000000000000000000000515f7d84cee53051b7adf645fa2220f65bc25c68",
+          "0x000000000000000000000000be188d6641e8b680743a4815dfa0f6208038960f"
+        ],
+        "data": "0x00000000000000000000000000000000000000000000000000325c156426feee0000000000000000000000000000000000000000000000000429ec833e0767370000000000000000000000000000000000000000000023099996ec965235558b00000000000000000000000000000000000000000000000003f7906dd9e0684900000000000000000000000000000000000000000000230999c948abb65c5479",
+        "logIndex": 6,
+        "blockHash": "0x535361803f2be0636a7ab74bc162792678f32579c04e7eb9b3f7e4fa8b22a26b"
+      }
+    ],
+    "blockNumber": 27650077,
+    "cumulativeGasUsed": "631377",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0xE5eC1D79E0AF57C57AAeE8D64cDCDf52493b8711",
+    "0x50c001E4eB10801968F6640E1537D63a557e5d72"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "7dd94dde600f3f638c5876206305049e",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.13+commit.abaa5c0e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract IShowtimeVerifier\",\"name\":\"_showtimeVerifier\",\"type\":\"address\"},{\"internalType\":\"contract TimeCop\",\"name\":\"_timeCop\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"NullAddress\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"contract IEditionSingleMintable\",\"name\":\"collection\",\"type\":\"address\"}],\"name\":\"TimeLimitReached\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"VerificationFailed\",\"type\":\"error\"},{\"inputs\":[{\"components\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"beneficiary\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"context\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"validUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct Attestation\",\"name\":\"attestation\",\"type\":\"tuple\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"internalType\":\"struct SignedAttestation\",\"name\":\"signedAttestation\",\"type\":\"tuple\"}],\"name\":\"mintEdition\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"showtimeVerifier\",\"outputs\":[{\"internalType\":\"contract IShowtimeVerifier\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"timeCop\",\"outputs\":[{\"internalType\":\"contract TimeCop\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"mintEdition(((address,address,uint256,uint256),bytes))\":{\"details\":\"the edition to mint will be determined by the attestation's contextthe recipient of the minted edition will be determined by the attestation's beneficiary\",\"params\":{\"signedAttestation\":\"the attestation to verify along with a corresponding signature\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/editions/GatedEditionMinter.sol\":\"GatedEditionMinter\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":1000000},\"remappings\":[],\"viaIR\":true},\"sources\":{\"@openzeppelin/contracts/access/Ownable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (access/Ownable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../utils/Context.sol\\\";\\n\\n/**\\n * @dev Contract module which provides a basic access control mechanism, where\\n * there is an account (an owner) that can be granted exclusive access to\\n * specific functions.\\n *\\n * By default, the owner account will be the one that deploys the contract. This\\n * can later be changed with {transferOwnership}.\\n *\\n * This module is used through inheritance. It will make available the modifier\\n * `onlyOwner`, which can be applied to your functions to restrict their use to\\n * the owner.\\n */\\nabstract contract Ownable is Context {\\n    address private _owner;\\n\\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\\n\\n    /**\\n     * @dev Initializes the contract setting the deployer as the initial owner.\\n     */\\n    constructor() {\\n        _transferOwnership(_msgSender());\\n    }\\n\\n    /**\\n     * @dev Returns the address of the current owner.\\n     */\\n    function owner() public view virtual returns (address) {\\n        return _owner;\\n    }\\n\\n    /**\\n     * @dev Throws if called by any account other than the owner.\\n     */\\n    modifier onlyOwner() {\\n        require(owner() == _msgSender(), \\\"Ownable: caller is not the owner\\\");\\n        _;\\n    }\\n\\n    /**\\n     * @dev Leaves the contract without owner. It will not be possible to call\\n     * `onlyOwner` functions anymore. Can only be called by the current owner.\\n     *\\n     * NOTE: Renouncing ownership will leave the contract without an owner,\\n     * thereby removing any functionality that is only available to the owner.\\n     */\\n    function renounceOwnership() public virtual onlyOwner {\\n        _transferOwnership(address(0));\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Can only be called by the current owner.\\n     */\\n    function transferOwnership(address newOwner) public virtual onlyOwner {\\n        require(newOwner != address(0), \\\"Ownable: new owner is the zero address\\\");\\n        _transferOwnership(newOwner);\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Internal function without access restriction.\\n     */\\n    function _transferOwnership(address newOwner) internal virtual {\\n        address oldOwner = _owner;\\n        _owner = newOwner;\\n        emit OwnershipTransferred(oldOwner, newOwner);\\n    }\\n}\\n\",\"keccak256\":\"0x24e0364e503a9bbde94c715d26573a76f14cd2a202d45f96f52134ab806b67b9\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/Context.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/Context.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\nabstract contract Context {\\n    function _msgSender() internal view virtual returns (address) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes calldata) {\\n        return msg.data;\\n    }\\n}\\n\",\"keccak256\":\"0xe2e337e6dde9ef6b680e07338c493ebea1b5fd09b43424112868e9cc1706bca7\",\"license\":\"MIT\"},\"@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\npragma solidity ^0.8.6;\\n\\ninterface IEditionSingleMintable {\\n  function mintEdition(address to) external returns (uint256);\\n  function mintEditions(address[] memory to) external returns (uint256);\\n  function numberCanMint() external view returns (uint256);\\n  function owner() external view returns (address);\\n}\",\"keccak256\":\"0x04b73ddff10e4feb9297834b5550faecb1e63bfc8c4a513ecdf25796c49360db\",\"license\":\"GPL-3.0\"},\"src/editions/GatedEditionMinter.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.7;\\n\\nimport { IEditionSingleMintable } from \\\"@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol\\\";\\nimport { IShowtimeVerifier, SignedAttestation } from \\\"src/interfaces/IShowtimeVerifier.sol\\\";\\nimport { IGatedEditionMinter } from \\\"./interfaces/IGatedEditionMinter.sol\\\";\\nimport { TimeCop } from \\\"./TimeCop.sol\\\";\\n\\ncontract GatedEditionMinter is IGatedEditionMinter {\\n    error NullAddress();\\n    error TimeLimitReached(IEditionSingleMintable collection);\\n    error VerificationFailed();\\n\\n    IShowtimeVerifier public immutable showtimeVerifier;\\n    TimeCop public immutable timeCop;\\n\\n    constructor(IShowtimeVerifier _showtimeVerifier, TimeCop _timeCop) {\\n        if (address(_showtimeVerifier) == address(0) || address(_timeCop) == address(0)) {\\n            revert NullAddress();\\n        }\\n\\n        showtimeVerifier = _showtimeVerifier;\\n        timeCop = _timeCop;\\n    }\\n\\n    /// @param signedAttestation the attestation to verify along with a corresponding signature\\n    /// @dev the edition to mint will be determined by the attestation's context\\n    /// @dev the recipient of the minted edition will be determined by the attestation's beneficiary\\n    function mintEdition(SignedAttestation calldata signedAttestation) external override {\\n        IEditionSingleMintable collection = IEditionSingleMintable(signedAttestation.attestation.context);\\n\\n        if (timeCop.timeLimitReached(address(collection))) {\\n            revert TimeLimitReached(collection);\\n        }\\n\\n        if (!showtimeVerifier.verifyAndBurn(signedAttestation)) {\\n            revert VerificationFailed();\\n        }\\n\\n        collection.mintEdition(signedAttestation.attestation.beneficiary);\\n    }\\n}\\n\",\"keccak256\":\"0x2ce8a98ce877b076fc7aa45ad83ea6cccbb4a2118a89ddd2fd2efa56a2722d64\",\"license\":\"MIT\"},\"src/editions/TimeCop.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.7;\\n\\nimport { Ownable } from \\\"@openzeppelin/contracts/access/Ownable.sol\\\";\\n\\ncontract TimeCop {\\n    event TimeLimitSet(address collection, uint256 deadline);\\n\\n    error InvalidTimeLimit(uint256 offsetSeconds);\\n    error NotCollectionOwner();\\n    error TimeLimitAlreadySet();\\n\\n    uint256 public immutable MAX_DURATION_SECONDS;\\n\\n    /// @notice the time limits expressed as a timestamp in seconds\\n    mapping(address => uint256) public timeLimits;\\n\\n    /// @param _maxDurationSeconds maximum time limit\\n    /// @dev _maxDurationSeconds can be set to 0 to have no maximum time limit\\n    constructor(uint256 _maxDurationSeconds) {\\n        MAX_DURATION_SECONDS = _maxDurationSeconds;\\n    }\\n\\n    /// @notice Sets the deadline for the given collection\\n    /// @notice Only the owner of the collection can set the deadline\\n    /// @param collection The address to set the deadline for\\n    /// @param offsetSeconds a duration in seconds that will be used to set the time limit\\n    function setTimeLimit(address collection, uint256 offsetSeconds) external {\\n        if (offsetSeconds == 0) {\\n            revert InvalidTimeLimit(offsetSeconds);\\n        }\\n\\n        if (MAX_DURATION_SECONDS > 0 && offsetSeconds > MAX_DURATION_SECONDS) {\\n            revert InvalidTimeLimit(offsetSeconds);\\n        }\\n\\n        if (timeLimitSet(collection)) {\\n            revert TimeLimitAlreadySet();\\n        }\\n\\n        if (msg.sender != Ownable(collection).owner()) {\\n            revert NotCollectionOwner();\\n        }\\n\\n        uint256 deadline = block.timestamp + offsetSeconds;\\n        timeLimits[collection] = deadline;\\n\\n        emit TimeLimitSet(collection, deadline);\\n    }\\n\\n    function timeLimitSet(address collection) public view returns (bool) {\\n        return timeLimits[collection] > 0;\\n    }\\n\\n    /// @return false if there is no time limit set for that collection\\n    function timeLimitReached(address collection) public view returns (bool) {\\n        return timeLimitSet(collection) && block.timestamp > timeLimits[collection];\\n    }\\n}\",\"keccak256\":\"0x7a245be43fac95db15a2f5b1badaa8de64feac5a9afb6ab8c06f535512f03743\",\"license\":\"MIT\"},\"src/editions/interfaces/IGatedEditionMinter.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.7;\\n\\nimport { IShowtimeVerifier, SignedAttestation } from \\\"src/interfaces/IShowtimeVerifier.sol\\\";\\n\\ninterface IGatedEditionMinter {\\n    function mintEdition(SignedAttestation calldata signedAttestation) external;\\n\\n    function showtimeVerifier() external view returns (IShowtimeVerifier);\\n}\\n\",\"keccak256\":\"0xa407de034a9e047cc52df2924ad8088f741ab7f2e7f98d6465132dab810a17ed\",\"license\":\"MIT\"},\"src/interfaces/IShowtimeVerifier.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.7;\\n\\nstruct Attestation {\\n    address beneficiary;\\n    address context;\\n    uint256 nonce;\\n    uint256 validUntil;\\n}\\n\\nstruct SignedAttestation {\\n    Attestation attestation;\\n    bytes signature;\\n}\\n\\ninterface IShowtimeVerifier {\\n    error BadNonce(uint256 expected, uint256 actual);\\n    error DeadlineTooLong();\\n    error Expired();\\n    error NullAddress();\\n    error SignerExpired(address signer);\\n    error Unauthorized();\\n    error UnknownSigner();\\n\\n    event SignerAdded(address signer, uint256 validUntil);\\n    event SignerRevoked(address signer);\\n    event ManagerUpdated(address newManager);\\n\\n    function verify(SignedAttestation calldata signedAttestation) external view returns (bool);\\n\\n    function verifyAndBurn(SignedAttestation calldata signedAttestation) external returns (bool);\\n\\n    function verify(\\n        Attestation calldata attestation,\\n        bytes32 typeHash,\\n        bytes memory encodedData,\\n        bytes calldata signature\\n    ) external view returns (bool);\\n\\n    function verifyAndBurn(\\n        Attestation calldata attestation,\\n        bytes32 typeHash,\\n        bytes memory encodedData,\\n        bytes calldata signature\\n    ) external returns (bool);\\n\\n    function setManager(address _manager) external;\\n\\n    function registerSigner(address signer, uint256 validityDays) external returns (uint256 validUntil);\\n\\n    function revokeSigner(address signer) external;\\n\\n    function registerAndRevoke(\\n        address signerToRegister,\\n        address signerToRevoke,\\n        uint256 validityDays\\n    ) external returns (uint256 validUntil);\\n}\\n\",\"keccak256\":\"0x695d273638ee417210ccd91f0d47a9e280573887d068086f19038b8483950af8\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60c03461008f57601f61073638819003918201601f19168301916001600160401b0383118484101761009457808492604094855283398101031261008f5780602061006092519161004f836100aa565b01519061005b826100aa565b6100bb565b60405161063c90816100fa82396080518181816101bd01526103cf015260a05181818161014b01526104440152f35b600080fd5b634e487b7160e01b600052604160045260246000fd5b6001600160a01b0381160361008f57565b6001600160a01b03818116159081156100ee575b506100dc5760805260a052565b60405163e99d5ac560e01b8152600490fd5b9050821615386100cf56fe60806040908082526004918236101561001757600080fd5b600091823560e01c93846332345cad14610063575050505080635360e5d41461005a5763f565d63d1461004d575b388080600080fd5b6100556103f8565b610045565b50610055610383565b3461037f576020917ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc838136011261037b57823567ffffffffffffffff81116103775760a0818501928236030112610377576100c460246100dd9201610486565b73ffffffffffffffffffffffffffffffffffffffff1690565b73ffffffffffffffffffffffffffffffffffffffff90818116937fcf06dde4000000000000000000000000000000000000000000000000000000008152868180610146888a830191909173ffffffffffffffffffffffffffffffffffffffff6020820193169052565b0381867f0000000000000000000000000000000000000000000000000000000000000000165afa90811561036a575b899161034d575b50610301575084865180927f82059300000000000000000000000000000000000000000000000000000000008252818a816101b9888b8301610567565b03927f0000000000000000000000000000000000000000000000000000000000000000165af19081156102f4575b87916102c7575b501561029f5791839161020361025494610486565b918787518096819582947fa66ff0af000000000000000000000000000000000000000000000000000000008452830191909173ffffffffffffffffffffffffffffffffffffffff6020820193169052565b03925af18015610292575b61026857505051f35b8161028792903d1061028b575b61027f8183610493565b810190610620565b5051f35b503d610275565b61029a61051b565b61025f565b8285517f439cc0cd000000000000000000000000000000000000000000000000000000008152fd5b6102e79150853d87116102ed575b6102df8183610493565b810190610503565b876101ee565b503d6102d5565b6102fc61051b565b6101e7565b86517fd302dcb800000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff90911681860190815281906020010390fd5b6103649150873d89116102ed576102df8183610493565b8961017c565b61037261051b565b610175565b8680fd5b8580fd5b8380fd5b50346103f35760007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126103f357602060405173ffffffffffffffffffffffffffffffffffffffff7f0000000000000000000000000000000000000000000000000000000000000000168152f35b600080fd5b50346103f35760007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126103f357602060405173ffffffffffffffffffffffffffffffffffffffff7f0000000000000000000000000000000000000000000000000000000000000000168152f35b73ffffffffffffffffffffffffffffffffffffffff8116036103f357565b3561049081610468565b90565b90601f7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0910116810190811067ffffffffffffffff8211176104d457604052565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b908160209103126103f3575180151581036103f35790565b506040513d6000823e3d90fd5b601f82602094937fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0938186528686013760008582860101520116010190565b9060208252803561057781610468565b73ffffffffffffffffffffffffffffffffffffffff809116602084015260208201356105a281610468565b166040830152604081013560608301526060810135608083015260808101357fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe1823603018112156103f35781019081359067ffffffffffffffff82116103f357813603126103f357602060c08460a080610490970152019201610528565b908160209103126103f357519056fea164736f6c634300080d000a",
+  "deployedBytecode": "0x60806040908082526004918236101561001757600080fd5b600091823560e01c93846332345cad14610063575050505080635360e5d41461005a5763f565d63d1461004d575b388080600080fd5b6100556103f8565b610045565b50610055610383565b3461037f576020917ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc838136011261037b57823567ffffffffffffffff81116103775760a0818501928236030112610377576100c460246100dd9201610486565b73ffffffffffffffffffffffffffffffffffffffff1690565b73ffffffffffffffffffffffffffffffffffffffff90818116937fcf06dde4000000000000000000000000000000000000000000000000000000008152868180610146888a830191909173ffffffffffffffffffffffffffffffffffffffff6020820193169052565b0381867f0000000000000000000000000000000000000000000000000000000000000000165afa90811561036a575b899161034d575b50610301575084865180927f82059300000000000000000000000000000000000000000000000000000000008252818a816101b9888b8301610567565b03927f0000000000000000000000000000000000000000000000000000000000000000165af19081156102f4575b87916102c7575b501561029f5791839161020361025494610486565b918787518096819582947fa66ff0af000000000000000000000000000000000000000000000000000000008452830191909173ffffffffffffffffffffffffffffffffffffffff6020820193169052565b03925af18015610292575b61026857505051f35b8161028792903d1061028b575b61027f8183610493565b810190610620565b5051f35b503d610275565b61029a61051b565b61025f565b8285517f439cc0cd000000000000000000000000000000000000000000000000000000008152fd5b6102e79150853d87116102ed575b6102df8183610493565b810190610503565b876101ee565b503d6102d5565b6102fc61051b565b6101e7565b86517fd302dcb800000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff90911681860190815281906020010390fd5b6103649150873d89116102ed576102df8183610493565b8961017c565b61037261051b565b610175565b8680fd5b8580fd5b8380fd5b50346103f35760007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126103f357602060405173ffffffffffffffffffffffffffffffffffffffff7f0000000000000000000000000000000000000000000000000000000000000000168152f35b600080fd5b50346103f35760007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126103f357602060405173ffffffffffffffffffffffffffffffffffffffff7f0000000000000000000000000000000000000000000000000000000000000000168152f35b73ffffffffffffffffffffffffffffffffffffffff8116036103f357565b3561049081610468565b90565b90601f7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0910116810190811067ffffffffffffffff8211176104d457604052565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b908160209103126103f3575180151581036103f35790565b506040513d6000823e3d90fd5b601f82602094937fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0938186528686013760008582860101520116010190565b9060208252803561057781610468565b73ffffffffffffffffffffffffffffffffffffffff809116602084015260208201356105a281610468565b166040830152604081013560608301526060810135608083015260808101357fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe1823603018112156103f35781019081359067ffffffffffffffff82116103f357813603126103f357602060c08460a080610490970152019201610528565b908160209103126103f357519056fea164736f6c634300080d000a",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "mintEdition(((address,address,uint256,uint256),bytes))": {
+        "details": "the edition to mint will be determined by the attestation's contextthe recipient of the minted edition will be determined by the attestation's beneficiary",
+        "params": {
+          "signedAttestation": "the attestation to verify along with a corresponding signature"
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}
