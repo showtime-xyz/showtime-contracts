@@ -5,7 +5,7 @@ import { console2 } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-import { Attestation } from "src/interfaces/IShowtimeVerifier.sol";
+import { Attestation, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
 import { ShowtimeVerifier } from "src/ShowtimeVerifier.sol";
 
 contract ShowtimeVerifierTest is Test {
@@ -78,21 +78,23 @@ contract ShowtimeVerifierTest is Test {
         return abi.encodePacked(r, s, v);
     }
 
+    function signed(uint256 key, Attestation memory someAttestation) public returns (SignedAttestation memory) {
+        return SignedAttestation({ attestation: someAttestation, signature: sign(key, someAttestation) });
+    }
+
     /*//////////////////////////////////////////////////////////////
                             VERIFICATION LOGIC
     //////////////////////////////////////////////////////////////*/
 
     function testHappyPath() public {
-        assertTrue(verifier.verify(attestation, sign(signerKey, attestation)));
+        assertTrue(verifier.verify(signed(signerKey, attestation)));
     }
 
     function testSignerNotRegistered() public {
         // when signed by a non-registered signer
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(badActorKey, digest(attestation));
-
         // then verification fails (with the expected signer)
         vm.expectRevert(abi.encodeWithSignature("UnknownSigner(address)", badActor));
-        verifier.verify(attestation, abi.encodePacked(r, s, v));
+        verifier.verify(SignedAttestation({ attestation: attestation, signature: sign(badActorKey, attestation) }));
     }
 
     function testFailSignatureTamperedWith() public {
@@ -102,23 +104,19 @@ contract ShowtimeVerifierTest is Test {
         r = keccak256(abi.encodePacked(r));
 
         // then verification fails
-        verifier.verify(attestation, abi.encodePacked(r, s, v));
+        verifier.verify(SignedAttestation({ attestation: attestation, signature: abi.encodePacked(r, s, v) }));
     }
 
     function testExpiredSigner() public {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, digest(attestation));
-
         // when we are way out in the future
         vm.warp(block.timestamp + 10000 days);
 
         // then verification fails
         vm.expectRevert(abi.encodeWithSignature("Expired()"));
-        verifier.verify(attestation, abi.encodePacked(r, s, v));
+        verifier.verify(signed(signerKey, attestation));
     }
 
     function testRevokedSigner() public {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, digest(attestation));
-
         // when the signer is revoked
         vm.prank(manager);
         vm.expectEmit(true, true, true, true);
@@ -127,7 +125,7 @@ contract ShowtimeVerifierTest is Test {
 
         // then verification fails
         vm.expectRevert(abi.encodeWithSignature("UnknownSigner(address)", signer));
-        verifier.verify(attestation, abi.encodePacked(r, s, v));
+        verifier.verify(signed(signerKey, attestation));
     }
 
     function testArbitraryTypeHash() public {
@@ -164,7 +162,7 @@ contract ShowtimeVerifierTest is Test {
 
         // then the verification fails
         vm.expectRevert(abi.encodeWithSignature("Expired()"));
-        verifier.verify(attestation, "");
+        verifier.verify(signed(signerKey, attestation));
     }
 
     function testDeadlineTooLong() public {
@@ -173,7 +171,7 @@ contract ShowtimeVerifierTest is Test {
 
         // then the verification fails
         vm.expectRevert(abi.encodeWithSignature("DeadlineTooLong()"));
-        verifier.verify(attestation, "");
+        verifier.verify(signed(signerKey, attestation));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -184,15 +182,14 @@ contract ShowtimeVerifierTest is Test {
         assertEq(verifier.nonces(attestation.beneficiary), 0);
 
         // when we call verifyAndBurn
-        verifier.verifyAndBurn(attestation, sign(signerKey, attestation));
+        verifier.verifyAndBurn(signed(signerKey, attestation));
 
         // then the nonce is incremented
         assertEq(verifier.nonces(attestation.beneficiary), 1);
 
         // if we try to reuse the same attestation, nonce verification fails
-        bytes memory signature = sign(signerKey, attestation);
         vm.expectRevert(abi.encodeWithSignature("BadNonce(uint256,uint256)", 1, 0));
-        verifier.verify(attestation, signature);
+        verifier.verify(signed(signerKey, attestation));
     }
 
     function testBurnIncrementsNonce100Times() public {
@@ -203,15 +200,14 @@ contract ShowtimeVerifierTest is Test {
             assertEq(verifier.nonces(attestation.beneficiary), i);
 
             // when we call verifyAndBurn
-            verifier.verifyAndBurn(attestation, sign(signerKey, attestation));
+            verifier.verifyAndBurn(signed(signerKey, attestation));
 
             // then the nonce is incremented
             assertEq(verifier.nonces(attestation.beneficiary), i + 1);
 
             // if we try to reuse the same attestation, nonce verification fails
-            bytes memory signature = sign(signerKey, attestation);
             vm.expectRevert(abi.encodeWithSignature("BadNonce(uint256,uint256)", i + 1, i));
-            verifier.verify(attestation, signature);
+            verifier.verify(signed(signerKey, attestation));
         }
     }
 

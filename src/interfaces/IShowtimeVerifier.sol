@@ -8,6 +8,11 @@ struct Attestation {
     uint256 validUntil;
 }
 
+struct SignedAttestation {
+    Attestation attestation;
+    bytes signature;
+}
+
 interface IShowtimeVerifier {
     error BadNonce(uint256 expected, uint256 actual);
     error DeadlineTooLong();
@@ -21,8 +26,9 @@ interface IShowtimeVerifier {
     event SignerRevoked(address signer);
     event ManagerUpdated(address newManager);
 
-    function verify(Attestation calldata attestation, bytes calldata signature) external view returns (bool);
-    function verifyAndBurn(Attestation calldata attestation, bytes calldata signature) external returns (bool);
+    function verify(SignedAttestation calldata signedAttestation) external view returns (bool);
+
+    function verifyAndBurn(SignedAttestation calldata signedAttestation) external returns (bool);
 
     function verify(
         Attestation calldata attestation,
@@ -39,8 +45,14 @@ interface IShowtimeVerifier {
     ) external returns (bool);
 
     function setManager(address _manager) external;
+
     function registerSigner(address signer, uint256 validityDays) external returns (uint256 validUntil);
+
     function revokeSigner(address signer) external;
-    function registerAndRevoke(address signerToRegister, address signerToRevoke, uint256 validityDays)
-        external returns (uint256 validUntil);
+
+    function registerAndRevoke(
+        address signerToRegister,
+        address signerToRevoke,
+        uint256 validityDays
+    ) external returns (uint256 validUntil);
 }

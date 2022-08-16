@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { EIP712, ECDSA } from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-import { IShowtimeVerifier, Attestation } from "./interfaces/IShowtimeVerifier.sol";
+import { IShowtimeVerifier, Attestation, SignedAttestation } from "./interfaces/IShowtimeVerifier.sol";
 
 contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /*//////////////////////////////////////////////////////////////
@@ -58,12 +58,17 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
 
     /// @notice Verifies the given attestation
     /// @notice This method does not increment the nonce so it provides no replay safety
-    /// @param attestation the attestation to verify
-    /// @param signature the signature of the attestation
+    /// @param signedAttestation the attestation to verify along with a corresponding signature
     /// @return true if the attestation is valid, reverts otherwise
-    function verify(Attestation calldata attestation, bytes calldata signature) public view override returns (bool) {
+    function verify(SignedAttestation calldata signedAttestation) public view override returns (bool) {
         // what we want is EIP712 encoding, not ABI encoding
-        return verify(attestation, REQUEST_TYPE_HASH, encode(attestation), signature);
+        return
+            verify(
+                signedAttestation.attestation,
+                REQUEST_TYPE_HASH,
+                encode(signedAttestation.attestation),
+                signedAttestation.signature
+            );
     }
 
     /// @notice Verifies arbitrary typed data
@@ -119,16 +124,12 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         }
     }
 
-    function verifyAndBurn(Attestation calldata attestation, bytes calldata signature)
-        external
-        override
-        returns (bool)
-    {
-        if (!verify(attestation, signature)) {
+    function verifyAndBurn(SignedAttestation calldata signedAttestation) external override returns (bool) {
+        if (!verify(signedAttestation)) {
             return false;
         }
 
-        incrementNonce(attestation.beneficiary);
+        incrementNonce(signedAttestation.attestation.beneficiary);
         return true;
     }
 

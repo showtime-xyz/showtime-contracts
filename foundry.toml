@@ -15,5 +15,6 @@ force = false
 verbosity = 3
 
 solc_version = '0.8.13'
-solc_optimizer = true
-solc_optimizer_runs = 1000000
+optimizer = true
+optimizer_runs = 1000000
+via_ir = true
