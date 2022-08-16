@@ -53,8 +53,7 @@ contract GatedSingleEditionMintableCreator {
     /// @param signedAttestation the attestation to verify along with a corresponding signature
     /// @dev we expect the signed attestation's context to correspond to this contract's address
     /// @dev we expect the signed attestation's beneficiary to be the edition's creator
-    /// @return (edition, newMinter) the address of the created edition and the minter contract for that edition
-    /// @return (edition, minter) the address of the created edition and the minter contract for that edition
+    /// @return the address of the created edition
     function createEdition(
         // ISingleEditionMintableCreator parameters
         string memory name,
