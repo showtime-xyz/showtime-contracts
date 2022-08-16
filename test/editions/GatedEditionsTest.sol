@@ -6,10 +6,9 @@ import { SingleEditionMintable } from "@zoralabs/nft-editions-contracts/contract
 import { SharedNFTLogic } from "@zoralabs/nft-editions-contracts/contracts/SharedNFTLogic.sol";
 import { Test } from "lib/forge-std/src/Test.sol";
 
-// import { ShowtimeVerifier, Attestation, SignedAttestation } from "src/ShowtimeVerifier.sol";
 import { TimeCop } from "src/editions/TimeCop.sol";
 import { GatedEditionMinter } from "src/editions/GatedEditionMinter.sol";
-import { GatedSingleEditionMintableCreator } from "src/editions/GatedSingleEditionMintableCreator.sol";
+import { GatedEditionCreator } from "src/editions/GatedEditionCreator.sol";
 import "test/fixtures/ShowtimeVerifierFixture.sol";
 
 contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
@@ -17,7 +16,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     uint256 constant ROYALTY_BPS = 1000;
     uint256 constant CLAIM_DURATION_WINDOW_SECONDS = 48 hours;
 
-    GatedSingleEditionMintableCreator gatedEditionCreator;
+    GatedEditionCreator gatedEditionCreator;
     GatedEditionMinter gatedEditionMinter;
     TimeCop timeCop;
     ShowtimeVerifier verifier;
@@ -48,11 +47,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         SingleEditionMintableCreator editionCreator = new SingleEditionMintableCreator(address(editionImpl));
 
         // configure gatedEditionCreator
-        gatedEditionCreator = new GatedSingleEditionMintableCreator(
-            address(editionCreator),
-            address(minter),
-            address(timeCop)
-        );
+        gatedEditionCreator = new GatedEditionCreator(address(editionCreator), address(minter), address(timeCop));
     }
 
     function getVerifier() public view override returns (ShowtimeVerifier) {

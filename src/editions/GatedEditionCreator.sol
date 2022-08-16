@@ -14,7 +14,7 @@ interface _IEditionSingleMintable {
     function setApprovedMinter(address minter, bool allowed) external;
 }
 
-contract GatedSingleEditionMintableCreator {
+contract GatedEditionCreator {
     error NullAddress();
     error VerificationFailed();
     error UnexpectedContext(address context);
