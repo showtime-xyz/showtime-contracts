@@ -200,4 +200,19 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         vm.expectRevert(abi.encodeWithSignature("BadNonce(uint256,uint256)", 1, 0));
         minter.mintEdition(signedAttestation);
     }
+
+    function testWithGreatAttestationsComesGreatClaims() public {
+        SingleEditionMintable edition = createEdition(getCreatorAttestion());
+
+        // can mint once
+        minter.mintEdition(signed(signerKey, getClaimerAttestion(edition)));
+
+        // can mint twice
+        minter.mintEdition(signed(signerKey, getClaimerAttestion(edition)));
+
+        // can keep minting, as long as we can get freshly signed attestations
+        minter.mintEdition(signed(signerKey, getClaimerAttestion(edition)));
+
+        assertEq(edition.balanceOf(claimer), 3);
+    }
 }
