@@ -8,7 +8,9 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.s
 import { Attestation, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
 import { ShowtimeVerifier } from "src/ShowtimeVerifier.sol";
 
-contract ShowtimeVerifierTest is Test {
+import { ShowtimeVerifierFixture } from "./fixtures/ShowtimeVerifierFixture.sol";
+
+contract ShowtimeVerifierTest is Test, ShowtimeVerifierFixture {
     event SignerAdded(address signer, uint256 validUntil);
     event SignerRevoked(address signer);
     event ManagerUpdated(address newmanager);
@@ -28,26 +30,13 @@ contract ShowtimeVerifierTest is Test {
 
     Attestation internal attestation;
 
-    // inspired by https://twitter.com/eth_call/status/1549792921976803328
-    function mkaddr(string memory name) public returns (uint256 Key, address addr) {
-        Key = uint256(keccak256(bytes(name)));
-        addr = vm.addr(Key);
-        vm.label(addr, name);
-    }
-
-    function digest(Attestation memory _attestation) public view returns (bytes32) {
-        bytes memory encodedStruct = verifier.encode(_attestation);
-        bytes32 structHash = keccak256(abi.encodePacked(verifier.REQUEST_TYPE_HASH(), encodedStruct));
-        return keccak256(abi.encodePacked("\x19\x01", verifier.domainSeparator(), structHash));
-    }
-
     function setUp() public {
-        (, owner) = mkaddr("owner");
-        (, manager) = mkaddr("manager");
-        (, alice) = mkaddr("alice");
-        (, bob) = mkaddr("bob");
-        (signerKey, signer) = mkaddr("signer");
-        (badActorKey, badActor) = mkaddr("badActor");
+        owner = makeAddr("owner");
+        manager = makeAddr("manager");
+        alice = makeAddr("alice");
+        bob = makeAddr("bob");
+        (signer, signerKey) = makeAddrAndKey("signer");
+        (badActor, badActorKey) = makeAddrAndKey("badActor");
 
         vm.startPrank(owner);
         verifier = new ShowtimeVerifier(owner);
@@ -73,13 +62,8 @@ contract ShowtimeVerifierTest is Test {
         return block.timestamp + verifier.MAX_ATTESTATION_VALIDITY_SECONDS() / 2;
     }
 
-    function sign(uint256 key, Attestation memory someAttestation) public returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, digest(someAttestation));
-        return abi.encodePacked(r, s, v);
-    }
-
-    function signed(uint256 key, Attestation memory someAttestation) public returns (SignedAttestation memory) {
-        return SignedAttestation({ attestation: someAttestation, signature: sign(key, someAttestation) });
+    function getVerifier() public view override returns (ShowtimeVerifier) {
+        return verifier;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -98,7 +82,7 @@ contract ShowtimeVerifierTest is Test {
         });
 
         // then verification fails (with the expected signer)
-        vm.expectRevert(abi.encodeWithSignature("UnknownSigner(address)", badActor));
+        vm.expectRevert(abi.encodeWithSignature("UnknownSigner()"));
         verifier.verify(signedAttestation);
     }
 
@@ -131,7 +115,7 @@ contract ShowtimeVerifierTest is Test {
 
         // then verification fails
         SignedAttestation memory signedAttestation = signed(signerKey, attestation);
-        vm.expectRevert(abi.encodeWithSignature("UnknownSigner(address)", signer));
+        vm.expectRevert(abi.encodeWithSignature("UnknownSigner()"));
         verifier.verify(signedAttestation);
     }
 
@@ -268,7 +252,7 @@ contract ShowtimeVerifierTest is Test {
     }
 
     function testRegisterAndRevoke() public {
-        (, address newSigner) = mkaddr("newSigner");
+        address newSigner = makeAddr("newSigner");
 
         // when the manager calls registerAndRevoke
         vm.expectEmit(true, false, false, false);

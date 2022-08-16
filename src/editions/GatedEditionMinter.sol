@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { IEditionSingleMintable } from "@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol";
-
 import { IShowtimeVerifier, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
 import { IGatedEditionMinter } from "./interfaces/IGatedEditionMinter.sol";
 import { TimeCop } from "./TimeCop.sol";

@@ -108,7 +108,7 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
         address signer = ECDSA.recover(digest, signature);
         uint256 signerExpirationTimestamp = signerValidity[signer];
         if (signerExpirationTimestamp == 0) {
-            revert UnknownSigner(signer);
+            revert UnknownSigner();
         }
 
         if (block.timestamp > signerExpirationTimestamp) {

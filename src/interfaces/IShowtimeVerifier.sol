@@ -20,7 +20,7 @@ interface IShowtimeVerifier {
     error NullAddress();
     error SignerExpired(address signer);
     error Unauthorized();
-    error UnknownSigner(address signer);
+    error UnknownSigner();
 
     event SignerAdded(address signer, uint256 validUntil);
     event SignerRevoked(address signer);
