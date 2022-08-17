@@ -12,7 +12,7 @@ from eth_account.account import Account
 
 KEYFILE_NAME = "keyfile.json"
 KEYFILE_PASSWORD = "hunter2"
-VERIFIER_MUMBAI_ADDRESS = "0x4712e57fF5e4d053Dca30F76024dFE2792D6D2A9"
+VERIFIER_MUMBAI_ADDRESS = "0xE5eC1D79E0AF57C57AAeE8D64cDCDf52493b8711"
 
 
 def load_keyfile():
@@ -60,34 +60,41 @@ def get_verifier_abi():
                 {
                     "components": [
                         {
-                            "internalType": "address",
-                            "name": "beneficiary",
-                            "type": "address"
+                            "components": [
+                                {
+                                    "internalType": "address",
+                                    "name": "beneficiary",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "context",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "nonce",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "validUntil",
+                                    "type": "uint256"
+                                }
+                            ],
+                            "internalType": "struct Attestation",
+                            "name": "attestation",
+                            "type": "tuple"
                         },
                         {
-                            "internalType": "address",
-                            "name": "context",
-                            "type": "address"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "nonce",
-                            "type": "uint256"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "validUntil",
-                            "type": "uint256"
+                            "internalType": "bytes",
+                            "name": "signature",
+                            "type": "bytes"
                         }
                     ],
-                    "internalType": "struct Attestation",
-                    "name": "attestation",
+                    "internalType": "struct SignedAttestation",
+                    "name": "signedAttestation",
                     "type": "tuple"
-                },
-                {
-                    "internalType": "bytes",
-                    "name": "signature",
-                    "type": "bytes"
                 }
             ],
             "name": "verify",
@@ -166,7 +173,10 @@ def main():
 
     try:
         print(verifier.functions.verify(
-            attestation, signed_message.signature).call())
+            [
+                attestation,
+                signed_message.signature
+            ]).call())
     except ContractLogicError as e:
         print("Error:", e)
 
