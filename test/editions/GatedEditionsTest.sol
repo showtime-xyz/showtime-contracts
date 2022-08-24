@@ -90,7 +90,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         return createEdition(attestation, "");
     }
 
-    function getCreatorAttestion() public view returns (Attestation memory creatorAttestation) {
+    function getCreatorAttestation() public view returns (Attestation memory creatorAttestation) {
         // generate a valid attestation
         creatorAttestation = Attestation({
             context: address(gatedEditionCreator),
@@ -100,18 +100,19 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         });
     }
 
-    function getClaimerAttestion(SingleEditionMintable edition)
-        public
-        view
-        returns (Attestation memory creatorAttestation)
-    {
+    function getClaimerAttestation(
+        SingleEditionMintable edition,
+        address _claimer,
+        uint256 _validUntil,
+        uint256 _nonce
+    ) public pure returns (Attestation memory) {
         // generate a valid attestation
-        creatorAttestation = Attestation({
-            context: address(edition),
-            beneficiary: claimer,
-            validUntil: block.timestamp + 2 minutes,
-            nonce: verifier.nonces(claimer)
-        });
+        return
+            Attestation({ context: address(edition), beneficiary: _claimer, validUntil: _validUntil, nonce: _nonce });
+    }
+
+    function getClaimerAttestation(SingleEditionMintable edition) public view returns (Attestation memory) {
+        return getClaimerAttestation(edition, claimer, block.timestamp + 2 minutes, verifier.nonces(claimer));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -120,7 +121,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function testCreateEditionHappyPath() public {
         // create a new edition
-        SingleEditionMintable edition = createEdition(getCreatorAttestion());
+        SingleEditionMintable edition = createEdition(getCreatorAttestation());
 
         // the time limit has been set
         assertEq(timeCop.timeLimits(address(edition)), block.timestamp + CLAIM_DURATION_WINDOW_SECONDS);
@@ -149,7 +150,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function testCreateEditionWithWrongContext() public {
         // when we have an attestation with the wrong context
-        Attestation memory creatorAttestation = getCreatorAttestion();
+        Attestation memory creatorAttestation = getCreatorAttestation();
         creatorAttestation.context = address(this); // nonsense context
 
         // creating a new edition should fail
@@ -158,7 +159,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function testCreateEditionWithWrongNonce() public {
         // when we have an attestation with the wrong context
-        Attestation memory creatorAttestation = getCreatorAttestion();
+        Attestation memory creatorAttestation = getCreatorAttestation();
 
         uint256 badNonce = uint256(uint160(address(this)));
         creatorAttestation.nonce = badNonce;
@@ -168,7 +169,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     }
 
     function testCanNotReuseCreatorAttestation() public {
-        Attestation memory creatorAttestation = getCreatorAttestion();
+        Attestation memory creatorAttestation = getCreatorAttestation();
 
         // first one should work
         createEdition(creatorAttestation);
@@ -178,7 +179,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     }
 
     function testCanNotHijackCreatorAttestation() public {
-        SignedAttestation memory signedAttestation = signed(signerKey, getCreatorAttestion());
+        SignedAttestation memory signedAttestation = signed(signerKey, getCreatorAttestation());
 
         // when the badActor tries to steal the attestation
         signedAttestation.attestation.beneficiary = badActor;
@@ -189,8 +190,8 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function testCanNotReuseClaimerAttestation() public {
         // setup
-        SingleEditionMintable edition = createEdition(getCreatorAttestion());
-        Attestation memory claimerAttestation = getClaimerAttestion(edition);
+        SingleEditionMintable edition = createEdition(getCreatorAttestation());
+        Attestation memory claimerAttestation = getClaimerAttestation(edition);
         SignedAttestation memory signedAttestation = signed(signerKey, claimerAttestation);
 
         // first one should work
@@ -202,17 +203,80 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     }
 
     function testWithGreatAttestationsComesGreatClaims() public {
-        SingleEditionMintable edition = createEdition(getCreatorAttestion());
+        SingleEditionMintable edition = createEdition(getCreatorAttestation());
 
         // can mint once
-        minter.mintEdition(signed(signerKey, getClaimerAttestion(edition)));
+        minter.mintEdition(signed(signerKey, getClaimerAttestation(edition)));
 
         // can mint twice
-        minter.mintEdition(signed(signerKey, getClaimerAttestion(edition)));
+        minter.mintEdition(signed(signerKey, getClaimerAttestation(edition)));
 
         // can keep minting, as long as we can get freshly signed attestations
-        minter.mintEdition(signed(signerKey, getClaimerAttestion(edition)));
+        minter.mintEdition(signed(signerKey, getClaimerAttestation(edition)));
 
         assertEq(edition.balanceOf(claimer), 3);
+    }
+
+    function testBatchMintFromSingleClaimer() public {
+        // setup
+        SingleEditionMintable edition1 = createEdition(getCreatorAttestation());
+        SingleEditionMintable edition2 = createEdition(getCreatorAttestation());
+        SingleEditionMintable edition3 = createEdition(getCreatorAttestation());
+
+        SignedAttestation[] memory attestations = new SignedAttestation[](3);
+        attestations[0] = signed(
+            signerKey,
+            getClaimerAttestation(edition1, claimer, block.timestamp + 2 minutes, verifier.nonces(claimer))
+        );
+        attestations[1] = signed(
+            signerKey,
+            getClaimerAttestation(edition2, claimer, block.timestamp + 2 minutes, verifier.nonces(claimer) + 1)
+        );
+        attestations[2] = signed(
+            signerKey,
+            getClaimerAttestation(edition3, claimer, block.timestamp + 2 minutes, verifier.nonces(claimer) + 2)
+        );
+
+        // when we batch mint from 3 editions
+        minter.mintEditions(attestations);
+
+        // then the claimer receives all the expected tokens
+        assertEq(edition1.balanceOf(claimer), 1);
+        assertEq(edition2.balanceOf(claimer), 1);
+        assertEq(edition3.balanceOf(claimer), 1);
+
+        // and the claimer's nonce has been incremented 3 times
+        assertEq(verifier.nonces(claimer), 3);
+    }
+
+    function testBatchMintFromMultipleClaimers() public {
+        // setup
+        SingleEditionMintable edition = createEdition(getCreatorAttestation());
+
+        address claimer1 = makeAddr("claimer1");
+        address claimer2 = makeAddr("claimer2");
+        address claimer3 = makeAddr("claimer3");
+
+        SignedAttestation[] memory attestations = new SignedAttestation[](3);
+        attestations[0] = signed(
+            signerKey,
+            getClaimerAttestation(edition, claimer1, block.timestamp + 2 minutes, verifier.nonces(claimer1))
+        );
+        attestations[1] = signed(
+            signerKey,
+            getClaimerAttestation(edition, claimer2, block.timestamp + 2 minutes, verifier.nonces(claimer2))
+        );
+        attestations[2] = signed(
+            signerKey,
+            getClaimerAttestation(edition, claimer3, block.timestamp + 2 minutes, verifier.nonces(claimer3))
+        );
+
+        // when we batch mint from 3 editions
+        minter.mintEditions(attestations);
+
+        // then each claimer receives the expected tokens
+        assertEq(edition.balanceOf(claimer1), 1);
+        assertEq(edition.balanceOf(claimer2), 1);
+        assertEq(edition.balanceOf(claimer3), 1);
     }
 }

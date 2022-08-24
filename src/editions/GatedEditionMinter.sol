@@ -11,7 +11,7 @@ contract GatedEditionMinter is IGatedEditionMinter {
     error TimeLimitReached(IEditionSingleMintable collection);
     error VerificationFailed();
 
-    IShowtimeVerifier public immutable showtimeVerifier;
+    IShowtimeVerifier public immutable override showtimeVerifier;
     TimeCop public immutable timeCop;
 
     constructor(IShowtimeVerifier _showtimeVerifier, TimeCop _timeCop) {
@@ -26,7 +26,7 @@ contract GatedEditionMinter is IGatedEditionMinter {
     /// @param signedAttestation the attestation to verify along with a corresponding signature
     /// @dev the edition to mint will be determined by the attestation's context
     /// @dev the recipient of the minted edition will be determined by the attestation's beneficiary
-    function mintEdition(SignedAttestation calldata signedAttestation) external override {
+    function mintEdition(SignedAttestation calldata signedAttestation) public override {
         IEditionSingleMintable collection = IEditionSingleMintable(signedAttestation.attestation.context);
 
         if (timeCop.timeLimitReached(address(collection))) {
@@ -38,5 +38,18 @@ contract GatedEditionMinter is IGatedEditionMinter {
         }
 
         collection.mintEdition(signedAttestation.attestation.beneficiary);
+    }
+
+    /// @notice a batch version of mintEdition
+    /// @notice any failed call to mintEdition will revert the entire batch
+    function mintEditions(SignedAttestation[] calldata signedAttestations) external override {
+        uint256 length = signedAttestations.length;
+        for (uint256 i = 0; i < length; ) {
+            mintEdition(signedAttestations[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 }
