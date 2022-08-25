@@ -84,13 +84,13 @@ contract MetaSingleEditionMintableCreatorTest is DSTest, ForwarderTestUtil {
                 "The Collection",
                 "DROP",
                 "The best collection in the world",
-                "",     // _animationUrl
-                0x0,    // _animationHash
+                "", // _animationUrl
+                0x0, // _animationHash
                 "ipfs://SOME_IMAGE_CID",
                 keccak256("this is not really used, is it?"),
-                0,      // _editionSize, 0 means unlimited
-                1000,   // _royaltyBPS
-                2 days  // _claimWindowDurationSeconds
+                0, // _editionSize, 0 means unlimited
+                1000, // _royaltyBPS
+                2 days // _claimWindowDurationSeconds
             ),
             validUntilTime: block.timestamp + 1 minutes
         });
@@ -100,7 +100,7 @@ contract MetaSingleEditionMintableCreatorTest is DSTest, ForwarderTestUtil {
         assertTrue(success);
 
         address editionAddress = address(uint160(toUint256(ret, 0)));
-        address minterAddress =  address(uint160(toUint256(ret, 32)));
+        address minterAddress = address(uint160(toUint256(ret, 32)));
 
         // then we get a properly configured collection
         SingleEditionMintable edition = SingleEditionMintable(editionAddress);
@@ -128,7 +128,7 @@ contract MetaSingleEditionMintableCreatorTest is DSTest, ForwarderTestUtil {
             nonce: forwarder.getNonce(walletAddress),
             data: abi.encodeWithSignature(
                 "mintEdition(address)",
-                address(alice)    // alice is the recipient of the claim
+                address(alice) // alice is the recipient of the claim
             ),
             validUntilTime: block.timestamp + 1 minutes
         });
@@ -198,15 +198,10 @@ contract MetaSingleEditionMintableCreatorTest is DSTest, ForwarderTestUtil {
         // and a long time passes by
         hevm.warp(block.timestamp + 500 weeks);
 
-        // then the minter can be destroyed for the greater good
+        // then the minter can be destroyed
         hevm.expectEmit(true, true, true, true);
         emit Destroyed(minter, edition);
         minter.purge();
-
-        // minter's dead
-        hevm.prank(address(bob));
-        hevm.expectRevert(bytes(""));
-        minter.mintEdition(address(bob));
 
         // the base implementation is intact though
         assertEq(address(minterFactory.minterImpl().collection()), address(0));
@@ -241,19 +236,17 @@ contract MetaSingleEditionMintableCreatorTest is DSTest, ForwarderTestUtil {
         minter.mintEdition(address(alice));
     }
 
-    function createDummyEdition()
-        internal returns (SingleEditionMintable edition, MetaEditionMinter metaMinter)
-    {
+    function createDummyEdition() internal returns (SingleEditionMintable edition, MetaEditionMinter metaMinter) {
         (address editionAddress, address minterAddress) = metaEditionCreator.createEdition(
             "The Collection",
             "DROP",
             "The best collection in the world",
-            "",     // _animationUrl
-            0x0,    // _animationHash
+            "", // _animationUrl
+            0x0, // _animationHash
             "ipfs://SOME_IMAGE_CID",
             keccak256("this is not really used, is it?"),
-            0,      // _editionSize, 0 means unlimited
-            1000,   // _royaltyBPS
+            0, // _editionSize, 0 means unlimited
+            1000, // _royaltyBPS
             2 hours // _claimWindowDurationSeconds
         );
 
