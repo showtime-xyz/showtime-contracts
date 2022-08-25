@@ -23,7 +23,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             ethers.utils.hexZeroPad(timeCopAddress, 32).slice(2)
     );
 
-    const salt = ethers.utils.hexlify(3229371);
+    // deploys to 0x00d2249ef000002B2Fdec16900058800E900000c (7 zero bytes)
+    const salt = "0x00000000000000000000000000000000000000000206dfade46a7f02e9000000";
     const { address, deploy } = await deployments.deterministic(contractName, {
         from: namedAccounts.deployer,
         args: [verifierAddress, timeCopAddress],
@@ -31,6 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
 
     console.log("It will be deployed at address:", address);
+
     console.log("skipping " + contractName);
     return;
 

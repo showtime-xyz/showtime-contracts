@@ -9,7 +9,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const namedAccounts = await hre.getNamedAccounts();
     const minterAddress = (await deployments.get("GatedEditionMinter")).address;
     const timeCopAddress = (await deployments.get("TimeCop")).address;
-
     // see https://github.com/ourzora/nft-editions#where-is-the-factory-contract-deployed=
     const editionCreatorAddress = {
         hardhat: "0x773E5B82179E6CE1CdF8c5C0d736e797b3ceDDDC",
@@ -35,7 +34,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             ethers.utils.hexZeroPad(timeCopAddress, 32).slice(2)
     );
 
-    const salt = ethers.utils.hexlify(3229371);
+    // results in address 0x50C001482BBc5C9720F11DB34AE49b89b7494BBA on polygon
+    const salt = "0x00000000000000000000000000000000000000000000000c00000000001bd413";
     const { address, deploy } = await deployments.deterministic(contractName, {
         from: namedAccounts.deployer,
         args: [editionCreatorAddress, minterAddress, timeCopAddress],
@@ -43,6 +43,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
 
     console.log("It will be deployed at address:", address);
+
     console.log("skipping " + contractName);
     return;
 
