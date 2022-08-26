@@ -58,7 +58,7 @@ Some limitations:
 yarn install
 
 # fetch the dependencies under lib/
-git submodule update
+git submodule update --init
 ```
 
 ### Configure project
@@ -98,7 +98,7 @@ forge test --match-contract ShowtimeV1MarketTest
 -   Run a single test:
 
 ```sh
-forge test --match-test testCannotBuyWhenPaused
+forge test --match testCannotBuyWhenPaused
 ```
 
 ## Deploy smart contracts with hardhat
