@@ -9,10 +9,34 @@ from web3 import Web3
 from web3.exceptions import ContractLogicError
 from eth_account.messages import encode_structured_data
 from eth_account.account import Account
+from dataclasses import dataclass
+
+
+@dataclass
+class ChainConfig:
+    chainId: int
+    name: str
+    rpcUrl: str
+    verifierAddress: str
+
+
+mumbai = ChainConfig(
+    chainId=80001,
+    name="mumbai",
+    rpcUrl="https://matic-mumbai.chainstacklabs.com",
+    # formerly "0xE5eC1D79E0AF57C57AAeE8D64cDCDf52493b8711"
+    verifierAddress="0x50C0017836517dc49C9EBC7615d8B322A0f91F67")
+
+polygon = ChainConfig(
+    chainId=137,
+    name="polygon",
+    rpcUrl="https://polygon-rpc.com",
+    verifierAddress="0x50C0017836517dc49C9EBC7615d8B322A0f91F67")
+
+active_chain = polygon
 
 KEYFILE_NAME = "keyfile.json"
 KEYFILE_PASSWORD = "hunter2"
-VERIFIER_MUMBAI_ADDRESS = "0xE5eC1D79E0AF57C57AAeE8D64cDCDf52493b8711"
 
 
 def load_keyfile():
@@ -118,19 +142,21 @@ def main():
         account = create_keyfile()
 
     print("Loaded account with address", account.address)
+    print(
+        f"Verifying on {active_chain.name} against {active_chain.verifierAddress}")
 
-    w3 = Web3(Web3.HTTPProvider("https://matic-mumbai.chainstacklabs.com"))
+    w3 = Web3(Web3.HTTPProvider(active_chain.rpcUrl))
     verifier = w3.eth.contract(
-        address=VERIFIER_MUMBAI_ADDRESS, abi=get_verifier_abi())
+        address=active_chain.verifierAddress, abi=get_verifier_abi())
 
     beneficiary = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
     nonce = verifier.functions.nonces(beneficiary).call()
 
     structured_data = {
         "domain": {
-            "chainId": 80001,  # mumbai
+            "chainId": active_chain.chainId,
             "name": 'showtime.xyz',
-            "verifyingContract": VERIFIER_MUMBAI_ADDRESS,
+            "verifyingContract": active_chain.verifierAddress,
             "version": 'v1',
         },
 
