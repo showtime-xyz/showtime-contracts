@@ -16,3 +16,6 @@
 [submodule "lib/nft-editions"]
 	path = lib/nft-editions
 	url = https://github.com/showtime-xyz/nft-editions
+[submodule "lib/openzeppelin-contracts"]
+	path = lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
