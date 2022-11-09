@@ -1,9 +1,5 @@
-@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
-@zoralabs/=node_modules/@zoralabs/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
 
-@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
-ds-test/=lib/ds-test/src/
-base64-sol/=lib/base64/
 forge-std/=lib/forge-std/src/
 
 lib/=lib/
