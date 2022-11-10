@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { IEdition, IEditionCreator } from "nft-editions/interfaces/IEditionCreator.sol";
+import { ClonesUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+
+import { IEdition, IEditionCreator } from "nft-editions/EditionCreator.sol";
+import { Edition } from "nft-editions/Edition.sol";
 
 import { IGatedEditionMinter } from "./interfaces/IGatedEditionMinter.sol";
 import { IShowtimeVerifier, Attestation, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
@@ -12,78 +15,95 @@ interface IOwnable {
 }
 
 contract GatedEditionCreator {
+    event CreatedEdition(
+        uint256 indexed editionId,
+        address indexed creator,
+        uint256 editionSize,
+        address editionContractAddress
+    );
+
+    error InvalidTimeLimit(uint256 offsetSeconds);
     error NullAddress();
     error VerificationFailed();
     error UnexpectedContext(address context);
 
-    string constant SYMBOL = "SHOWTIME";
+    string internal constant SYMBOL = unicode"✦ SHOWTIME";
+    uint256 internal constant MAX_DURATION_SECONDS = 5 weeks;
 
-    IEditionCreator public immutable editionCreator;
+    address public immutable editionImpl;
     IGatedEditionMinter public immutable minter;
     IShowtimeVerifier public immutable showtimeVerifier;
-    TimeCop public immutable timeCop;
 
-    constructor(
-        address _editionCreator,
-        address _minter,
-        address _timeCop
-    ) {
-        if (_editionCreator == address(0) || _minter == address(0) || _timeCop == address(0)) {
+    constructor(address _editionImpl, address _minter) {
+        if (_editionImpl == address(0) || _minter == address(0)) {
             revert NullAddress();
         }
-        editionCreator = IEditionCreator(_editionCreator);
-        minter = IGatedEditionMinter(_minter);
-        timeCop = TimeCop(_timeCop);
 
+        editionImpl = _editionImpl;
+        minter = IGatedEditionMinter(_minter);
         showtimeVerifier = IGatedEditionMinter(_minter).showtimeVerifier();
     }
 
     /// Creates a new edition contract as a factory with a deterministic address
-    /// Important: None of these fields (except the Url fields with the same hash) can be changed after calling
     /// @param name Name of the edition contract
     /// @param description Metadata: Description of the edition entry
     /// @param animationUrl Metadata: Animation url (optional) of the edition entry
     /// @param imageUrl Metadata: Image url (semi-required) of the edition entry
     /// @param editionSize Total size of the edition (number of possible editions)
     /// @param royaltyBPS BPS amount of royalty
-    /// @param claimWindowDurationSeconds How long after deployment the edition can be claimed, in seconds
+    /// @param mintPeriodSeconds How long after deployment the edition can be claimed, in seconds
     /// @param signedAttestation the attestation to verify along with a corresponding signature
     /// @dev we expect the signed attestation's context to correspond to this contract's address
     /// @dev we expect the signed attestation's beneficiary to be the edition's creator
-    /// @return the address of the created edition
+    /// @return edition the address of the created edition
     function createEdition(
-        // ISingleEditionMintableCreator parameters
         string memory name,
         string memory description,
         string memory animationUrl,
         string memory imageUrl,
         uint256 editionSize,
         uint256 royaltyBPS,
-        // additional parameters
-        uint256 claimWindowDurationSeconds,
+        uint256 mintPeriodSeconds,
         SignedAttestation calldata signedAttestation
-    ) external returns (address) {
+    ) external returns (IEdition edition) {
+        if (mintPeriodSeconds == 0 || mintPeriodSeconds > MAX_DURATION_SECONDS) {
+            revert InvalidTimeLimit(mintPeriodSeconds);
+        }
+
         validateAttestation(signedAttestation);
+        address creator = signedAttestation.attestation.beneficiary;
 
-        // deploy the new edition
-        IEdition edition = editionCreator.createEdition(
-            name,
-            SYMBOL,
-            description,
-            animationUrl,
-            imageUrl,
-            editionSize,
-            royaltyBPS,
-            claimWindowDurationSeconds
-        );
+        bytes32 salt = keccak256(abi.encodePacked(creator, name, animationUrl, imageUrl));
+        edition = IEdition(ClonesUpgradeable.cloneDeterministic(editionImpl, salt));
 
-        configureEdition(edition, signedAttestation, claimWindowDurationSeconds);
+        try
+            edition.initialize(
+                address(this),
+                name,
+                SYMBOL,
+                description,
+                animationUrl,
+                imageUrl,
+                editionSize,
+                royaltyBPS,
+                mintPeriodSeconds
+            )
+        {} catch {
+            // rethrow the problematic way until we have a better way
+            // see https://github.com/ethereum/solidity/issues/12654
+            assembly {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+        }
 
-        return address(edition);
+        emit CreatedEdition(uint256(salt), creator, editionSize, address(edition));
+
+        configureEdition(edition, signedAttestation);
     }
 
     function getEditionAtId(uint256 editionId) external view returns (IEdition) {
-        return editionCreator.getEditionAtId(editionId);
+        return IEdition(ClonesUpgradeable.predictDeterministicAddress(editionImpl, bytes32(editionId), address(this)));
     }
 
     function validateAttestation(SignedAttestation calldata signedAttestation) internal returns (bool) {
@@ -101,16 +121,8 @@ contract GatedEditionCreator {
         return true;
     }
 
-    function configureEdition(
-        IEdition edition,
-        // address creator,
-        SignedAttestation calldata signedAttestation,
-        uint256 _claimWindowDurationSeconds
-    ) internal {
+    function configureEdition(IEdition edition, SignedAttestation calldata signedAttestation) internal {
         address creator = signedAttestation.attestation.beneficiary;
-
-        // configure the time limit
-        timeCop.setTimeLimit(address(edition), _claimWindowDurationSeconds);
 
         // configure the edition (while we still own it)
         edition.setApprovedMinter(address(minter), true);
@@ -120,5 +132,9 @@ contract GatedEditionCreator {
 
         // and finally transfer ownership of the configured contract to the actual creator
         IOwnable(address(edition)).transferOwnership(creator);
+
+        // TODO:
+        // - setExternalURL
+        // - setStringProperties
     }
 }

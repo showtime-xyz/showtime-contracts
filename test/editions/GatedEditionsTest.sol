@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { Edition } from "nft-editions/Edition.sol";
-import { EditionCreator } from "nft-editions/EditionCreator.sol";
+import { Edition, IEdition } from "nft-editions/Edition.sol";
 import { Test } from "lib/forge-std/src/Test.sol";
 
-import { TimeCop } from "src/editions/TimeCop.sol";
 import { GatedEditionMinter } from "src/editions/GatedEditionMinter.sol";
 import { GatedEditionCreator } from "src/editions/GatedEditionCreator.sol";
 import "test/fixtures/ShowtimeVerifierFixture.sol";
@@ -17,7 +15,6 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     GatedEditionCreator gatedEditionCreator;
     GatedEditionMinter gatedEditionMinter;
-    TimeCop timeCop;
     ShowtimeVerifier verifier;
     GatedEditionMinter minter;
 
@@ -30,8 +27,6 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     uint256 signerKey;
 
     function setUp() public {
-        timeCop = new TimeCop(365 days);
-
         // configure verifier
         verifier = new ShowtimeVerifier(verifierOwner);
         (signerAddr, signerKey) = makeAddrAndKey("signer");
@@ -39,14 +34,13 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         verifier.registerSigner(signerAddr, 7);
 
         // configure minter
-        minter = new GatedEditionMinter(verifier, timeCop);
+        minter = new GatedEditionMinter(verifier);
 
         // configure editionCreator
         Edition editionImpl = new Edition();
-        EditionCreator editionCreator = new EditionCreator(address(editionImpl));
 
         // configure gatedEditionCreator
-        gatedEditionCreator = new GatedEditionCreator(address(editionCreator), address(minter), address(timeCop));
+        gatedEditionCreator = new GatedEditionCreator(address(editionImpl), address(minter));
     }
 
     function getVerifier() public view override returns (ShowtimeVerifier) {
@@ -65,15 +59,17 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         }
 
         edition = Edition(
-            gatedEditionCreator.createEdition(
-                "name",
-                "description",
-                "animationUrl",
-                "imageUrl",
-                EDITION_SIZE,
-                ROYALTY_BPS,
-                CLAIM_DURATION_WINDOW_SECONDS,
-                signedAttestation
+            address(
+                gatedEditionCreator.createEdition(
+                    "name",
+                    "description",
+                    "animationUrl",
+                    "imageUrl",
+                    EDITION_SIZE,
+                    ROYALTY_BPS,
+                    CLAIM_DURATION_WINDOW_SECONDS,
+                    signedAttestation
+                )
             )
         );
     }
@@ -90,10 +86,14 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     }
 
     function getCreatorAttestation() public view returns (Attestation memory creatorAttestation) {
+        return getCreatorAttestation(creator);
+    }
+
+    function getCreatorAttestation(address creatorAddr) public view returns (Attestation memory creatorAttestation) {
         // generate a valid attestation
         creatorAttestation = Attestation({
             context: address(gatedEditionCreator),
-            beneficiary: creator,
+            beneficiary: creatorAddr,
             validUntil: block.timestamp + 2 minutes,
             nonce: verifier.nonces(creator)
         });
@@ -122,11 +122,11 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         // create a new edition
         Edition edition = createEdition(getCreatorAttestation());
 
-        // the time limit has been set
-        assertEq(timeCop.timeLimits(address(edition)), block.timestamp + CLAIM_DURATION_WINDOW_SECONDS);
-
         // the edition is owned by the creator
         assertEq(edition.owner(), creator);
+
+        // it has the expected symbol
+        assertEq(edition.symbol(), unicode"✦ SHOWTIME");
 
         // the creator automatically received the first token
         assertEq(edition.balanceOf(creator), 1);
@@ -145,6 +145,57 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
         // the claimer received the second token
         assertEq(edition.balanceOf(claimer), 1);
+    }
+
+    function testTimeLimitedOpenEdition() public {
+        // create a new edition
+        Edition edition = createEdition(getCreatorAttestation());
+
+        // warp into the future
+        vm.warp(block.timestamp + CLAIM_DURATION_WINDOW_SECONDS + 1);
+
+        // generate a valid claimer attestation
+        SignedAttestation memory claimerAttestation = signed(signerKey, getClaimerAttestation(edition));
+
+        // can no longer mint
+        vm.expectRevert(abi.encodeWithSelector(IEdition.MintingEnded.selector));
+        minter.mintEdition(claimerAttestation);
+    }
+
+    function testCanNotCreateEditionWithNoTimeLimit() public {
+        // generate a valid attestation
+        SignedAttestation memory creatorAttestation = signed(signerKey, getCreatorAttestation());
+
+        vm.expectRevert(abi.encodeWithSelector(GatedEditionCreator.InvalidTimeLimit.selector, 0));
+        gatedEditionCreator.createEdition(
+            "name",
+            "description",
+            "animationUrl",
+            "imageUrl",
+            EDITION_SIZE,
+            ROYALTY_BPS,
+            0,
+            creatorAttestation
+        );
+    }
+
+    function testCanNotCreateEditionWithHugeTimeLimit() public {
+        uint256 hugeTimeLimit = 20 * 365 days;
+
+        // generate a valid attestation
+        SignedAttestation memory creatorAttestation = signed(signerKey, getCreatorAttestation());
+
+        vm.expectRevert(abi.encodeWithSelector(GatedEditionCreator.InvalidTimeLimit.selector, hugeTimeLimit));
+        gatedEditionCreator.createEdition(
+            "name",
+            "description",
+            "animationUrl",
+            "imageUrl",
+            EDITION_SIZE,
+            ROYALTY_BPS,
+            hugeTimeLimit,
+            creatorAttestation
+        );
     }
 
     function testCreateEditionWithWrongContext() public {
@@ -218,9 +269,9 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function testBatchMintFromSingleClaimer() public {
         // setup
-        Edition edition1 = createEdition(getCreatorAttestation());
-        Edition edition2 = createEdition(getCreatorAttestation());
-        Edition edition3 = createEdition(getCreatorAttestation());
+        Edition edition1 = createEdition(getCreatorAttestation(makeAddr("creator1")));
+        Edition edition2 = createEdition(getCreatorAttestation(makeAddr("creator2")));
+        Edition edition3 = createEdition(getCreatorAttestation(makeAddr("creator3")));
 
         SignedAttestation[] memory attestations = new SignedAttestation[](3);
         attestations[0] = signed(

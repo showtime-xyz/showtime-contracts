@@ -270,7 +270,7 @@ contract ShowtimeMTBurningTest is Test, ERC1155Holder {
     function testCannotBurnSomeonesTokens() public {
         mt.issueToken(address(0x1), 10, "some-hash", "0", address(0), 0);
 
-        vm.expectRevert("ERC1155: caller is not owner nor approved");
+        vm.expectRevert("ERC1155: caller is not token owner or approved");
         mt.burn(address(0x1), 1, 10);
     }
 
@@ -289,7 +289,7 @@ contract ShowtimeMTBurningTest is Test, ERC1155Holder {
         }
         uint256[] memory tokenIds = mt.issueTokenBatch(address(0x1), tokenAmounts, hashes, "0", addresses, royalties);
 
-        vm.expectRevert("ERC1155: caller is not owner nor approved");
+        vm.expectRevert("ERC1155: caller is not token owner or approved");
         mt.burnBatch(address(0x1), tokenIds, tokenAmounts);
     }
 
