@@ -1,24 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { Test } from "forge-std/Test.sol";
 
 import { ShowtimeMT } from "src/ShowtimeMT.sol";
 import { ShowtimeV1Market } from "src/ShowtimeV1Market.sol";
 
-import { DSTest } from "ds-test/test.sol";
-import { Hevm } from "test/Hevm.sol";
 import { TestToken } from "test/TestToken.sol";
 
 contract User is ERC1155Holder {}
 
-contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
+contract ShowtimeMTAccessTest is Test, ERC1155Holder {
     User internal anon;
     User internal admin;
     User internal minter;
     address[] internal minters;
     ShowtimeMT internal mt;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     event UserAccessSet(address _user, string _access, bool _enabled);
 
@@ -41,8 +39,8 @@ contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
 
     // it non-minter should not be able to mint
     function testNotMintersCannotMint() public {
-        hevm.prank(address(anon));
-        hevm.expectRevert("AccessProtected: caller is not minter");
+        vm.prank(address(anon));
+        vm.expectRevert("AccessProtected: caller is not minter");
 
         mt.issueToken(address(this), 10, "some-hash", "0", address(0), 0);
     }
@@ -51,7 +49,7 @@ contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
     function testOwnerCanSetAdmin() public {
         assertTrue(!mt.isAdmin(address(anon)));
 
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit UserAccessSet(address(anon), "ADMIN", true);
 
         mt.setAdmin(address(anon), true);
@@ -63,7 +61,7 @@ contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
     function testAdminCanSetMinter() public {
         assertTrue(!mt.isMinter(address(anon)));
 
-        hevm.prank(address(admin));
+        vm.prank(address(admin));
         mt.setMinter(address(anon), true);
         emit UserAccessSet(address(anon), "MINTER", true);
 
@@ -76,10 +74,10 @@ contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
             assertTrue(!mt.isMinter(minters[i]));
         }
 
-        hevm.prank(address(admin));
+        vm.prank(address(admin));
 
         for (uint256 i = 0; i < minters.length; i++) {
-            hevm.expectEmit(true, true, true, true);
+            vm.expectEmit(true, true, true, true);
             emit UserAccessSet(minters[i], "MINTER", true);
         }
 
@@ -94,8 +92,8 @@ contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
     function testAdminCanRevokeMinter() public {
         assertTrue(mt.isMinter(address(minter)));
 
-        hevm.prank(address(admin));
-        hevm.expectEmit(true, true, true, true);
+        vm.prank(address(admin));
+        vm.expectEmit(true, true, true, true);
         emit UserAccessSet(address(minter), "MINTER", false);
 
         mt.setMinter(address(minter), false);
@@ -105,10 +103,10 @@ contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
 
     // it admin should be able to revoke batch of minters
     function testAdminCanRevokeMinterBatch() public {
-        hevm.prank(address(admin));
+        vm.prank(address(admin));
 
         for (uint256 i = 0; i < minters.length; i++) {
-            hevm.expectEmit(true, true, true, true);
+            vm.expectEmit(true, true, true, true);
             emit UserAccessSet(minters[i], "MINTER", false);
         }
 
@@ -121,15 +119,15 @@ contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
 
     // it non-owner should not be able to set admin
     function testNonOwnerCannotSetAdmin() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Ownable: caller is not the owner");
 
-        hevm.prank(address(admin));
+        vm.prank(address(admin));
         mt.setAdmin(address(admin), true);
     }
 
     // it owner should be able to revoke admin
     function testOwnerCanRevokeAdmin() public {
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit UserAccessSet(address(admin), "ADMIN", false);
 
         mt.setAdmin(address(admin), false);
@@ -139,15 +137,15 @@ contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
 
     // it admin should be able to enable/disable minting for all
     function testAdminCanControlPublicMinting() public {
-        hevm.startPrank(address(admin));
-        hevm.expectEmit(true, true, true, true);
+        vm.startPrank(address(admin));
+        vm.expectEmit(true, true, true, true);
         emit UserAccessSet(address(0), "MINTER", true);
 
         mt.setPublicMinting(true);
 
         assertTrue(mt.publicMinting());
 
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit UserAccessSet(address(0), "MINTER", false);
 
         mt.setPublicMinting(false);
@@ -156,10 +154,9 @@ contract ShowtimeMTAccessTest is DSTest, ERC1155Holder {
     }
 }
 
-contract ShowtimeMTMintingTest is DSTest, ERC1155Holder {
+contract ShowtimeMTMintingTest is Test, ERC1155Holder {
     User internal admin;
     ShowtimeMT internal mt;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
         admin = new User();
@@ -211,16 +208,15 @@ contract ShowtimeMTMintingTest is DSTest, ERC1155Holder {
 
     // it should not be able to mint if public minting is disabled
     function testMintersCantMintIfMintingIsDisabled() public {
-        hevm.expectRevert("AccessProtected: caller is not minter");
-        hevm.prank(address(0x1));
+        vm.expectRevert("AccessProtected: caller is not minter");
+        vm.prank(address(0x1));
 
         mt.issueToken(address(0x1), 10, "some-hash", "0", address(0), 0);
     }
 }
 
-contract ShowtimeMTBurningTest is DSTest, ERC1155Holder {
+contract ShowtimeMTBurningTest is Test, ERC1155Holder {
     ShowtimeMT internal mt;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
         mt = new ShowtimeMT();
@@ -274,7 +270,7 @@ contract ShowtimeMTBurningTest is DSTest, ERC1155Holder {
     function testCannotBurnSomeonesTokens() public {
         mt.issueToken(address(0x1), 10, "some-hash", "0", address(0), 0);
 
-        hevm.expectRevert("ERC1155: caller is not owner nor approved");
+        vm.expectRevert("ERC1155: caller is not owner nor approved");
         mt.burn(address(0x1), 1, 10);
     }
 
@@ -293,7 +289,7 @@ contract ShowtimeMTBurningTest is DSTest, ERC1155Holder {
         }
         uint256[] memory tokenIds = mt.issueTokenBatch(address(0x1), tokenAmounts, hashes, "0", addresses, royalties);
 
-        hevm.expectRevert("ERC1155: caller is not owner nor approved");
+        vm.expectRevert("ERC1155: caller is not owner nor approved");
         mt.burnBatch(address(0x1), tokenIds, tokenAmounts);
     }
 
@@ -301,15 +297,14 @@ contract ShowtimeMTBurningTest is DSTest, ERC1155Holder {
     function testCannotBurnMoreThanOwned() public {
         mt.issueToken(address(this), 10, "some-hash", "0", address(0), 0);
 
-        hevm.expectRevert("ERC1155: burn amount exceeds balance");
+        vm.expectRevert("ERC1155: burn amount exceeds balance");
         mt.burn(address(this), 1, 11);
     }
 }
 
-contract ShowtimeMTURITest is DSTest, ERC1155Holder {
+contract ShowtimeMTURITest is Test, ERC1155Holder {
     ShowtimeMT internal mt;
     uint256 internal tokenId;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
         mt = new ShowtimeMT();
@@ -335,10 +330,9 @@ contract ShowtimeMTURITest is DSTest, ERC1155Holder {
     }
 }
 
-contract ShowtimeMTTransferTest is DSTest, ERC1155Holder {
+contract ShowtimeMTTransferTest is Test, ERC1155Holder {
     ShowtimeMT internal mt;
     uint256 internal tokenId;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
         mt = new ShowtimeMT();
@@ -360,9 +354,8 @@ contract ShowtimeMTTransferTest is DSTest, ERC1155Holder {
     }
 }
 
-contract ShowtimeMTRoyaltyTest is DSTest, ERC1155Holder {
+contract ShowtimeMTRoyaltyTest is Test, ERC1155Holder {
     ShowtimeMT internal mt;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
         mt = new ShowtimeMT();
@@ -400,14 +393,13 @@ contract ShowtimeMTRoyaltyTest is DSTest, ERC1155Holder {
 
     // it throws on % greater than 100%
     function testCannotHaveMoreThan100PercentRoyalty() public {
-        hevm.expectRevert("ERC2981Royalties: value too high");
+        vm.expectRevert("ERC2981Royalties: value too high");
         mt.issueToken(address(this), 10, "some-hash", "0", address(this), 101_00);
     }
 }
 
-contract ShowtimeMTERC165Test is DSTest, ERC1155Holder {
+contract ShowtimeMTERC165Test is Test, ERC1155Holder {
     ShowtimeMT internal mt;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     function setUp() public {
         mt = new ShowtimeMT();

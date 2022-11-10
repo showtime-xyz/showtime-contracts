@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { IEditionSingleMintable } from "@zoralabs/nft-editions-contracts/contracts/IEditionSingleMintable.sol";
+import { IEdition } from "nft-editions/interfaces/IEdition.sol";
+
 import { IShowtimeVerifier, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
 import { IGatedEditionMinter } from "./interfaces/IGatedEditionMinter.sol";
 import { TimeCop } from "./TimeCop.sol";
 
 contract GatedEditionMinter is IGatedEditionMinter {
     error NullAddress();
-    error TimeLimitReached(IEditionSingleMintable collection);
     error VerificationFailed();
 
     IShowtimeVerifier public immutable override showtimeVerifier;
@@ -27,17 +27,13 @@ contract GatedEditionMinter is IGatedEditionMinter {
     /// @dev the edition to mint will be determined by the attestation's context
     /// @dev the recipient of the minted edition will be determined by the attestation's beneficiary
     function mintEdition(SignedAttestation calldata signedAttestation) public override {
-        IEditionSingleMintable collection = IEditionSingleMintable(signedAttestation.attestation.context);
-
-        if (timeCop.timeLimitReached(address(collection))) {
-            revert TimeLimitReached(collection);
-        }
+        IEdition collection = IEdition(signedAttestation.attestation.context);
 
         if (!showtimeVerifier.verifyAndBurn(signedAttestation)) {
             revert VerificationFailed();
         }
 
-        collection.mintEdition(signedAttestation.attestation.beneficiary);
+        collection.mint(signedAttestation.attestation.beneficiary);
     }
 
     /// @notice a batch version of mintEdition

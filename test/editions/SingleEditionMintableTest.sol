@@ -1,73 +1,74 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { SharedNFTLogic } from "@zoralabs/nft-editions-contracts/contracts/SharedNFTLogic.sol";
-import { SingleEditionMintable } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintable.sol";
-import { SingleEditionMintableCreator } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintableCreator.sol";
+import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
-import { DSTest } from "ds-test/test.sol";
-import { Hevm } from "test/Hevm.sol";
+import { IEdition } from "nft-editions/interfaces/IEdition.sol";
+import { Edition } from "nft-editions/Edition.sol";
+import { EditionCreator } from "nft-editions/EditionCreator.sol";
+
+import { Test } from "forge-std/Test.sol";
+
+interface IOwnable {
+    function owner() external view returns (address);
+}
 
 contract User {}
 
-contract CreatorOwnedCollectionTest is DSTest {
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
-
+contract CreatorOwnedCollectionTest is Test {
     User internal alice = new User();
     User internal bob = new User();
     User internal charlieTheCreator = new User();
 
-    SingleEditionMintableCreator internal editionCreator;
+    EditionCreator internal editionCreator;
 
     function setUp() public {
-        SharedNFTLogic sharedNFTLogic = new SharedNFTLogic();
-        SingleEditionMintable editionImplementation = new SingleEditionMintable(sharedNFTLogic);
-        editionCreator = new SingleEditionMintableCreator(address(editionImplementation));
+        Edition editionImpl = new Edition();
+        editionCreator = new EditionCreator(address(editionImpl));
     }
 
     function testCreateMintableCollection() public {
         // when charlieTheCreator calls `createEdition`
-        hevm.prank(address(charlieTheCreator));
-        uint newId = editionCreator.createEdition(
+        vm.prank(address(charlieTheCreator));
+        IEdition edition = editionCreator.createEdition(
             "The Collection",
             "COLL",
             "The best collection in the world",
-            "",     // _animationUrl
-            0x0,    // _animationHash
+            "", // _animationUrl
             "http://example.com/image.png",
-            keccak256("http://example.com/image.png"),
-            2,      // _editionSize
-            1000);  // _royaltyBPS
+            2, // _editionSize
+            10_00, // _royaltyBPS
+            0 // _mintPeriodSeconds
+        );
 
         // then we get a correctly configured collection
-        SingleEditionMintable edition = editionCreator.getEditionAtId(newId);
-        assertEq(edition.owner(), address(charlieTheCreator));
-        assertEq(edition.name(), "The Collection");
+        assertEq(IOwnable(address(edition)).owner(), address(charlieTheCreator));
+        assertEq(IERC721Metadata(address(edition)).name(), "The Collection");
 
         // when alice tries to mint from that collection, it should fail
-        hevm.prank(address(alice));
-        hevm.expectRevert("Needs to be an allowed minter");
-        edition.mintEdition(address(alice));
+        vm.prank(address(alice));
+        vm.expectRevert("Needs to be an allowed minter");
+        edition.mint(address(alice));
 
         // when bob tries to open up public minting, it should fail
-        hevm.prank(address(bob));
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(bob));
+        vm.expectRevert("Ownable: caller is not the owner");
         edition.setApprovedMinter(address(0), true);
 
         // when charlieTheCreator opens up public minting
-        hevm.prank(address(charlieTheCreator));
+        vm.prank(address(charlieTheCreator));
         edition.setApprovedMinter(address(0), true);
 
         // then anybody can mint
-        hevm.prank(address(alice));
-        edition.mintEdition(address(alice));
+        vm.prank(address(alice));
+        edition.mint(address(alice));
 
-        hevm.prank(address(bob));
-        edition.mintEdition(address(bob));
+        vm.prank(address(bob));
+        edition.mint(address(bob));
 
         // when we are sold out, then new mints fail (even for charlieTheCreator)
-        hevm.prank(address(charlieTheCreator));
-        hevm.expectRevert("Sold out");
-        edition.mintEdition(address(charlieTheCreator));
+        vm.prank(address(charlieTheCreator));
+        vm.expectRevert("Sold out");
+        edition.mint(address(charlieTheCreator));
     }
 }
