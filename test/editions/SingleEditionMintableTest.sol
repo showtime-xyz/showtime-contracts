@@ -47,12 +47,12 @@ contract CreatorOwnedCollectionTest is Test {
 
         // when alice tries to mint from that collection, it should fail
         vm.prank(address(alice));
-        vm.expectRevert("Needs to be an allowed minter");
+        vm.expectRevert(abi.encodeWithSelector(IEdition.Unauthorized.selector));
         edition.mint(address(alice));
 
         // when bob tries to open up public minting, it should fail
         vm.prank(address(bob));
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("UNAUTHORIZED");
         edition.setApprovedMinter(address(0), true);
 
         // when charlieTheCreator opens up public minting
@@ -68,7 +68,7 @@ contract CreatorOwnedCollectionTest is Test {
 
         // when we are sold out, then new mints fail (even for charlieTheCreator)
         vm.prank(address(charlieTheCreator));
-        vm.expectRevert("Sold out");
+        vm.expectRevert(abi.encodeWithSelector(IEdition.SoldOut.selector));
         edition.mint(address(charlieTheCreator));
     }
 }

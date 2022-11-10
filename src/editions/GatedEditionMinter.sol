@@ -12,15 +12,13 @@ contract GatedEditionMinter is IGatedEditionMinter {
     error VerificationFailed();
 
     IShowtimeVerifier public immutable override showtimeVerifier;
-    TimeCop public immutable timeCop;
 
-    constructor(IShowtimeVerifier _showtimeVerifier, TimeCop _timeCop) {
-        if (address(_showtimeVerifier) == address(0) || address(_timeCop) == address(0)) {
+    constructor(IShowtimeVerifier _showtimeVerifier) {
+        if (address(_showtimeVerifier) == address(0)) {
             revert NullAddress();
         }
 
         showtimeVerifier = _showtimeVerifier;
-        timeCop = _timeCop;
     }
 
     /// @param signedAttestation the attestation to verify along with a corresponding signature
