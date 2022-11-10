@@ -56,11 +56,6 @@
         "typechain": "^7.0.0",
         "typescript": "^4.5.5"
     },
-    "dependencies": {
-        "@openzeppelin/contracts": "=4.5.0",
-        "@openzeppelin/contracts-upgradeable": "=4.6.0",
-        "@zoralabs/nft-editions-contracts": "https://github.com/ourzora/nft-editions.git"
-    },
     "files": [
         "/src"
     ],

@@ -1022,20 +1022,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts-upgradeable@npm:=4.6.0, @openzeppelin/contracts-upgradeable@npm:^4.3.2":
-  version: 4.6.0
-  resolution: "@openzeppelin/contracts-upgradeable@npm:4.6.0"
-  checksum: f9802c9cccf31bd475412ba5d862ed15eed5352302c30b29c38f84aed2dcfe0d957687935a72068f3d44292a4a55b0ff26cd018b2e14a47f16f74f087009aa29
-  languageName: node
-  linkType: hard
-
-"@openzeppelin/contracts@npm:=4.5.0":
-  version: 4.5.0
-  resolution: "@openzeppelin/contracts@npm:4.5.0"
-  checksum: 1c9c5dff041905771d2a83ac29c64dbf0b48603de43f74a34fb1358813d7c7bf259efe2f64e2112b410c5cca7a0b41aaedd882368be5f01a6d50a3ee0740f962
-  languageName: node
-  linkType: hard
-
 "@paulrberg/solidity-template@workspace:.":
   version: 0.0.0-use.local
   resolution: "@paulrberg/solidity-template@workspace:."
@@ -1051,8 +1037,6 @@ __metadata:
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13"
     "@nomiclabs/hardhat-etherscan": ^3.0.0
     "@nomiclabs/hardhat-waffle": ^2.0.2
-    "@openzeppelin/contracts": =4.5.0
-    "@openzeppelin/contracts-upgradeable": =4.6.0
     "@typechain/ethers-v5": ^9.0.0
     "@typechain/hardhat": ^4.0.0
     "@types/chai": ^4.3.0
@@ -1061,7 +1045,6 @@ __metadata:
     "@types/node": ^17.0.18
     "@typescript-eslint/eslint-plugin": ^5.12.0
     "@typescript-eslint/parser": ^5.12.0
-    "@zoralabs/nft-editions-contracts": "https://github.com/ourzora/nft-editions.git"
     chai: ^4.3.6
     commitizen: ^4.2.4
     cross-env: ^7.0.3
@@ -1793,17 +1776,6 @@ __metadata:
   version: 1.1.0
   resolution: "@yarnpkg/lockfile@npm:1.1.0"
   checksum: 05b881b4866a3546861fee756e6d3812776ea47fa6eb7098f983d6d0eefa02e12b66c3fff931574120f196286a7ad4879ce02743c8bb2be36c6a576c7852083a
-  languageName: node
-  linkType: hard
-
-"@zoralabs/nft-editions-contracts@https://github.com/ourzora/nft-editions.git":
-  version: 1.0.1
-  resolution: "@zoralabs/nft-editions-contracts@https://github.com/ourzora/nft-editions.git#commit=980061e1e183d52886b190d128da987d1a144917"
-  dependencies:
-    "@openzeppelin/contracts-upgradeable": ^4.3.2
-    base64-sol: ^1.0.1
-    ethers: ^5.4.1
-  checksum: c65a14ad0b1e88033f6fefa5e7bf9d7a91947354a5ad610a57c705c831c489366c3a988e60440f792b3d53015577da34c599a25237c36616f7b28216036ccbbc
   languageName: node
   linkType: hard
 
@@ -3112,13 +3084,6 @@ __metadata:
   version: 1.5.1
   resolution: "base64-js@npm:1.5.1"
   checksum: 669632eb3745404c2f822a18fc3a0122d2f9a7a13f7fb8b5823ee19d1d2ff9ee5b52c53367176ea4ad093c332fd5ab4bd0ebae5a8e27917a4105a4cfc86b1005
-  languageName: node
-  linkType: hard
-
-"base64-sol@npm:^1.0.1":
-  version: 1.1.0
-  resolution: "base64-sol@npm:1.1.0"
-  checksum: 9bea828af71e6adcf7c841cf0001e03bd1eae8cc1aef86daedb36f04117b2a626ac23631f700d56a24515f88c2021d7ebdbee4608369f66c53e51c0b4b39ee47
   languageName: node
   linkType: hard
 
@@ -6032,7 +5997,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^5.0.1, ethers@npm:^5.0.2, ethers@npm:^5.4.1, ethers@npm:^5.5.2, ethers@npm:^5.6.2":
+"ethers@npm:^5.0.1, ethers@npm:^5.0.2, ethers@npm:^5.5.2, ethers@npm:^5.6.2":
   version: 5.6.5
   resolution: "ethers@npm:5.6.5"
   dependencies:
