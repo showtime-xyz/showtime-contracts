@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { SingleEditionMintableCreator } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintableCreator.sol";
-import { SingleEditionMintable } from "@zoralabs/nft-editions-contracts/contracts/SingleEditionMintable.sol";
-import { SharedNFTLogic } from "@zoralabs/nft-editions-contracts/contracts/SharedNFTLogic.sol";
+import { Edition } from "nft-editions/Edition.sol";
+import { EditionCreator } from "nft-editions/EditionCreator.sol";
 import { Test } from "lib/forge-std/src/Test.sol";
 
 import { TimeCop } from "src/editions/TimeCop.sol";
@@ -43,8 +42,8 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         minter = new GatedEditionMinter(verifier, timeCop);
 
         // configure editionCreator
-        SingleEditionMintable editionImpl = new SingleEditionMintable(new SharedNFTLogic());
-        SingleEditionMintableCreator editionCreator = new SingleEditionMintableCreator(address(editionImpl));
+        Edition editionImpl = new Edition();
+        EditionCreator editionCreator = new EditionCreator(address(editionImpl));
 
         // configure gatedEditionCreator
         gatedEditionCreator = new GatedEditionCreator(address(editionCreator), address(minter), address(timeCop));
@@ -56,7 +55,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function createEdition(SignedAttestation memory signedAttestation, bytes memory expectedError)
         public
-        returns (SingleEditionMintable edition)
+        returns (Edition edition)
     {
         // anyone can broadcast the transaction as long as it has the right signed attestation
         vm.prank(relayer);
@@ -65,7 +64,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
             vm.expectRevert(expectedError);
         }
 
-        edition = SingleEditionMintable(
+        edition = Edition(
             gatedEditionCreator.createEdition(
                 "name",
                 "description",
@@ -81,12 +80,12 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function createEdition(Attestation memory attestation, bytes memory expectedError)
         public
-        returns (SingleEditionMintable edition)
+        returns (Edition edition)
     {
         return createEdition(signed(signerKey, attestation), expectedError);
     }
 
-    function createEdition(Attestation memory attestation) public returns (SingleEditionMintable) {
+    function createEdition(Attestation memory attestation) public returns (Edition) {
         return createEdition(attestation, "");
     }
 
@@ -101,7 +100,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     }
 
     function getClaimerAttestation(
-        SingleEditionMintable edition,
+        Edition edition,
         address _claimer,
         uint256 _validUntil,
         uint256 _nonce
@@ -111,7 +110,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
             Attestation({ context: address(edition), beneficiary: _claimer, validUntil: _validUntil, nonce: _nonce });
     }
 
-    function getClaimerAttestation(SingleEditionMintable edition) public view returns (Attestation memory) {
+    function getClaimerAttestation(Edition edition) public view returns (Attestation memory) {
         return getClaimerAttestation(edition, claimer, block.timestamp + 2 minutes, verifier.nonces(claimer));
     }
 
@@ -121,7 +120,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function testCreateEditionHappyPath() public {
         // create a new edition
-        SingleEditionMintable edition = createEdition(getCreatorAttestation());
+        Edition edition = createEdition(getCreatorAttestation());
 
         // the time limit has been set
         assertEq(timeCop.timeLimits(address(edition)), block.timestamp + CLAIM_DURATION_WINDOW_SECONDS);
@@ -190,7 +189,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function testCanNotReuseClaimerAttestation() public {
         // setup
-        SingleEditionMintable edition = createEdition(getCreatorAttestation());
+        Edition edition = createEdition(getCreatorAttestation());
         Attestation memory claimerAttestation = getClaimerAttestation(edition);
         SignedAttestation memory signedAttestation = signed(signerKey, claimerAttestation);
 
@@ -203,7 +202,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     }
 
     function testWithGreatAttestationsComesGreatClaims() public {
-        SingleEditionMintable edition = createEdition(getCreatorAttestation());
+        Edition edition = createEdition(getCreatorAttestation());
 
         // can mint once
         minter.mintEdition(signed(signerKey, getClaimerAttestation(edition)));
@@ -219,9 +218,9 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function testBatchMintFromSingleClaimer() public {
         // setup
-        SingleEditionMintable edition1 = createEdition(getCreatorAttestation());
-        SingleEditionMintable edition2 = createEdition(getCreatorAttestation());
-        SingleEditionMintable edition3 = createEdition(getCreatorAttestation());
+        Edition edition1 = createEdition(getCreatorAttestation());
+        Edition edition2 = createEdition(getCreatorAttestation());
+        Edition edition3 = createEdition(getCreatorAttestation());
 
         SignedAttestation[] memory attestations = new SignedAttestation[](3);
         attestations[0] = signed(
@@ -251,7 +250,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
     function testBatchMintFromMultipleClaimers() public {
         // setup
-        SingleEditionMintable edition = createEdition(getCreatorAttestation());
+        Edition edition = createEdition(getCreatorAttestation());
 
         address claimer1 = makeAddr("claimer1");
         address claimer2 = makeAddr("claimer2");

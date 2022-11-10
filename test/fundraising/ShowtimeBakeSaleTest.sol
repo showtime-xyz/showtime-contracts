@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Test } from "forge-std/Test.sol";
 
 import { ShowtimeMT } from "src/ShowtimeMT.sol";
 import { ShowtimeV1Market } from "src/ShowtimeV1Market.sol";
 import { ShowtimeBakeSale } from "src/fundraising/ShowtimeBakeSale.sol";
 
-import { DSTest } from "ds-test/test.sol";
-import { Hevm } from "test/Hevm.sol";
 import { TestToken } from "test/TestToken.sol";
-
 
 contract User is ERC1155Holder {}
 
-contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
+contract ShowtimeBakeSaleTest is Test, ERC1155Holder {
     uint256 internal constant INITIAL_NFT_SUPPLY = 1000;
     address internal constant BURN_ADDRESS = address(0xdEaD);
     address internal constant FORWARDER_ADDRESS = BURN_ADDRESS;
@@ -26,7 +24,6 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
     TestToken internal token;
     ShowtimeMT internal showtimeNFT;
     ShowtimeV1Market internal market;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     address[] internal justCharityPayees = [address(charity)];
     uint256[] internal just100Shares = [100];
@@ -80,7 +77,7 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
 
         // mint erc20s to bob
         token = new TestToken();
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         token.mint(0xffffffff);
 
         address[] memory tokens = new address[](1);
@@ -88,7 +85,7 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
 
         // approvals
         market = new ShowtimeV1Market(address(showtimeNFT), FORWARDER_ADDRESS, tokens);
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         token.approve(address(market), type(uint256).max);
 
         // deploy the normal splitter with 100% to charity
@@ -96,7 +93,7 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
     }
 
     function testDeploySalesContractWithNoPayees() public {
-        hevm.expectRevert("PaymentSplitter: no payees");
+        vm.expectRevert("PaymentSplitter: no payees");
 
         address[] memory payees = new address[](0);
         uint256[] memory shares = new uint256[](0);
@@ -105,7 +102,7 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
     }
 
     function testDeploySalesContractWithBadShares() public {
-        hevm.expectRevert("PaymentSplitter: shares are 0");
+        vm.expectRevert("PaymentSplitter: shares are 0");
 
         address[] memory payees = new address[](1);
         payees[0] = address(bob);
@@ -117,7 +114,7 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
     }
 
     function testDeploySalesContractWithPayeesSharesMismatch() public {
-        hevm.expectRevert("PaymentSplitter: payees and shares length mismatch");
+        vm.expectRevert("PaymentSplitter: payees and shares length mismatch");
 
         address[] memory payees = new address[](2);
         payees[0] = address(alice);
@@ -130,7 +127,7 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
     }
 
     function testDeploySalesContractWithDuplicatePayees() public {
-        hevm.expectRevert("PaymentSplitter: account already has shares");
+        vm.expectRevert("PaymentSplitter: account already has shares");
 
         address[] memory payees = new address[](2);
         payees[0] = address(bob);
@@ -144,22 +141,22 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
     }
 
     function testOnlyOwnerCanCreateSales() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Ownable: caller is not the owner");
 
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         charitySeller.createSale(2, 2, 2, address(token));
     }
 
     function testOnlyOwnerCanCancelSales() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Ownable: caller is not the owner");
 
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         charitySeller.cancelSale(0);
     }
 
     function testOnlyOwnerCanWithdraw() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
-        hevm.prank(address(alice));
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(alice));
         charitySeller.withdraw(42, address(alice));
     }
 
@@ -167,7 +164,7 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
         uint256 tokenId = tokenId10PctRoyaltyToAlice;
 
         // when alice transfers her NFTs to the charitySeller
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         showtimeNFT.safeTransferFrom(address(alice), address(charitySeller), tokenId, INITIAL_NFT_SUPPLY, "");
 
         // then we see the balance of the charitySeller reflected
@@ -185,17 +182,17 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
         }
 
         // when bob purchases an NFT
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit SaleCompleted(listingId, address(charitySeller), address(bob), address(bob), quantity);
 
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         market.buy(listingId, tokenId, quantity, price, address(token), address(bob));
 
         // then we see the balances reflected
         uint256 salePrice = uint256(quantity) * uint256(price);
         uint256 royalties = salePrice / 10;
         uint256 saleProceeds = salePrice - royalties;
-        uint remainingSupply = INITIAL_NFT_SUPPLY - quantity;
+        uint256 remainingSupply = INITIAL_NFT_SUPPLY - quantity;
         assertEq(quantity, showtimeNFT.balanceOf(address(bob), tokenId));
         assertEq(remainingSupply, showtimeNFT.balanceOf(address(charitySeller), tokenId));
         assertEq(saleProceeds, token.balanceOf(address(charitySeller)));
@@ -207,7 +204,7 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
         }
 
         // when someone calls release (could be anyone, so let's randomly pick bob)
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         charitySeller.release(token, address(charity));
 
         // then we see the balance of the sales contract going to the charity
@@ -215,19 +212,13 @@ contract ShowtimeBakeSaleTest is DSTest, ERC1155Holder {
         assertEq(saleProceeds, token.balanceOf(address(charity)));
 
         // when the deployer cancels the sale, then the listing really is deleted
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit ListingDeleted(listingId, address(charitySeller));
         charitySeller.cancelSale(listingId);
 
         // when the deployer burns the remaining supply
-        hevm.expectEmit(true, true, true, true);
-        emit TransferSingle(
-            address(charitySeller),
-            address(charitySeller),
-            address(alice),
-            tokenId,
-            remainingSupply
-        );
+        vm.expectEmit(true, true, true, true);
+        emit TransferSingle(address(charitySeller), address(charitySeller), address(alice), tokenId, remainingSupply);
         charitySeller.withdraw(tokenId, address(alice));
 
         // then the transfer really happened

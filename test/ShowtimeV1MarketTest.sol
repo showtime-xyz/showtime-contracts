@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { Test } from "forge-std/Test.sol";
 
 import { ShowtimeMT } from "src/ShowtimeMT.sol";
 import { ShowtimeV1Market, IERC20 } from "src/ShowtimeV1Market.sol";
 
-import { DSTest } from "ds-test/test.sol";
-import { Hevm } from "test/Hevm.sol";
 import { TestToken } from "test/TestToken.sol";
 
 contract User is ERC1155Holder {}
 
-contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
+contract ShowtimeV1MarketTest is Test, ERC1155Holder {
     uint256 constant INITIAL_NFT_SUPPLY = 10;
     address constant BURN_ADDRESS = address(0xdEaD);
     address constant FORWARDER_ADDRESS = BURN_ADDRESS;
@@ -22,7 +21,6 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     TestToken internal token;
     ShowtimeMT internal showtimeNFT;
     ShowtimeV1Market internal market;
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     uint256 tokenId0PctRoyalty;
     uint256 tokenId10PctRoyaltyToAlice;
@@ -84,7 +82,7 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
 
         // mint erc20s to bob
         token = new TestToken();
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         token.mint(2500);
 
         address[] memory tokens = new address[](1);
@@ -93,9 +91,9 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         // approvals
         market = new ShowtimeV1Market(address(showtimeNFT), FORWARDER_ADDRESS, tokens);
         showtimeNFT.setApprovalForAll(address(market), true);
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         showtimeNFT.setApprovalForAll(address(market), true);
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         token.approve(address(market), 2500);
     }
 
@@ -137,11 +135,11 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
 
     // it creates a new listing
     function testCanCreateListing() public {
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit ListingCreated(0, address(alice), 1);
 
         // alice creates a sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // alice still owns the NFTs
@@ -163,16 +161,16 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         // alice does not own token 2
         assertEq(showtimeNFT.balanceOf(address(alice), 2), 0);
 
-        hevm.expectRevert(abi.encodeWithSignature("SellerDoesNotOwnToken(uint256,uint256)", 2, 5));
-        hevm.prank(address(alice));
+        vm.expectRevert(abi.encodeWithSignature("SellerDoesNotOwnToken(uint256,uint256)", 2, 5));
+        vm.prank(address(alice));
         market.createSale(2, 5, 500, address(token));
     }
 
     // it ensures that the listing is in an accepted currency
     function testListingUsesAcceptedCurrenciesOnly() public {
-        hevm.expectRevert(abi.encodeWithSignature("CurrencyNotAccepted(address)", address(showtimeNFT)));
+        vm.expectRevert(abi.encodeWithSignature("CurrencyNotAccepted(address)", address(showtimeNFT)));
 
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         market.createSale(1, 5, 500, address(showtimeNFT));
     }
 
@@ -181,9 +179,9 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         // alice owns INITIAL_NFT_SUPPLY of token 1
         assertEq(showtimeNFT.balanceOf(address(alice), 1), INITIAL_NFT_SUPPLY);
 
-        hevm.expectRevert(abi.encodeWithSignature("SellerDoesNotOwnToken(uint256,uint256)", 1, INITIAL_NFT_SUPPLY + 1));
+        vm.expectRevert(abi.encodeWithSignature("SellerDoesNotOwnToken(uint256,uint256)", 1, INITIAL_NFT_SUPPLY + 1));
 
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
 
         market.createSale(1, INITIAL_NFT_SUPPLY + 1, 500, address(token));
     }
@@ -191,25 +189,25 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     // it ensures that request from the buyer lines up with the listing
     function testBuyerRequestMatchesListing() public {
         // alice creates a sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 10, address(token));
 
-        hevm.startPrank(address(bob));
+        vm.startPrank(address(bob));
 
-        hevm.expectRevert(abi.encodeWithSignature("TokenIdMismatch(uint256)", 1));
+        vm.expectRevert(abi.encodeWithSignature("TokenIdMismatch(uint256)", 1));
         market.buy(listingId, 424242424242, 2, 10, address(token), address(bob));
 
-        hevm.expectRevert(abi.encodeWithSignature("PriceMismatch(uint256)", 10));
+        vm.expectRevert(abi.encodeWithSignature("PriceMismatch(uint256)", 10));
         market.buy(listingId, 1, 2, 424242424242, address(token), address(bob));
 
-        hevm.expectRevert(abi.encodeWithSignature("CurrencyMismatch(address)", address(token)));
+        vm.expectRevert(abi.encodeWithSignature("CurrencyMismatch(address)", address(token)));
         market.buy(listingId, 1, 2, 10, address(bob), address(bob));
     }
 
     // it creates a new listing with price 0
     function testCreateFreeListing() public {
         // alice creates a sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 0, address(token));
 
         (uint256 tokenId, , , , address seller) = market.listings(listingId);
@@ -220,7 +218,7 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
 
         uint256 bobsTokenBalanceBefore = token.balanceOf(address(bob));
 
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         market.buy(listingId, 1, 2, 0, address(token), address(bob));
 
         assertEq(showtimeNFT.balanceOf(address(bob), tokenId), 2);
@@ -232,7 +230,7 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     // sellers can *not* buy from themselves
     function testSellersCannotSelfBuy() public {
         // alice creates a sale
-        hevm.startPrank(address(alice));
+        vm.startPrank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         (uint256 tokenId, , , , address seller) = market.listings(listingId);
@@ -244,43 +242,43 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         assertEq(showtimeNFT.balanceOf(address(alice), tokenId), INITIAL_NFT_SUPPLY);
 
         // alice can not initially complete the sale because she doesn't have the tokens to buy
-        hevm.expectRevert(abi.encodeWithSignature("CanNotSellToSelf()"));
+        vm.expectRevert(abi.encodeWithSignature("CanNotSellToSelf()"));
         market.buy(listingId, 1, 5, 500, address(token), address(alice));
     }
 
     // it has enough tokens to buy
     function testChecksBuyerCanPay() public {
         // alice creates the sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // bob burns his tokens
-        hevm.startPrank(address(bob));
+        vm.startPrank(address(bob));
         token.transfer(BURN_ADDRESS, token.balanceOf(address(bob)));
 
         // bob has no tokens now
         assertEq(token.balanceOf(address(bob)), 0);
 
         // bob can no longer buy
-        hevm.expectRevert("ERC20: transfer amount exceeds balance");
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
         market.buy(listingId, 1, 5, 500, address(token), address(bob));
     }
 
     // it cannot cancel other seller's sale
     function testCannotCancelSomeonesSale() public {
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // bob cannot cancel
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
 
-        hevm.expectRevert(abi.encodeWithSignature("NotListingSeller(uint256)", listingId));
+        vm.expectRevert(abi.encodeWithSignature("NotListingSeller(uint256)", listingId));
         market.cancelSale(listingId);
     }
 
     // it cannot cancel non existent sale
     function testCannotCancelNonExistentSale() public {
-        hevm.expectRevert(abi.encodeWithSignature("ListingDoesNotExist(uint256)", 42));
+        vm.expectRevert(abi.encodeWithSignature("ListingDoesNotExist(uint256)", 42));
 
         market.cancelSale(42);
     }
@@ -288,11 +286,11 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     // it allows seller to cancel their sale
     function testSellerCanCancelSale() public {
         // alice creates a sale
-        hevm.startPrank(address(alice));
+        vm.startPrank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // alice cancels her sale
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit ListingDeleted(listingId, address(alice));
         market.cancelSale(listingId);
 
@@ -309,25 +307,25 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
 
     // it cannot buy a cancelled sale
     function testCannotBuyCancelledSale() public {
-        hevm.startPrank(address(alice));
+        vm.startPrank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token)); // alice create
         market.cancelSale(listingId); // alice cancel
-        hevm.stopPrank();
+        vm.stopPrank();
 
-        hevm.prank(address(bob));
-        hevm.expectRevert(abi.encodeWithSignature("ListingDoesNotExist(uint256)", listingId));
+        vm.prank(address(bob));
+        vm.expectRevert(abi.encodeWithSignature("ListingDoesNotExist(uint256)", listingId));
         market.buy(listingId, 1, 5, 500, address(token), address(bob));
     }
 
     // it completes a valid buy
     function testCanBuy() public {
         // alice puts up 5 NFTs for sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // bob buys them
-        hevm.prank(address(bob));
-        hevm.expectEmit(true, true, true, true);
+        vm.prank(address(bob));
+        vm.expectEmit(true, true, true, true);
         emit SaleCompleted(listingId, address(alice), address(bob), address(bob), 5);
         market.buy(listingId, 1, 5, 500, address(token), address(bob));
 
@@ -340,22 +338,22 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     // it can not buy for address 0
     function testCannotBuyForBurnAddress() public {
         // alice creates a sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
-        hevm.expectRevert(abi.encodeWithSignature("NullAddress()"));
+        vm.expectRevert(abi.encodeWithSignature("NullAddress()"));
         market.buy(listingId, 1, 5, 500, address(token), address(0));
     }
 
     // it allows buying for another user
     function testCanBuyForSomeoneElse() public {
         // alice creates a sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // bob buys the sale for another user
-        hevm.prank(address(bob));
-        hevm.expectEmit(true, true, true, true);
+        vm.prank(address(bob));
+        vm.expectEmit(true, true, true, true);
         emit SaleCompleted(listingId, address(alice), address(bob), address(this), 5);
         market.buy(listingId, 1, 5, 500, address(token), address(this));
 
@@ -369,17 +367,17 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     // it buys specific quantity of tokenIds
     function testBuySpecificQuantities() public {
         // alice creates a sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // bob buys the sale: 2 tokens only out of 5
-        hevm.startPrank(address(bob));
-        hevm.expectEmit(true, true, true, true);
+        vm.startPrank(address(bob));
+        vm.expectEmit(true, true, true, true);
         emit SaleCompleted(listingId, address(alice), address(bob), address(bob), 2);
         market.buy(listingId, 1, 2, 500, address(token), address(bob));
 
         // there should still be 3 left available
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit SaleCompleted(listingId, address(alice), address(bob), address(bob), 3);
         market.buy(listingId, 1, 3, 500, address(token), address(bob));
     }
@@ -387,39 +385,39 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     // it throws on attempting to buy 0"
     function testCannotBuy0Tokens() public {
         // alice lists 5 NFTs for sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // bob tries to buy 0 NFTs
-        hevm.expectRevert(abi.encodeWithSignature("NullQuantity()"));
+        vm.expectRevert(abi.encodeWithSignature("NullQuantity()"));
         market.buy(listingId, 1, 0, 500, address(token), address(bob));
     }
 
     // it throws on attempting to buy more than available quantity
     function testCannotBuyMoreThanListed() public {
         // alice lists 5 NFTs for sale
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // bob tries to buy 6 NFTs
-        hevm.prank(address(bob));
-        hevm.expectRevert(abi.encodeWithSignature("AvailableQuantityInsuficient(uint256)", 5));
+        vm.prank(address(bob));
+        vm.expectRevert(abi.encodeWithSignature("AvailableQuantityInsuficient(uint256)", 5));
         market.buy(listingId, 1, 6, 500, address(token), address(bob));
     }
 
     // it throws on attempting to buy listed quantity that is no longer available
     function testCannotBuyMoreThanAvailable() public {
         // alice creates a sale
-        hevm.startPrank(address(alice));
+        vm.startPrank(address(alice));
         uint256 listingId = market.createSale(1, INITIAL_NFT_SUPPLY, 500, address(token));
 
         // then she burns the NFTs except 1
         showtimeNFT.burn(address(alice), 1, INITIAL_NFT_SUPPLY - 1);
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // bob tries to buy 2
-        hevm.prank(address(bob));
-        hevm.expectRevert(abi.encodeWithSignature("AvailableQuantityInsuficient(uint256)", 1));
+        vm.prank(address(bob));
+        vm.expectRevert(abi.encodeWithSignature("AvailableQuantityInsuficient(uint256)", 1));
 
         market.buy(listingId, 1, 2, 500, address(token), address(bob));
 
@@ -434,7 +432,7 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     // it completes a partial sale when required <= available < listed
     function testCanCompletePartialSale() public {
         // alice lists 5 NFTs for sale
-        hevm.startPrank(address(alice));
+        vm.startPrank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
         // then she burns 8 NFTs
@@ -443,10 +441,10 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         // there are still 2 available for sale
         assertEq(market.availableForSale(listingId), 2);
 
-        hevm.stopPrank();
+        vm.stopPrank();
 
         // bob can buy 1
-        hevm.startPrank(address(bob));
+        vm.startPrank(address(bob));
         market.buy(listingId, 1, 1, 500, address(token), address(bob));
 
         // there is still 1 available for sale
@@ -470,8 +468,8 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         market.createSale(tokenId10PctRoyaltyToAlice, 5, 500, address(token));
         assertEq(token.balanceOf(address(alice)), 0);
 
-        hevm.prank(address(bob));
-        hevm.expectEmit(true, true, true, true);
+        vm.prank(address(bob));
+        vm.expectEmit(true, true, true, true);
         emit RoyaltyPaid(address(alice), token, 250);
         market.buy(0, tokenId10PctRoyaltyToAlice, 5, 500, address(token), address(bob));
 
@@ -486,7 +484,7 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         assertEq(token.balanceOf(address(alice)), 0);
 
         // we ignore the royalty, everything goes to the seller
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         market.buy(0, tokenId10PctRoyaltyToZeroAddress, 5, 500, address(token), address(bob));
         assertEq(token.balanceOf(address(this)), 2500); // price
     }
@@ -498,8 +496,8 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         assertEq(token.balanceOf(address(alice)), 0);
 
         // bob buys 2 of them
-        hevm.prank(address(bob));
-        hevm.expectEmit(true, true, true, true);
+        vm.prank(address(bob));
+        vm.expectEmit(true, true, true, true);
         emit RoyaltyPaid(address(alice), token, 500);
         market.buy(0, tokenId100PctRoyaltyToAlice, 2, 500, address(token), address(bob));
 
@@ -509,15 +507,15 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
 
     // it permits only owner to update max royalties
     function testOnlyOwnerCanUpdateRoyaltyCap() public {
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Ownable: caller is not the owner");
 
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         market.setMaxRoyalties(100);
     }
 
     // it does not permit to set maxRoyalties above 100%
     function testCannotCapRoyaltiesOver100Percent() public {
-        hevm.expectRevert(abi.encodeWithSignature("InvalidMaxRoyalties()"));
+        vm.expectRevert(abi.encodeWithSignature("InvalidMaxRoyalties()"));
 
         market.setMaxRoyalties(200_00);
     }
@@ -528,7 +526,7 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         market.createSale(tokenId100PctRoyaltyToAlice, 5, 500, address(token));
 
         // then we set the max royalties to 100%
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit MaxRoyaltiesUpdated(address(this), 100_00);
         market.setMaxRoyalties(100_00);
 
@@ -536,8 +534,8 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         uint256 adminBalanceBefore = token.balanceOf(address(this));
 
         // bob buys 2 of them
-        hevm.prank(address(bob));
-        hevm.expectEmit(true, true, true, true);
+        vm.prank(address(bob));
+        vm.expectEmit(true, true, true, true);
         emit RoyaltyPaid(address(alice), token, 1000);
         market.buy(0, tokenId100PctRoyaltyToAlice, 2, 500, address(token), address(bob));
 
@@ -557,7 +555,7 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         uint256 adminBalanceBefore = token.balanceOf(address(this));
 
         // bob buys 2 of them
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         market.buy(0, tokenId100PctRoyaltyToAlice, 2, 500, address(token), address(bob));
 
         assertEq(token.balanceOf(address(alice)), aliceBalanceBefore); // alice gets no royalties
@@ -566,12 +564,12 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
 
     // it permits only owner to turn off royalty on the contract
     function testOnlyOwnerCanDisableRoyalties() public {
-        hevm.prank(address(alice));
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(alice));
+        vm.expectRevert("Ownable: caller is not the owner");
         market.setRoyaltiesEnabled(false);
         assertTrue(market.royaltiesEnabled());
 
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit RoyaltiesEnabledChanged(address(this), false);
         market.setRoyaltiesEnabled(false);
 
@@ -584,7 +582,7 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
         market.createSale(2, 5, 500, address(token));
         assertEq(token.balanceOf(address(alice)), 0);
 
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         market.buy(0, 2, 5, 500, address(token), address(bob));
 
         assertEq(token.balanceOf(address(alice)), 0); // received no royalty
@@ -595,16 +593,16 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     function testOnlyOwnerCanPauseAndUnpause() public {
         assertTrue(!market.paused());
 
-        hevm.prank(address(alice));
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(alice));
+        vm.expectRevert("Ownable: caller is not the owner");
         market.pause();
         assertTrue(!market.paused());
 
         market.pause();
         assertTrue(market.paused());
 
-        hevm.prank(address(alice));
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(alice));
+        vm.expectRevert("Ownable: caller is not the owner");
         market.unpause();
         assertTrue(market.paused());
 
@@ -616,37 +614,37 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     function testCannotCreateListingWhenPaused() public {
         market.pause();
 
-        hevm.expectRevert("Pausable: paused");
-        hevm.prank(address(alice));
+        vm.expectRevert("Pausable: paused");
+        vm.prank(address(alice));
         market.createSale(1, 5, 500, address(token));
     }
 
     // it can not buy when paused
     function testCannotBuyWhenPaused() public {
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         market.createSale(1, 5, 500, address(token));
 
         market.pause();
 
-        hevm.prank(address(bob));
-        hevm.expectRevert("Pausable: paused");
+        vm.prank(address(bob));
+        vm.expectRevert("Pausable: paused");
         market.buy(0, 1, 5, 500, address(token), address(bob));
 
         market.unpause();
 
         // succeeds after unpausing
-        hevm.prank(address(bob));
+        vm.prank(address(bob));
         market.buy(0, 1, 5, 500, address(token), address(bob));
     }
 
     // it can still cancel a listing when paused
     function testCanCancelWhenPaused() public {
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         market.createSale(1, 5, 500, address(token));
 
         market.pause();
 
-        hevm.prank(address(alice));
+        vm.prank(address(alice));
         market.cancelSale(0);
     }
 
@@ -654,11 +652,11 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     function testOnlyOwnerCanAddCurrencies() public {
         assertTrue(!market.acceptedCurrencies(address(showtimeNFT)));
 
-        hevm.prank(address(alice));
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(alice));
+        vm.expectRevert("Ownable: caller is not the owner");
         market.setAcceptedCurrency(address(showtimeNFT), true);
 
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit AcceptedCurrencyChanged(address(this), address(showtimeNFT), true);
         market.setAcceptedCurrency(address(showtimeNFT), true);
 
@@ -669,11 +667,11 @@ contract ShowtimeV1MarketTest is DSTest, ERC1155Holder {
     function testOnlyOwnerCanRemoveCurrencies() public {
         market.setAcceptedCurrency(address(showtimeNFT), true);
 
-        hevm.prank(address(alice));
-        hevm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(alice));
+        vm.expectRevert("Ownable: caller is not the owner");
         market.setAcceptedCurrency(address(showtimeNFT), false);
 
-        hevm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, true);
         emit AcceptedCurrencyChanged(address(this), address(showtimeNFT), false);
         market.setAcceptedCurrency(address(showtimeNFT), false);
 

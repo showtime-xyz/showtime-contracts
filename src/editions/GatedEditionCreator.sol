@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+import { IEdition, IEditionCreator } from "nft-editions/interfaces/IEditionCreator.sol";
+
 import { IGatedEditionMinter } from "./interfaces/IGatedEditionMinter.sol";
 import { IShowtimeVerifier, Attestation, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
-import { ISingleEditionMintableCreator, IEditionSingleMintable } from "./interfaces/ISingleEditionMintableCreator.sol";
-import { MetaEditionMinter } from "./MetaEditionMinter.sol";
-import { MetaEditionMinterFactory } from "./MetaEditionMinterFactory.sol";
 import { TimeCop } from "./TimeCop.sol";
 
-interface _IEditionSingleMintable {
+interface IOwnable {
     function transferOwnership(address newOwner) external;
-
-    function setApprovedMinter(address minter, bool allowed) external;
 }
 
 contract GatedEditionCreator {
@@ -21,7 +18,7 @@ contract GatedEditionCreator {
 
     string constant SYMBOL = "SHOWTIME";
 
-    ISingleEditionMintableCreator public immutable editionCreator;
+    IEditionCreator public immutable editionCreator;
     IGatedEditionMinter public immutable minter;
     IShowtimeVerifier public immutable showtimeVerifier;
     TimeCop public immutable timeCop;
@@ -34,7 +31,7 @@ contract GatedEditionCreator {
         if (_editionCreator == address(0) || _minter == address(0) || _timeCop == address(0)) {
             revert NullAddress();
         }
-        editionCreator = ISingleEditionMintableCreator(_editionCreator);
+        editionCreator = IEditionCreator(_editionCreator);
         minter = IGatedEditionMinter(_minter);
         timeCop = TimeCop(_timeCop);
 
@@ -69,18 +66,15 @@ contract GatedEditionCreator {
         validateAttestation(signedAttestation);
 
         // deploy the new edition
-        IEditionSingleMintable edition = editionCreator.getEditionAtId(
-            editionCreator.createEdition(
-                name,
-                SYMBOL,
-                description,
-                animationUrl,
-                0, // animation hash
-                imageUrl,
-                0, // image hash
-                editionSize,
-                royaltyBPS
-            )
+        IEdition edition = editionCreator.createEdition(
+            name,
+            SYMBOL,
+            description,
+            animationUrl,
+            imageUrl,
+            editionSize,
+            royaltyBPS,
+            claimWindowDurationSeconds
         );
 
         configureEdition(edition, signedAttestation, claimWindowDurationSeconds);
@@ -88,7 +82,7 @@ contract GatedEditionCreator {
         return address(edition);
     }
 
-    function getEditionAtId(uint256 editionId) external view returns (IEditionSingleMintable) {
+    function getEditionAtId(uint256 editionId) external view returns (IEdition) {
         return editionCreator.getEditionAtId(editionId);
     }
 
@@ -108,7 +102,7 @@ contract GatedEditionCreator {
     }
 
     function configureEdition(
-        IEditionSingleMintable edition,
+        IEdition edition,
         // address creator,
         SignedAttestation calldata signedAttestation,
         uint256 _claimWindowDurationSeconds
@@ -119,12 +113,12 @@ contract GatedEditionCreator {
         timeCop.setTimeLimit(address(edition), _claimWindowDurationSeconds);
 
         // configure the edition (while we still own it)
-        _IEditionSingleMintable(address(edition)).setApprovedMinter(address(minter), true);
+        edition.setApprovedMinter(address(minter), true);
 
         // auto claim one for the creator
-        edition.mintEdition(creator);
+        edition.mint(creator);
 
         // and finally transfer ownership of the configured contract to the actual creator
-        _IEditionSingleMintable(address(edition)).transferOwnership(creator);
+        IOwnable(address(edition)).transferOwnership(creator);
     }
 }
