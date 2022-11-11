@@ -57,13 +57,15 @@ contract GatedEditionCreator {
     /// @dev we expect the signed attestation's beneficiary to be the edition's creator
     /// @return edition the address of the created edition
     function createEdition(
-        string memory name,
-        string memory description,
-        string memory animationUrl,
-        string memory imageUrl,
+        string calldata name,
+        string calldata description,
+        string calldata animationUrl,
+        string calldata imageUrl,
         uint256 editionSize,
         uint256 royaltyBPS,
         uint256 mintPeriodSeconds,
+        string calldata externalUrl,
+        string calldata creatorName,
         SignedAttestation calldata signedAttestation
     ) external returns (IEdition edition) {
         if (mintPeriodSeconds == 0 || mintPeriodSeconds > MAX_DURATION_SECONDS) {
@@ -91,7 +93,7 @@ contract GatedEditionCreator {
         {} catch {
             // rethrow the problematic way until we have a better way
             // see https://github.com/ethereum/solidity/issues/12654
-            assembly {
+            assembly ("memory-safe") {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
@@ -99,7 +101,10 @@ contract GatedEditionCreator {
 
         emit CreatedEdition(uint256(salt), creator, editionSize, address(edition));
 
-        configureEdition(edition, signedAttestation);
+        configureEdition(edition, signedAttestation, externalUrl, creatorName);
+
+        // and finally transfer ownership of the configured contract to the actual creator
+        IOwnable(address(edition)).transferOwnership(creator);
     }
 
     function getEditionAtId(uint256 editionId) external view returns (IEdition) {
@@ -121,7 +126,12 @@ contract GatedEditionCreator {
         return true;
     }
 
-    function configureEdition(IEdition edition, SignedAttestation calldata signedAttestation) internal {
+    function configureEdition(
+        IEdition edition,
+        SignedAttestation calldata signedAttestation,
+        string calldata externalUrl,
+        string calldata creatorName
+    ) internal {
         address creator = signedAttestation.attestation.beneficiary;
 
         // configure the edition (while we still own it)
@@ -130,11 +140,14 @@ contract GatedEditionCreator {
         // auto claim one for the creator
         edition.mint(creator);
 
-        // and finally transfer ownership of the configured contract to the actual creator
-        IOwnable(address(edition)).transferOwnership(creator);
+        edition.setExternalUrl(externalUrl);
 
-        // TODO:
-        // - setExternalURL
-        // - setStringProperties
+        string[] memory propertyNames = new string[](1);
+        propertyNames[0] = "Creator";
+
+        string[] memory propertyValues = new string[](1);
+        propertyValues[0] = creatorName;
+
+        edition.setStringProperties(propertyNames, propertyValues);
     }
 }
