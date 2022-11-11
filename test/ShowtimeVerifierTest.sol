@@ -86,7 +86,7 @@ contract ShowtimeVerifierTest is Test, ShowtimeVerifierFixture {
         verifier.verify(signedAttestation);
     }
 
-    function testFailSignatureTamperedWith() public {
+    function testFailSignatureTamperedWith() public view {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, digest(attestation));
 
         // when the signature is tampered with
