@@ -17,12 +17,12 @@ abstract contract ShowtimeVerifierFixture is Test {
         return keccak256(abi.encodePacked("\x19\x01", verifier.domainSeparator(), structHash));
     }
 
-    function sign(uint256 key, Attestation memory someAttestation) public returns (bytes memory) {
+    function sign(uint256 key, Attestation memory someAttestation) public view returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, digest(someAttestation));
         return abi.encodePacked(r, s, v);
     }
 
-    function signed(uint256 key, Attestation memory someAttestation) public returns (SignedAttestation memory) {
+    function signed(uint256 key, Attestation memory someAttestation) public view returns (SignedAttestation memory) {
         return SignedAttestation({ attestation: someAttestation, signature: sign(key, someAttestation) });
     }
 }
