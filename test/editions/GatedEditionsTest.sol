@@ -68,6 +68,8 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
                     EDITION_SIZE,
                     ROYALTY_BPS,
                     CLAIM_DURATION_WINDOW_SECONDS,
+                    "externalUrl",
+                    "creatorName",
                     signedAttestation
                 )
             )
@@ -158,7 +160,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         SignedAttestation memory claimerAttestation = signed(signerKey, getClaimerAttestation(edition));
 
         // can no longer mint
-        vm.expectRevert(abi.encodeWithSelector(IEdition.MintingEnded.selector));
+        vm.expectRevert(abi.encodeWithSelector(IEdition.TimeLimitReached.selector));
         minter.mintEdition(claimerAttestation);
     }
 
@@ -175,6 +177,8 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
             EDITION_SIZE,
             ROYALTY_BPS,
             0,
+            "externalUrl",
+            "creatorName",
             creatorAttestation
         );
     }
@@ -194,6 +198,8 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
             EDITION_SIZE,
             ROYALTY_BPS,
             hugeTimeLimit,
+            "externalUrl",
+            "creatorName",
             creatorAttestation
         );
     }
