@@ -10,28 +10,8 @@ from web3.exceptions import ContractLogicError
 from eth_account.messages import encode_structured_data
 from eth_account.account import Account
 from dataclasses import dataclass
+from chains import polygon
 
-
-@dataclass
-class ChainConfig:
-    chainId: int
-    name: str
-    rpcUrl: str
-    verifierAddress: str
-
-
-mumbai = ChainConfig(
-    chainId=80001,
-    name="mumbai",
-    rpcUrl="https://matic-mumbai.chainstacklabs.com",
-    # formerly "0xE5eC1D79E0AF57C57AAeE8D64cDCDf52493b8711"
-    verifierAddress="0x50C0017836517dc49C9EBC7615d8B322A0f91F67")
-
-polygon = ChainConfig(
-    chainId=137,
-    name="polygon",
-    rpcUrl="https://polygon-rpc.com",
-    verifierAddress="0x50C0017836517dc49C9EBC7615d8B322A0f91F67")
 
 active_chain = polygon
 
