@@ -44,8 +44,8 @@ def main():
         ]
     ]).call()
 
-    editionSize = w3.toInt(primitive=bytes_returndata[0][2:])
-    totalSupply = w3.toInt(primitive=bytes_returndata[1][2:])
+    editionSize = w3.toInt(primitive=bytes_returndata[0])
+    totalSupply = w3.toInt(primitive=bytes_returndata[1])
     soldOut = editionSize > 0 and totalSupply >= editionSize
 
     print("editionSize", editionSize)
