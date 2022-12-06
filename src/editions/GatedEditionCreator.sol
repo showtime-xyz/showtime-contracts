@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { ClonesUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+import { ClonesUpgradeable } from "@openzeppelin-contracts-upgradeable/proxy/ClonesUpgradeable.sol";
 
 import { IEdition, IEditionCreator } from "nft-editions/EditionCreator.sol";
 import { Edition } from "nft-editions/Edition.sol";

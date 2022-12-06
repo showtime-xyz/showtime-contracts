@@ -3,6 +3,7 @@ pragma solidity ^0.8.7;
 
 import { Edition, IEdition } from "nft-editions/Edition.sol";
 import { Test } from "lib/forge-std/src/Test.sol";
+import "nft-editions/interfaces/Errors.sol";
 
 import { GatedEditionMinter } from "src/editions/GatedEditionMinter.sol";
 import { GatedEditionCreator } from "src/editions/GatedEditionCreator.sol";
@@ -160,7 +161,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         SignedAttestation memory claimerAttestation = signed(signerKey, getClaimerAttestation(edition));
 
         // can no longer mint
-        vm.expectRevert(abi.encodeWithSelector(IEdition.TimeLimitReached.selector));
+        vm.expectRevert(abi.encodeWithSelector(TimeLimitReached.selector));
         minter.mintEdition(claimerAttestation);
     }
 
