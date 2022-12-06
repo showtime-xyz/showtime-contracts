@@ -161,24 +161,18 @@ Registered domain:
 
 ## Troubleshooting
 
-Getting this failure when deploying:
+Getting this failure when building:
 
 ```
-Error: error:0308010C:digital envelope routines::unsupported
-    at new Hash (node:internal/crypto/hash:67:19)
-    at Object.createHash (node:crypto:130:10)
+Failed to resolve file:
+"lib/nft-editions/lib/solmate/src/tokens/ERC721.sol": No such file or directory (os error 2).
+Check configured remappings.
 ```
 
-Seems to be an issue in node v17, workaround suggested in https://github.com/Snapmaker/Luban/issues/1250 is
-
-    export NODE_OPTIONS=--openssl-legacy-provider
-
-
-When running the `npx hardhat verify` command:
+Rebuilding `lib/nft-editions` should resolve the missed dependencies:
 
 ```
-Error in plugin @nomiclabs/hardhat-etherscan: The constructor for src/ShowtimeVerifier.sol:ShowtimeVerifier has 1 parameters
-but 0 arguments were provided instead.
-```
+(cd lib/nft-editions && forge build)
 
--> need to pass the constructor arguments on the command line
+Missing dependencies found. Installing now...
+```

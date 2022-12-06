@@ -6,6 +6,7 @@ import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions
 import { IEdition } from "nft-editions/interfaces/IEdition.sol";
 import { Edition } from "nft-editions/Edition.sol";
 import { EditionCreator } from "nft-editions/EditionCreator.sol";
+import "nft-editions/interfaces/Errors.sol";
 
 import { Test } from "forge-std/Test.sol";
 
@@ -47,7 +48,7 @@ contract CreatorOwnedCollectionTest is Test {
 
         // when alice tries to mint from that collection, it should fail
         vm.prank(address(alice));
-        vm.expectRevert(abi.encodeWithSelector(IEdition.Unauthorized.selector));
+        vm.expectRevert(abi.encodeWithSelector(Unauthorized.selector));
         edition.mint(address(alice));
 
         // when bob tries to open up public minting, it should fail
@@ -68,7 +69,7 @@ contract CreatorOwnedCollectionTest is Test {
 
         // when we are sold out, then new mints fail (even for charlieTheCreator)
         vm.prank(address(charlieTheCreator));
-        vm.expectRevert(abi.encodeWithSelector(IEdition.SoldOut.selector));
+        vm.expectRevert(abi.encodeWithSelector(SoldOut.selector));
         edition.mint(address(charlieTheCreator));
     }
 }
