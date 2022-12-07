@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { IEdition } from "nft-editions/interfaces/IEdition.sol";
+import {IEdition} from "nft-editions/interfaces/IEdition.sol";
 
-import { IShowtimeVerifier, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
-import { IGatedEditionMinter } from "./interfaces/IGatedEditionMinter.sol";
-import { TimeCop } from "./TimeCop.sol";
+import {IShowtimeVerifier, SignedAttestation} from "src/interfaces/IShowtimeVerifier.sol";
+import {IGatedEditionMinter} from "./interfaces/IGatedEditionMinter.sol";
 
 contract GatedEditionMinter is IGatedEditionMinter {
     error NullAddress();
@@ -38,7 +37,7 @@ contract GatedEditionMinter is IGatedEditionMinter {
     /// @notice any failed call to mintEdition will revert the entire batch
     function mintEditions(SignedAttestation[] calldata signedAttestations) external override {
         uint256 length = signedAttestations.length;
-        for (uint256 i = 0; i < length; ) {
+        for (uint256 i = 0; i < length;) {
             mintEdition(signedAttestations[i]);
 
             unchecked {
