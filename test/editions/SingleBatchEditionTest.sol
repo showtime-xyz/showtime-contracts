@@ -18,6 +18,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     SingleBatchEditionCreator editionCreator;
     ShowtimeVerifier verifier;
     SingleBatchEditionMinter minter;
+    SingleBatchEdition edition;
 
     address creator = makeAddr("creator");
     address relayer = makeAddr("relayer");
@@ -42,6 +43,8 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
         // configure editionCreator
         editionCreator = new SingleBatchEditionCreator(address(editionImpl), address(minter));
+
+        edition = createEdition(getCreatorAttestation());
     }
 
     function getVerifier() public view override returns (ShowtimeVerifier) {
@@ -50,7 +53,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
     function createEdition(SignedAttestation memory signedAttestation, bytes memory expectedError)
         public
-        returns (SingleBatchEdition edition)
+        returns (SingleBatchEdition newEdition)
     {
         // anyone can broadcast the transaction as long as it has the right signed attestation
         vm.prank(relayer);
@@ -59,7 +62,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
             vm.expectRevert(expectedError);
         }
 
-        edition = SingleBatchEdition(
+        newEdition = SingleBatchEdition(
             address(
                 editionCreator.createEdition(
                     "name",
@@ -77,7 +80,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
     function createEdition(Attestation memory attestation, bytes memory expectedError)
         public
-        returns (SingleBatchEdition edition)
+        returns (SingleBatchEdition)
     {
         return createEdition(signed(signerKey, attestation), expectedError);
     }
@@ -100,18 +103,18 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         });
     }
 
-    function getBatchAttestation(SingleBatchEdition edition, address pointer, uint256 _validUntil, uint256 _nonce)
+    function getBatchAttestation(SingleBatchEdition _edition, address pointer, uint256 _validUntil, uint256 _nonce)
         public
         pure
         returns (Attestation memory)
     {
         // generate a valid attestation
-        return Attestation({context: address(edition), beneficiary: pointer, validUntil: _validUntil, nonce: _nonce});
+        return Attestation({context: address(_edition), beneficiary: pointer, validUntil: _validUntil, nonce: _nonce});
     }
 
-    function getSingleClaimerBatchAttestation(SingleBatchEdition edition) public returns (Attestation memory) {
+    function getSingleClaimerBatchAttestation(SingleBatchEdition _edition) public returns (Attestation memory) {
         address pointer = SSTORE2.write(abi.encodePacked(claimer));
-        return getBatchAttestation(edition, pointer, block.timestamp + 2 minutes, verifier.nonces(pointer));
+        return getBatchAttestation(_edition, pointer, block.timestamp + 2 minutes, verifier.nonces(pointer));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -119,9 +122,6 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     //////////////////////////////////////////////////////////////*/
 
     function testCreateEditionHappyPath() public {
-        // create a new edition
-        SingleBatchEdition edition = createEdition(getCreatorAttestation());
-
         // the edition is owned by the creator
         assertEq(edition.owner(), creator);
 
@@ -184,7 +184,6 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
     function testCanNotReuseBatchAttestation() public {
         // setup
-        SingleBatchEdition edition = createEdition(getCreatorAttestation());
         Attestation memory batchAttestation = getSingleClaimerBatchAttestation(edition);
         SignedAttestation memory signedAttestation = signed(signerKey, batchAttestation);
 
@@ -197,14 +196,22 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     }
 
     function testBatchMintWithDuplicateClaimer() public {
-        // TODO: should fail because the same claimer can not be duplicated
+        bytes memory addresses = abi.encodePacked(claimer, claimer);
+
+        address pointer = SSTORE2.write(addresses);
+        Attestation memory batchAttestation =
+            getBatchAttestation(edition, pointer, block.timestamp + 2 minutes, verifier.nonces(pointer));
+        SignedAttestation memory signedAttestation = signed(signerKey, batchAttestation);
+
+        // when we mint a batch with a duplicate claimer, it fails with ADDRESSES_NOT_SORTED
+        vm.expectRevert("ADDRESSES_NOT_SORTED");
+        minter.mintBatch(signedAttestation);
     }
 
     function testBatchMintWithUniqueClaimers(uint256 n) public {
         vm.assume(n < 1200);
 
         // setup
-        SingleBatchEdition edition = createEdition(getCreatorAttestation());
         bytes memory addresses = Addresses.make(n);
 
         address pointer = SSTORE2.write(addresses);
