@@ -22,7 +22,7 @@ contract SingleBatchEditionMinter is ISingleBatchEditionMinter {
     /// @dev the edition to mint will be determined by the attestation's context
     /// @dev the attestation's beneficiary will be interpreted as the SSTORE2 pointer for this batch mint
     function mintBatch(SignedAttestation calldata signedAttestation) public override {
-        ISingleBatchEdition collection = ISingleBatchEdition(signedAttestation.attestation.context);
+        ISingleBatchEdition edition = ISingleBatchEdition(signedAttestation.attestation.context);
 
         // no need to call verifyAndBurn because this is a *SingleBatch*Edition,
         // meaning that this attestation can not be replayed
@@ -30,6 +30,10 @@ contract SingleBatchEditionMinter is ISingleBatchEditionMinter {
             revert VerificationFailed();
         }
 
-        collection.mintBatch(signedAttestation.attestation.beneficiary);
+        edition.mintBatch(signedAttestation.attestation.beneficiary);
+
+        if (edition.totalSupply() == 0) {
+            revert InvalidBatch();
+        }
     }
 }
