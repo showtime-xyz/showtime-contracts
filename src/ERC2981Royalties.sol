@@ -11,11 +11,7 @@ abstract contract ERC2981Royalties is IERC2981 {
 
     mapping(uint256 => Royalty) internal _royalties; // tokenId => royalty
 
-    function _setTokenRoyalty(
-        uint256 id,
-        address recipient,
-        uint256 value
-    ) internal {
+    function _setTokenRoyalty(uint256 id, address recipient, uint256 value) internal {
         require(value <= 100_00, "ERC2981Royalties: value too high");
         _royalties[id] = Royalty(recipient, value);
     }

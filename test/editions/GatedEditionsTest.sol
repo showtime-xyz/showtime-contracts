@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { Edition, IEdition } from "nft-editions/Edition.sol";
-import { Test } from "lib/forge-std/src/Test.sol";
+import {Edition, IEdition} from "nft-editions/Edition.sol";
+import {Test} from "lib/forge-std/src/Test.sol";
 import "nft-editions/interfaces/Errors.sol";
 
-import { GatedEditionMinter } from "src/editions/GatedEditionMinter.sol";
-import { GatedEditionCreator } from "src/editions/GatedEditionCreator.sol";
+import {GatedEditionMinter} from "src/editions/GatedEditionMinter.sol";
+import {GatedEditionCreator} from "src/editions/GatedEditionCreator.sol";
 import "test/fixtures/ShowtimeVerifierFixture.sol";
+import "src/editions/interfaces/Errors.sol";
 
 contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     uint256 constant EDITION_SIZE = 100;
@@ -102,15 +103,13 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         });
     }
 
-    function getClaimerAttestation(
-        Edition edition,
-        address _claimer,
-        uint256 _validUntil,
-        uint256 _nonce
-    ) public pure returns (Attestation memory) {
+    function getClaimerAttestation(Edition edition, address _claimer, uint256 _validUntil, uint256 _nonce)
+        public
+        pure
+        returns (Attestation memory)
+    {
         // generate a valid attestation
-        return
-            Attestation({ context: address(edition), beneficiary: _claimer, validUntil: _validUntil, nonce: _nonce });
+        return Attestation({context: address(edition), beneficiary: _claimer, validUntil: _validUntil, nonce: _nonce});
     }
 
     function getClaimerAttestation(Edition edition) public view returns (Attestation memory) {
@@ -169,7 +168,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         // generate a valid attestation
         SignedAttestation memory creatorAttestation = signed(signerKey, getCreatorAttestation());
 
-        vm.expectRevert(abi.encodeWithSelector(GatedEditionCreator.InvalidTimeLimit.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(InvalidTimeLimit.selector, 0));
         gatedEditionCreator.createEdition(
             "name",
             "description",
@@ -190,7 +189,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         // generate a valid attestation
         SignedAttestation memory creatorAttestation = signed(signerKey, getCreatorAttestation());
 
-        vm.expectRevert(abi.encodeWithSelector(GatedEditionCreator.InvalidTimeLimit.selector, hugeTimeLimit));
+        vm.expectRevert(abi.encodeWithSelector(InvalidTimeLimit.selector, hugeTimeLimit));
         gatedEditionCreator.createEdition(
             "name",
             "description",
@@ -282,8 +281,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
         SignedAttestation[] memory attestations = new SignedAttestation[](3);
         attestations[0] = signed(
-            signerKey,
-            getClaimerAttestation(edition1, claimer, block.timestamp + 2 minutes, verifier.nonces(claimer))
+            signerKey, getClaimerAttestation(edition1, claimer, block.timestamp + 2 minutes, verifier.nonces(claimer))
         );
         attestations[1] = signed(
             signerKey,
@@ -316,16 +314,13 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
         SignedAttestation[] memory attestations = new SignedAttestation[](3);
         attestations[0] = signed(
-            signerKey,
-            getClaimerAttestation(edition, claimer1, block.timestamp + 2 minutes, verifier.nonces(claimer1))
+            signerKey, getClaimerAttestation(edition, claimer1, block.timestamp + 2 minutes, verifier.nonces(claimer1))
         );
         attestations[1] = signed(
-            signerKey,
-            getClaimerAttestation(edition, claimer2, block.timestamp + 2 minutes, verifier.nonces(claimer2))
+            signerKey, getClaimerAttestation(edition, claimer2, block.timestamp + 2 minutes, verifier.nonces(claimer2))
         );
         attestations[2] = signed(
-            signerKey,
-            getClaimerAttestation(edition, claimer3, block.timestamp + 2 minutes, verifier.nonces(claimer3))
+            signerKey, getClaimerAttestation(edition, claimer3, block.timestamp + 2 minutes, verifier.nonces(claimer3))
         );
 
         // when we batch mint from 3 editions

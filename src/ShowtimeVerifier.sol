@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { EIP712, ECDSA } from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {EIP712, ECDSA} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-import { IShowtimeVerifier, Attestation, SignedAttestation } from "./interfaces/IShowtimeVerifier.sol";
+import {IShowtimeVerifier, Attestation, SignedAttestation} from "./interfaces/IShowtimeVerifier.sol";
 
 contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /*//////////////////////////////////////////////////////////////
@@ -62,13 +62,12 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     /// @return true if the attestation is valid, reverts otherwise
     function verify(SignedAttestation calldata signedAttestation) public view override returns (bool) {
         // what we want is EIP712 encoding, not ABI encoding
-        return
-            verify(
-                signedAttestation.attestation,
-                REQUEST_TYPE_HASH,
-                encode(signedAttestation.attestation),
-                signedAttestation.signature
-            );
+        return verify(
+            signedAttestation.attestation,
+            REQUEST_TYPE_HASH,
+            encode(signedAttestation.attestation),
+            signedAttestation.signature
+        );
     }
 
     /// @notice Verifies arbitrary typed data
@@ -194,11 +193,12 @@ contract ShowtimeVerifier is Ownable, EIP712, IShowtimeVerifier {
     }
 
     /// @notice Convenience function for the workflow where one expects a single active signer
-    function registerAndRevoke(
-        address signerToRegister,
-        address signerToRevoke,
-        uint256 validityDays
-    ) external override onlyAdmin returns (uint256 validUntil) {
+    function registerAndRevoke(address signerToRegister, address signerToRevoke, uint256 validityDays)
+        external
+        override
+        onlyAdmin
+        returns (uint256 validUntil)
+    {
         _revokeSigner(signerToRevoke);
         return _registerSigner(signerToRegister, validityDays);
     }

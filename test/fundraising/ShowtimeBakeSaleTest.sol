@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Test } from "forge-std/Test.sol";
+import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Test} from "forge-std/Test.sol";
 
-import { ShowtimeMT } from "src/ShowtimeMT.sol";
-import { ShowtimeV1Market } from "src/ShowtimeV1Market.sol";
-import { ShowtimeBakeSale } from "src/fundraising/ShowtimeBakeSale.sol";
+import {ShowtimeMT} from "src/ShowtimeMT.sol";
+import {ShowtimeV1Market} from "src/ShowtimeV1Market.sol";
+import {ShowtimeBakeSale} from "src/fundraising/ShowtimeBakeSale.sol";
 
-import { TestToken } from "test/TestToken.sol";
+import {TestToken} from "test/TestToken.sol";
 
 contract User is ERC1155Holder {}
 
@@ -38,11 +38,7 @@ contract ShowtimeBakeSaleTest is Test, ERC1155Holder {
     event ListingCreated(uint256 indexed listingId, address indexed seller, uint256 indexed tokenId);
     event ListingDeleted(uint256 indexed listingId, address indexed seller);
     event SaleCompleted(
-        uint256 indexed listingId,
-        address indexed seller,
-        address indexed buyer,
-        address receiver,
-        uint256 quantity
+        uint256 indexed listingId, address indexed seller, address indexed buyer, address receiver, uint256 quantity
     );
     event RoyaltyPaid(address indexed receiver, IERC20 currency, uint256 amount);
     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
@@ -50,30 +46,11 @@ contract ShowtimeBakeSaleTest is Test, ERC1155Holder {
     function setUp() public {
         // mint NFTs
         showtimeNFT = new ShowtimeMT();
-        tokenId0PctRoyalty = showtimeNFT.issueToken(
-            address(alice),
-            INITIAL_NFT_SUPPLY,
-            "some-hash",
-            "0",
-            address(0),
-            0
-        ); // 0% royalties
-        tokenId10PctRoyaltyToAlice = showtimeNFT.issueToken(
-            address(alice),
-            INITIAL_NFT_SUPPLY,
-            "some-hash",
-            "0",
-            address(alice),
-            10_00
-        ); // 10% royalties
-        tokenId100PctRoyaltyToAlice = showtimeNFT.issueToken(
-            address(alice),
-            INITIAL_NFT_SUPPLY,
-            "some-hash",
-            "0",
-            address(alice),
-            100_00
-        ); // 100% royalties
+        tokenId0PctRoyalty = showtimeNFT.issueToken(address(alice), INITIAL_NFT_SUPPLY, "some-hash", "0", address(0), 0); // 0% royalties
+        tokenId10PctRoyaltyToAlice =
+            showtimeNFT.issueToken(address(alice), INITIAL_NFT_SUPPLY, "some-hash", "0", address(alice), 10_00); // 10% royalties
+        tokenId100PctRoyaltyToAlice =
+            showtimeNFT.issueToken(address(alice), INITIAL_NFT_SUPPLY, "some-hash", "0", address(alice), 100_00); // 100% royalties
 
         // mint erc20s to bob
         token = new TestToken();

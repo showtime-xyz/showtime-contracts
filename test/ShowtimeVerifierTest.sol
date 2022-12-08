@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { console2 } from "forge-std/console2.sol";
-import { Test } from "forge-std/Test.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import {console2} from "forge-std/console2.sol";
+import {Test} from "forge-std/Test.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-import { Attestation, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
-import { ShowtimeVerifier } from "src/ShowtimeVerifier.sol";
+import {Attestation, SignedAttestation} from "src/interfaces/IShowtimeVerifier.sol";
+import {ShowtimeVerifier} from "src/ShowtimeVerifier.sol";
 
-import { ShowtimeVerifierFixture } from "./fixtures/ShowtimeVerifierFixture.sol";
+import {ShowtimeVerifierFixture} from "./fixtures/ShowtimeVerifierFixture.sol";
 
 contract ShowtimeVerifierTest is Test, ShowtimeVerifierFixture {
     event SignerAdded(address signer, uint256 validUntil);
@@ -50,12 +50,7 @@ contract ShowtimeVerifierTest is Test, ShowtimeVerifierFixture {
         verifier.setManager(manager);
         vm.stopPrank();
 
-        attestation = Attestation({
-            beneficiary: bob,
-            context: address(0),
-            nonce: 0,
-            validUntil: reasonableValidUntil()
-        });
+        attestation = Attestation({beneficiary: bob, context: address(0), nonce: 0, validUntil: reasonableValidUntil()});
     }
 
     function reasonableValidUntil() public view returns (uint256) {
@@ -76,10 +71,8 @@ contract ShowtimeVerifierTest is Test, ShowtimeVerifierFixture {
 
     function testSignerNotRegistered() public {
         // when signed by a non-registered signer
-        SignedAttestation memory signedAttestation = SignedAttestation({
-            attestation: attestation,
-            signature: sign(badActorKey, attestation)
-        });
+        SignedAttestation memory signedAttestation =
+            SignedAttestation({attestation: attestation, signature: sign(badActorKey, attestation)});
 
         // then verification fails (with the expected signer)
         vm.expectRevert(abi.encodeWithSignature("UnknownSigner()"));
@@ -93,7 +86,7 @@ contract ShowtimeVerifierTest is Test, ShowtimeVerifierFixture {
         r = keccak256(abi.encodePacked(r));
 
         // then verification fails
-        verifier.verify(SignedAttestation({ attestation: attestation, signature: abi.encodePacked(r, s, v) }));
+        verifier.verify(SignedAttestation({attestation: attestation, signature: abi.encodePacked(r, s, v)}));
     }
 
     function testExpiredSigner() public {
@@ -123,23 +116,16 @@ contract ShowtimeVerifierTest is Test, ShowtimeVerifierFixture {
         string memory newType = "ValentineCard(address from,address to,string message)";
         bytes32 newTypeHash = keccak256(abi.encodePacked(newType));
 
-        bytes memory encodedStruct = abi.encodePacked(
-            uint256(uint160(bob)),
-            uint256(uint160(alice)),
-            keccak256("I love you")
-        );
+        bytes memory encodedStruct =
+            abi.encodePacked(uint256(uint160(bob)), uint256(uint160(alice)), keccak256("I love you"));
 
         bytes32 structHash = keccak256(abi.encodePacked(newTypeHash, encodedStruct));
         bytes32 _digest = keccak256(abi.encodePacked("\x19\x01", verifier.domainSeparator(), structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _digest);
 
-        Attestation memory _attestation = Attestation({
-            beneficiary: bob,
-            context: address(0),
-            nonce: 0,
-            validUntil: reasonableValidUntil()
-        });
+        Attestation memory _attestation =
+            Attestation({beneficiary: bob, context: address(0), nonce: 0, validUntil: reasonableValidUntil()});
         assertTrue(verifier.verify(_attestation, newTypeHash, encodedStruct, abi.encodePacked(r, s, v)));
     }
 

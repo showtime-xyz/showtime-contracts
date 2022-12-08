@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { ClonesUpgradeable } from "@openzeppelin-contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+import {ClonesUpgradeable} from "@openzeppelin-contracts-upgradeable/proxy/ClonesUpgradeable.sol";
 
-import { ISingleBatchEdition } from "nft-editions/interfaces/ISingleBatchEdition.sol";
-import { SingleBatchEdition } from "nft-editions/SingleBatchEdition.sol";
+import {ISingleBatchEdition} from "nft-editions/interfaces/ISingleBatchEdition.sol";
+import {SingleBatchEdition} from "nft-editions/SingleBatchEdition.sol";
 
-import { IGatedEditionMinter } from "./interfaces/IGatedEditionMinter.sol";
-import { IShowtimeVerifier, Attestation, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
+import {IGatedEditionMinter} from "./interfaces/IGatedEditionMinter.sol";
+import {IShowtimeVerifier, Attestation, SignedAttestation} from "src/interfaces/IShowtimeVerifier.sol";
 import "./interfaces/Errors.sol";
 
 interface IOwnable {
@@ -18,10 +18,7 @@ contract SingleBatchEditionCreator {
     // TODO: reevaluate need for this (editionSize in particular)
     // TODO: emit tag (or comma separated tags string)
     event CreatedEdition(
-        uint256 indexed editionId,
-        address indexed creator,
-        uint256 editionSize,
-        address editionContractAddress
+        uint256 indexed editionId, address indexed creator, uint256 editionSize, address editionContractAddress
     );
 
     string internal constant SYMBOL = unicode"✦ SHOWTIME";
@@ -67,18 +64,8 @@ contract SingleBatchEditionCreator {
         bytes32 salt = keccak256(abi.encodePacked(creator, name, animationUrl, imageUrl));
         edition = ISingleBatchEdition(ClonesUpgradeable.cloneDeterministic(editionImpl, salt));
 
-        try
-            edition.initialize(
-                address(this),
-                name,
-                SYMBOL,
-                description,
-                animationUrl,
-                imageUrl,
-                royaltyBPS,
-                minter
-            )
-        {} catch {
+        try edition.initialize(address(this), name, SYMBOL, description, animationUrl, imageUrl, royaltyBPS, minter) {}
+        catch {
             // rethrow the problematic way until we have a better way
             // see https://github.com/ethereum/solidity/issues/12654
             assembly ("memory-safe") {
@@ -96,7 +83,9 @@ contract SingleBatchEditionCreator {
     }
 
     function getEditionAtId(uint256 editionId) external view returns (ISingleBatchEdition) {
-        return ISingleBatchEdition(ClonesUpgradeable.predictDeterministicAddress(editionImpl, bytes32(editionId), address(this)));
+        return ISingleBatchEdition(
+            ClonesUpgradeable.predictDeterministicAddress(editionImpl, bytes32(editionId), address(this))
+        );
     }
 
     function validateAttestation(SignedAttestation calldata signedAttestation) internal returns (bool) {
@@ -116,7 +105,7 @@ contract SingleBatchEditionCreator {
 
     function configureEdition(
         ISingleBatchEdition edition,
-        SignedAttestation calldata /* signedAttestation */,
+        SignedAttestation calldata, /* signedAttestation */
         string calldata externalUrl,
         string calldata creatorName
     ) internal {

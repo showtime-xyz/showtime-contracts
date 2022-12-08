@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import { Test } from "forge-std/Test.sol";
+import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import {Test} from "forge-std/Test.sol";
 
-import { ShowtimeMT } from "src/ShowtimeMT.sol";
-import { ShowtimeV1Market, IERC20 } from "src/ShowtimeV1Market.sol";
+import {ShowtimeMT} from "src/ShowtimeMT.sol";
+import {ShowtimeV1Market, IERC20} from "src/ShowtimeV1Market.sol";
 
-import { TestToken } from "test/TestToken.sol";
+import {TestToken} from "test/TestToken.sol";
 
 contract User is ERC1155Holder {}
 
@@ -30,11 +30,7 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
     event ListingCreated(uint256 indexed listingId, address indexed seller, uint256 indexed tokenId);
     event ListingDeleted(uint256 indexed listingId, address indexed seller);
     event SaleCompleted(
-        uint256 indexed listingId,
-        address indexed seller,
-        address indexed buyer,
-        address receiver,
-        uint256 quantity
+        uint256 indexed listingId, address indexed seller, address indexed buyer, address receiver, uint256 quantity
     );
     event RoyaltyPaid(address indexed receiver, IERC20 currency, uint256 amount);
     event MaxRoyaltiesUpdated(address indexed account, uint256 maxRoyaltiesBasisPoints);
@@ -47,38 +43,13 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
 
         // mint NFTs
         showtimeNFT = new ShowtimeMT();
-        tokenId0PctRoyalty = showtimeNFT.issueToken(
-            address(alice),
-            INITIAL_NFT_SUPPLY,
-            "some-hash",
-            "0",
-            address(0),
-            0
-        );
-        tokenId10PctRoyaltyToAlice = showtimeNFT.issueToken(
-            address(this),
-            INITIAL_NFT_SUPPLY,
-            "some-hash",
-            "0",
-            address(alice),
-            10_00
-        ); // 10% royalty
-        tokenId10PctRoyaltyToZeroAddress = showtimeNFT.issueToken(
-            address(this),
-            INITIAL_NFT_SUPPLY,
-            "some-hash",
-            "0",
-            address(0),
-            10_00
-        ); // 10% royalty
-        tokenId100PctRoyaltyToAlice = showtimeNFT.issueToken(
-            address(this),
-            INITIAL_NFT_SUPPLY,
-            "some-hash",
-            "0",
-            address(alice),
-            100_00
-        ); // 100% royalty
+        tokenId0PctRoyalty = showtimeNFT.issueToken(address(alice), INITIAL_NFT_SUPPLY, "some-hash", "0", address(0), 0);
+        tokenId10PctRoyaltyToAlice =
+            showtimeNFT.issueToken(address(this), INITIAL_NFT_SUPPLY, "some-hash", "0", address(alice), 10_00); // 10% royalty
+        tokenId10PctRoyaltyToZeroAddress =
+            showtimeNFT.issueToken(address(this), INITIAL_NFT_SUPPLY, "some-hash", "0", address(0), 10_00); // 10% royalty
+        tokenId100PctRoyaltyToAlice =
+            showtimeNFT.issueToken(address(this), INITIAL_NFT_SUPPLY, "some-hash", "0", address(alice), 100_00); // 100% royalty
 
         // mint erc20s to bob
         token = new TestToken();
@@ -145,9 +116,7 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
         // alice still owns the NFTs
         assertEq(showtimeNFT.balanceOf(address(alice), 1), INITIAL_NFT_SUPPLY);
 
-        (uint256 tokenId, uint256 quantity, uint256 price, IERC20 currency, address seller) = market.listings(
-            listingId
-        );
+        (uint256 tokenId, uint256 quantity, uint256 price, IERC20 currency, address seller) = market.listings(listingId);
 
         assertEq(tokenId, 1);
         assertEq(quantity, 5);
@@ -210,7 +179,7 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
         vm.prank(address(alice));
         uint256 listingId = market.createSale(1, 5, 0, address(token));
 
-        (uint256 tokenId, , , , address seller) = market.listings(listingId);
+        (uint256 tokenId,,,, address seller) = market.listings(listingId);
 
         assertEq(listingId, 0);
         assertEq(seller, address(alice));
@@ -233,7 +202,7 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
         vm.startPrank(address(alice));
         uint256 listingId = market.createSale(1, 5, 500, address(token));
 
-        (uint256 tokenId, , , , address seller) = market.listings(listingId);
+        (uint256 tokenId,,,, address seller) = market.listings(listingId);
 
         // the listing exists and alice is the seller
         assertEq(seller, address(alice));
@@ -294,9 +263,7 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
         emit ListingDeleted(listingId, address(alice));
         market.cancelSale(listingId);
 
-        (uint256 tokenId, uint256 quantity, uint256 price, IERC20 currency, address seller) = market.listings(
-            listingId
-        );
+        (uint256 tokenId, uint256 quantity, uint256 price, IERC20 currency, address seller) = market.listings(listingId);
 
         assertEq(seller, address(0));
         assertEq(tokenId, 0);
@@ -329,7 +296,7 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
         emit SaleCompleted(listingId, address(alice), address(bob), address(bob), 5);
         market.buy(listingId, 1, 5, 500, address(token), address(bob));
 
-        (, , , , address seller) = market.listings(listingId);
+        (,,,, address seller) = market.listings(listingId);
         assertEq(seller, address(0));
         assertEq(showtimeNFT.balanceOf(address(alice), 1), 5); // 10 - 5
         assertEq(showtimeNFT.balanceOf(address(bob), 1), 5); // 0 + 5
@@ -357,7 +324,7 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
         emit SaleCompleted(listingId, address(alice), address(bob), address(this), 5);
         market.buy(listingId, 1, 5, 500, address(token), address(this));
 
-        (, , , , address seller) = market.listings(listingId);
+        (,,,, address seller) = market.listings(listingId);
         assertEq(seller, address(0));
 
         assertEq(showtimeNFT.balanceOf(address(alice), 1), 5); // 10 - 5
@@ -425,7 +392,7 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
         assertEq(actuallyAvailable, 1);
 
         // the listing is unchanged
-        (, uint256 quantity, , , ) = market.listings(listingId);
+        (, uint256 quantity,,,) = market.listings(listingId);
         assertEq(quantity, INITIAL_NFT_SUPPLY);
     }
 
@@ -451,14 +418,14 @@ contract ShowtimeV1MarketTest is Test, ERC1155Holder {
         assertEq(market.availableForSale(listingId), 1);
 
         // the listing has been updated to reflect the available quantity
-        (, uint256 quantity, , , ) = market.listings(listingId);
+        (, uint256 quantity,,,) = market.listings(listingId);
         assertEq(quantity, 1);
 
         // bob buys the last one
         market.buy(listingId, 1, 1, 500, address(token), address(bob));
 
         // the listing no longer exists
-        (, , , , address seller) = market.listings(listingId);
+        (,,,, address seller) = market.listings(listingId);
         assertEq(seller, address(0));
     }
 

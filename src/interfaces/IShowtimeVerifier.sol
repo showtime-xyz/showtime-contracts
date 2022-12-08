@@ -50,9 +50,7 @@ interface IShowtimeVerifier {
 
     function revokeSigner(address signer) external;
 
-    function registerAndRevoke(
-        address signerToRegister,
-        address signerToRevoke,
-        uint256 validityDays
-    ) external returns (uint256 validUntil);
+    function registerAndRevoke(address signerToRegister, address signerToRevoke, uint256 validityDays)
+        external
+        returns (uint256 validUntil);
 }
