@@ -1,23 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { Test } from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
-import { IForwarder } from "lib/gsn/packages/contracts/src/forwarder/Forwarder.sol";
+import {IForwarder} from "lib/gsn/packages/contracts/src/forwarder/Forwarder.sol";
 
-import { ShowtimeForwarder, Forwarder } from "src/meta-tx/ShowtimeForwarder.sol";
+import {ShowtimeForwarder, Forwarder} from "src/meta-tx/ShowtimeForwarder.sol";
 
 contract ForwarderTestUtil is Test {
-    bytes32 internal constant FORWARDREQUEST_TYPE_HASH =
-        keccak256(
-            "ForwardRequest(address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data,uint256 validUntilTime)"
-        );
+    bytes32 internal constant FORWARDREQUEST_TYPE_HASH = keccak256(
+        "ForwardRequest(address from,address to,uint256 value,uint256 gas,uint256 nonce,bytes data,uint256 validUntilTime)"
+    );
 
-    function getDomainSeparator(
-        Forwarder forwarder,
-        string memory name,
-        string memory version
-    ) internal view returns (bytes32 domainHash) {
+    function getDomainSeparator(Forwarder forwarder, string memory name, string memory version)
+        internal
+        view
+        returns (bytes32 domainHash)
+    {
         uint256 chainId;
         /* solhint-disable-next-line no-inline-assembly */
         assembly {
@@ -45,9 +44,7 @@ contract ForwarderTestUtil is Test {
 
         bytes32 digest = keccak256(
             abi.encodePacked(
-                "\x19\x01",
-                domainSeparator,
-                keccak256(forwarder._getEncoded(req, FORWARDREQUEST_TYPE_HASH, ""))
+                "\x19\x01", domainSeparator, keccak256(forwarder._getEncoded(req, FORWARDREQUEST_TYPE_HASH, ""))
             )
         );
 
@@ -58,7 +55,7 @@ contract ForwarderTestUtil is Test {
             vm.expectRevert(expectedError);
         }
 
-        (success, ret) = forwarder.execute{ value: req.value }(req, domainSeparator, FORWARDREQUEST_TYPE_HASH, "", sig);
+        (success, ret) = forwarder.execute{value: req.value}(req, domainSeparator, FORWARDREQUEST_TYPE_HASH, "", sig);
     }
 
     // from https://github.com/GNSPS/solidity-bytes-utils/blob/6458fb2780a3092bc756e737f246be1de6d3d362/contracts/BytesLib.sol

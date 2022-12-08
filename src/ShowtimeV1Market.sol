@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { Address } from "@openzeppelin/contracts/utils/Address.sol";
-import { Ownable, Context } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Ownable, Context} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import { BaseRelayRecipient } from "./utils/BaseRelayRecipient.sol";
+import {BaseRelayRecipient} from "./utils/BaseRelayRecipient.sol";
 
 interface ShowtimeERC1155 is IERC1155, IERC2981 {}
 
@@ -87,11 +87,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     event ListingDeleted(uint256 indexed listingId, address indexed seller);
     event RoyaltyPaid(address indexed receiver, IERC20 currency, uint256 amount);
     event SaleCompleted(
-        uint256 indexed listingId,
-        address indexed seller,
-        address indexed buyer,
-        address receiver,
-        uint256 quantity
+        uint256 indexed listingId, address indexed seller, address indexed buyer, address receiver, uint256 quantity
     );
 
     /// admin events
@@ -130,11 +126,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
 
     /// ============ Constructor ============
 
-    constructor(
-        address _nft,
-        address _trustedForwarder,
-        address[] memory _initialCurrencies
-    ) {
+    constructor(address _nft, address _trustedForwarder, address[] memory _initialCurrencies) {
         /// initialize the address of the NFT contract
         if (!_nft.isContract()) revert NotContractAddress(_nft);
         nft = ShowtimeERC1155(_nft);
@@ -156,12 +148,11 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
     /// @notice creates a new Listing
     /// @param _quantity the number of tokens to be listed
     /// @param _price the price per token
-    function createSale(
-        uint256 _tokenId,
-        uint256 _quantity,
-        uint256 _price,
-        address _currency
-    ) external whenNotPaused returns (uint256 listingId) {
+    function createSale(uint256 _tokenId, uint256 _quantity, uint256 _price, address _currency)
+        external
+        whenNotPaused
+        returns (uint256 listingId)
+    {
         address seller = _msgSender();
 
         if (!acceptedCurrencies[_currency]) revert CurrencyNotAccepted(_currency);
@@ -293,7 +284,7 @@ contract ShowtimeV1Market is Ownable, Pausable, BaseRelayRecipient {
         return Math.min(maxRoyaltiesAmount, royaltyAmount);
     }
 
-    function _msgSender() internal view override(Context, BaseRelayRecipient) returns (address) {
+    function _msgSender() internal view override (Context, BaseRelayRecipient) returns (address) {
         return BaseRelayRecipient._msgSender();
     }
 

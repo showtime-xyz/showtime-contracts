@@ -208,12 +208,8 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         bytes memory addresses = Addresses.make(n);
 
         address pointer = SSTORE2.write(addresses);
-        Attestation memory batchAttestation = getBatchAttestation(
-            edition,
-            pointer,
-            block.timestamp + 2 minutes,
-            verifier.nonces(pointer)
-        );
+        Attestation memory batchAttestation =
+            getBatchAttestation(edition, pointer, block.timestamp + 2 minutes, verifier.nonces(pointer));
         SignedAttestation memory signedAttestation = signed(signerKey, batchAttestation);
 
         // when we mint a batch for n unique addresses

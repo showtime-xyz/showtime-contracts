@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { Test } from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
-import { Attestation, SignedAttestation } from "src/interfaces/IShowtimeVerifier.sol";
-import { ShowtimeVerifier } from "src/ShowtimeVerifier.sol";
+import {Attestation, SignedAttestation} from "src/interfaces/IShowtimeVerifier.sol";
+import {ShowtimeVerifier} from "src/ShowtimeVerifier.sol";
 
 abstract contract ShowtimeVerifierFixture is Test {
     function getVerifier() public view virtual returns (ShowtimeVerifier);
@@ -23,6 +23,6 @@ abstract contract ShowtimeVerifierFixture is Test {
     }
 
     function signed(uint256 key, Attestation memory someAttestation) public view returns (SignedAttestation memory) {
-        return SignedAttestation({ attestation: someAttestation, signature: sign(key, someAttestation) });
+        return SignedAttestation({attestation: someAttestation, signature: sign(key, someAttestation)});
     }
 }

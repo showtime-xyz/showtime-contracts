@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { Script, console2 } from "forge-std/Script.sol";
+import {Script, console2} from "forge-std/Script.sol";
 
-import { Edition } from "nft-editions/Edition.sol";
+import {Edition} from "nft-editions/Edition.sol";
 
-import { IShowtimeVerifier } from "src/interfaces/IShowtimeVerifier.sol";
-import { GatedEditionCreator } from "src/editions/GatedEditionCreator.sol";
-import { GatedEditionMinter } from "src/editions/GatedEditionMinter.sol";
+import {IShowtimeVerifier} from "src/interfaces/IShowtimeVerifier.sol";
+import {GatedEditionCreator} from "src/editions/GatedEditionCreator.sol";
+import {GatedEditionMinter} from "src/editions/GatedEditionMinter.sol";
 
 contract GatedEditions is Script {
     address public constant SHOWTIME_VERIFIER = 0x50C0017836517dc49C9EBC7615d8B322A0f91F67;

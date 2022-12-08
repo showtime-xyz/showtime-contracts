@@ -12,6 +12,7 @@ import "./ERC2981Royalties.sol";
 
 contract ShowtimeMT is ERC1155Burnable, ERC2981Royalties, AccessProtected, BaseRelayRecipient {
     using Counters for Counters.Counter;
+
     Counters.Counter private _tokenIds;
     string public baseURI = "https://gateway.pinata.cloud/ipfs/";
     mapping(uint256 => string) private _hashes;
@@ -21,7 +22,7 @@ contract ShowtimeMT is ERC1155Burnable, ERC2981Royalties, AccessProtected, BaseR
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, IERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override (ERC1155, IERC165) returns (bool) {
         return interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId);
     }
 
@@ -72,9 +73,8 @@ contract ShowtimeMT is ERC1155Burnable, ERC2981Royalties, AccessProtected, BaseR
         uint256[] memory royaltyPercents
     ) public onlyMinter returns (uint256[] memory) {
         require(
-            amounts.length == hashes.length &&
-                royaltyRecipients.length == royaltyPercents.length &&
-                amounts.length == royaltyRecipients.length,
+            amounts.length == hashes.length && royaltyRecipients.length == royaltyPercents.length
+                && amounts.length == royaltyRecipients.length,
             "array length mismatch"
         );
         uint256[] memory ids = new uint256[](amounts.length);
@@ -121,7 +121,7 @@ contract ShowtimeMT is ERC1155Burnable, ERC2981Royalties, AccessProtected, BaseR
     /**
      * returns the message sender
      */
-    function _msgSender() internal view override(Context, BaseRelayRecipient) returns (address) {
+    function _msgSender() internal view override (Context, BaseRelayRecipient) returns (address) {
         return BaseRelayRecipient._msgSender();
     }
 }

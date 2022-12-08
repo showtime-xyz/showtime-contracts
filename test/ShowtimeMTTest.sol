@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import { Test } from "forge-std/Test.sol";
+import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import {Test} from "forge-std/Test.sol";
 
-import { ShowtimeMT } from "src/ShowtimeMT.sol";
-import { ShowtimeV1Market } from "src/ShowtimeV1Market.sol";
+import {ShowtimeMT} from "src/ShowtimeMT.sol";
+import {ShowtimeV1Market} from "src/ShowtimeV1Market.sol";
 
-import { TestToken } from "test/TestToken.sol";
+import {TestToken} from "test/TestToken.sol";
 
 contract User is ERC1155Holder {}
 
@@ -24,13 +24,8 @@ contract ShowtimeMTAccessTest is Test, ERC1155Holder {
         anon = new User();
         admin = new User();
         minter = new User();
-        minters = [
-            address(new User()),
-            address(new User()),
-            address(new User()),
-            address(new User()),
-            address(new User())
-        ];
+        minters =
+            [address(new User()), address(new User()), address(new User()), address(new User()), address(new User())];
 
         mt = new ShowtimeMT();
         mt.setAdmin(address(admin), true);

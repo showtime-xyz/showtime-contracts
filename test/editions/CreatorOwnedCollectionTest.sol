@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
-import { IEdition } from "nft-editions/interfaces/IEdition.sol";
-import { Edition } from "nft-editions/Edition.sol";
-import { EditionCreator } from "nft-editions/EditionCreator.sol";
+import {IEdition} from "nft-editions/interfaces/IEdition.sol";
+import {Edition} from "nft-editions/Edition.sol";
+import {EditionCreator} from "nft-editions/EditionCreator.sol";
 import "nft-editions/interfaces/Errors.sol";
 
-import { Test } from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 interface IOwnable {
     function owner() external view returns (address);
