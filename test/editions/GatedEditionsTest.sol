@@ -160,7 +160,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
         SignedAttestation memory claimerAttestation = signed(signerKey, getClaimerAttestation(edition));
 
         // can no longer mint
-        vm.expectRevert(abi.encodeWithSelector(TimeLimitReached.selector));
+        vm.expectRevert(TimeLimitReached.selector);
         minter.mintEdition(claimerAttestation);
     }
 
