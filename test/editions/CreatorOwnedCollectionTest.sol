@@ -48,7 +48,7 @@ contract CreatorOwnedCollectionTest is Test {
 
         // when alice tries to mint from that collection, it should fail
         vm.prank(address(alice));
-        vm.expectRevert(abi.encodeWithSelector(Unauthorized.selector));
+        vm.expectRevert(Unauthorized.selector);
         edition.mint(address(alice));
 
         // when bob tries to open up public minting, it should fail
@@ -69,7 +69,7 @@ contract CreatorOwnedCollectionTest is Test {
 
         // when we are sold out, then new mints fail (even for charlieTheCreator)
         vm.prank(address(charlieTheCreator));
-        vm.expectRevert(abi.encodeWithSelector(SoldOut.selector));
+        vm.expectRevert(SoldOut.selector);
         edition.mint(address(charlieTheCreator));
     }
 }

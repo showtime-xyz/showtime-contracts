@@ -197,7 +197,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         minter.mintBatch(signedAttestation);
 
         // second one should fail
-        vm.expectRevert(abi.encodeWithSelector(SoldOut.selector));
+        vm.expectRevert(SoldOut.selector);
         minter.mintBatch(signedAttestation);
     }
 
