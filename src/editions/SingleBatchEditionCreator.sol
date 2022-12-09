@@ -15,10 +15,9 @@ interface IOwnable {
 }
 
 contract SingleBatchEditionCreator {
-    // TODO: reevaluate need for this (editionSize in particular)
-    // TODO: emit tag (or comma separated tags string)
-    event CreatedEdition(
-        uint256 indexed editionId, address indexed creator, uint256 editionSize, address editionContractAddress
+    /// @dev we expect tags to be a comma-separated list of strings e.g. "music,location,password"
+    event CreatedBatchEdition(
+        uint256 indexed editionId, address indexed creator, address editionContractAddress, string tags
     );
 
     string internal constant SYMBOL = unicode"✦ SHOWTIME";
@@ -56,6 +55,7 @@ contract SingleBatchEditionCreator {
         uint256 royaltyBPS,
         string calldata externalUrl,
         string calldata creatorName,
+        string calldata tags,
         SignedAttestation calldata signedAttestation
     ) external returns (ISingleBatchEdition edition) {
         validateAttestation(signedAttestation);
@@ -74,7 +74,7 @@ contract SingleBatchEditionCreator {
             }
         }
 
-        emit CreatedEdition(uint256(salt), creator, 0, address(edition));
+        emit CreatedBatchEdition(uint256(salt), creator, address(edition), tags);
 
         configureEdition(edition, signedAttestation, externalUrl, creatorName);
 
