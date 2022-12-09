@@ -13,6 +13,10 @@ import "src/editions/interfaces/Errors.sol";
 import {SSTORE2} from "lib/nft-editions/lib/solmate/src/utils/SSTORE2.sol";
 
 contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
+    event CreatedBatchEdition(
+        uint256 indexed editionId, address indexed creator, address editionContractAddress, string tags
+    );
+
     uint256 constant ROYALTY_BPS = 1000;
 
     SingleBatchEditionCreator editionCreator;
@@ -69,6 +73,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
                     ROYALTY_BPS,
                     "externalUrl",
                     "creatorName",
+                    "tag1,tag2",
                     signedAttestation
                 )
             )
@@ -125,7 +130,16 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     //////////////////////////////////////////////////////////////*/
 
     function testCreateEditionHappyPath() public {
+        uint256 id = uint256(keccak256(abi.encodePacked(creator, "name", "animationUrl", "imageUrl")));
+        address expectedAddr = address(editionCreator.getEditionAtId(id));
+
+        // the edition creator emits the expected event
+        vm.expectEmit(true, true, true, true);
+        emit CreatedBatchEdition(id, creator, expectedAddr, "tag1,tag2");
         SingleBatchEdition edition = createEdition(getCreatorAttestation());
+
+        // the edition has the expected address
+        assertEq(address(edition), expectedAddr);
 
         // the edition is owned by the creator
         assertEq(edition.owner(), creator);
