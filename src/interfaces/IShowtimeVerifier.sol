@@ -26,6 +26,8 @@ interface IShowtimeVerifier {
     event SignerRevoked(address signer);
     event ManagerUpdated(address newManager);
 
+    function nonces(address) external view returns (uint256);
+
     function verify(SignedAttestation calldata signedAttestation) external view returns (bool);
 
     function verifyAndBurn(SignedAttestation calldata signedAttestation) external returns (bool);
