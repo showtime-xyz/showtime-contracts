@@ -15,7 +15,7 @@ interface IOwnable {
 
 contract GatedEditionCreator {
     event CreatedEdition(
-        uint256 indexed editionId, address indexed creator, uint256 editionSize, address editionContractAddress
+        uint256 indexed editionId, address indexed creator, address editionContractAddress, string tags
     );
 
     string internal constant SYMBOL = unicode"✦ SHOWTIME";
@@ -41,8 +41,11 @@ contract GatedEditionCreator {
     /// @param animationUrl Metadata: Animation url (optional) of the edition entry
     /// @param imageUrl Metadata: Image url (semi-required) of the edition entry
     /// @param editionSize Total size of the edition (number of possible editions)
-    /// @param royaltyBPS BPS amount of royalties
+    /// @param royaltyBPS Royalties in basis points (e.g. 250 is 2.5%), will be reflected in EIP-2981 royaltyInfo()
     /// @param mintPeriodSeconds How long after deployment the edition can be claimed, in seconds
+    /// @param externalUrl link to an external site will be reflected in contract URI
+    /// @param creatorName Profile name of the creator, will be reflected in string properties of token URIs
+    /// @param tags Comma-separated list of tags that will be emitted as part of the CreatedEdition event
     /// @param signedAttestation the attestation to verify along with a corresponding signature
     /// @dev we expect the signed attestation's context to correspond to this contract's address
     /// @dev we expect the signed attestation's beneficiary to be the edition's creator
@@ -57,6 +60,7 @@ contract GatedEditionCreator {
         uint256 mintPeriodSeconds,
         string calldata externalUrl,
         string calldata creatorName,
+        string calldata tags,
         SignedAttestation calldata signedAttestation
     ) external returns (IEdition edition) {
         if (mintPeriodSeconds == 0 || mintPeriodSeconds > MAX_DURATION_SECONDS) {
@@ -66,8 +70,8 @@ contract GatedEditionCreator {
         validateAttestation(signedAttestation);
         address creator = signedAttestation.attestation.beneficiary;
 
-        bytes32 salt = keccak256(abi.encodePacked(creator, name, animationUrl, imageUrl));
-        edition = IEdition(ClonesUpgradeable.cloneDeterministic(editionImpl, salt));
+        uint256 id = getEditionId(creator, name, animationUrl, imageUrl);
+        edition = IEdition(ClonesUpgradeable.cloneDeterministic(editionImpl, bytes32(id)));
 
         try edition.initialize(
             address(this), name, SYMBOL, description, animationUrl, imageUrl, editionSize, royaltyBPS, mintPeriodSeconds
@@ -80,12 +84,18 @@ contract GatedEditionCreator {
             }
         }
 
-        emit CreatedEdition(uint256(salt), creator, editionSize, address(edition));
+        emit CreatedEdition(id, creator, address(edition), tags);
 
         configureEdition(edition, signedAttestation, externalUrl, creatorName);
 
         // and finally transfer ownership of the configured contract to the actual creator
         IOwnable(address(edition)).transferOwnership(creator);
+    }
+
+    function getEditionId(address creator, string calldata name, string calldata animationUrl, string calldata imageUrl)
+        public pure returns (uint256)
+    {
+        return uint256(keccak256(abi.encodePacked(creator, name, animationUrl, imageUrl)));
     }
 
     function getEditionAtId(uint256 editionId) external view returns (IEdition) {

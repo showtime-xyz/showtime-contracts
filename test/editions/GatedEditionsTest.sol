@@ -11,6 +11,10 @@ import "test/fixtures/ShowtimeVerifierFixture.sol";
 import "src/editions/interfaces/Errors.sol";
 
 contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
+    event CreatedEdition(
+        uint256 indexed editionId, address indexed creator, address editionContractAddress, string tags
+    );
+
     uint256 constant EDITION_SIZE = 100;
     uint256 constant ROYALTY_BPS = 1000;
     uint256 constant CLAIM_DURATION_WINDOW_SECONDS = 48 hours;
@@ -72,6 +76,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
                     CLAIM_DURATION_WINDOW_SECONDS,
                     "externalUrl",
                     "creatorName",
+                    "tag1,tag2",
                     signedAttestation
                 )
             )
@@ -121,7 +126,6 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
     //////////////////////////////////////////////////////////////*/
 
     function testCreateEditionHappyPath() public {
-        // create a new edition
         Edition edition = createEdition(getCreatorAttestation());
 
         // the edition is owned by the creator
@@ -147,6 +151,17 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
 
         // the claimer received the second token
         assertEq(edition.balanceOf(claimer), 1);
+    }
+
+    function testCreateEditionEmitsEvent() public {
+        // setup
+        uint256 editionId = gatedEditionCreator.getEditionId(creator, "name", "animationUrl", "imageUrl");
+        address expectedEditionAddress = address(gatedEditionCreator.getEditionAtId(editionId));
+
+        // creating a new edition emits the expected event
+        vm.expectEmit(true, true, true, true);
+        emit CreatedEdition(editionId, creator, expectedEditionAddress, "tag1,tag2");
+        createEdition(getCreatorAttestation());
     }
 
     function testTimeLimitedOpenEdition() public {
@@ -179,6 +194,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
             0,
             "externalUrl",
             "creatorName",
+            "tag1,tag2",
             creatorAttestation
         );
     }
@@ -200,6 +216,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
             hugeTimeLimit,
             "externalUrl",
             "creatorName",
+            "tag1,tag2",
             creatorAttestation
         );
     }
