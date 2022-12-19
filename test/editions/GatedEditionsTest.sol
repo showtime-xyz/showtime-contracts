@@ -77,6 +77,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
                     "externalUrl",
                     "creatorName",
                     "tag1,tag2",
+                    false,
                     signedAttestation
                 )
             )
@@ -195,6 +196,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
             "externalUrl",
             "creatorName",
             "tag1,tag2",
+            false,
             creatorAttestation
         );
     }
@@ -217,6 +219,7 @@ contract GatedEditionsTest is Test, ShowtimeVerifierFixture {
             "externalUrl",
             "creatorName",
             "tag1,tag2",
+            false,
             creatorAttestation
         );
     }
