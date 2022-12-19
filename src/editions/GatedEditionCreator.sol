@@ -61,6 +61,7 @@ contract GatedEditionCreator {
         string calldata externalUrl,
         string calldata creatorName,
         string calldata tags,
+        bool enableOpenseaOperatorFiltering,
         SignedAttestation calldata signedAttestation
     ) external returns (IEdition edition) {
         if (mintPeriodSeconds == 0 || mintPeriodSeconds > MAX_DURATION_SECONDS) {
@@ -86,14 +87,16 @@ contract GatedEditionCreator {
 
         emit CreatedEdition(id, creator, address(edition), tags);
 
-        configureEdition(edition, signedAttestation, externalUrl, creatorName);
+        configureEdition(edition, signedAttestation, externalUrl, creatorName, enableOpenseaOperatorFiltering);
 
         // and finally transfer ownership of the configured contract to the actual creator
         IOwnable(address(edition)).transferOwnership(creator);
     }
 
     function getEditionId(address creator, string calldata name, string calldata animationUrl, string calldata imageUrl)
-        public pure returns (uint256)
+        public
+        pure
+        returns (uint256)
     {
         return uint256(keccak256(abi.encodePacked(creator, name, animationUrl, imageUrl)));
     }
@@ -121,7 +124,8 @@ contract GatedEditionCreator {
         IEdition edition,
         SignedAttestation calldata signedAttestation,
         string calldata externalUrl,
-        string calldata creatorName
+        string calldata creatorName,
+        bool enableOpenseaOperatorFiltering
     ) internal {
         address creator = signedAttestation.attestation.beneficiary;
 
@@ -140,5 +144,9 @@ contract GatedEditionCreator {
         propertyValues[0] = creatorName;
 
         edition.setStringProperties(propertyNames, propertyValues);
+
+        if (enableOpenseaOperatorFiltering) {
+            edition.enableDefaultOperatorFilter();
+        }
     }
 }
