@@ -18,13 +18,15 @@ contract GatedEditions is Script {
         console2.log("from address:", owner);
         vm.startBroadcast(pk);
 
-        Edition editionImpl = new Edition{ salt: 101 }();
+        bytes32 salt = bytes32(uint256(101));
+
+        Edition editionImpl = new Edition{ salt: salt }();
         console2.log("editionImpl:", address(editionImpl));
 
-        GatedEditionMinter minter = new GatedEditionMinter{ salt: 101 }(IShowtimeVerifier(SHOWTIME_VERIFIER));
-        console2.log("minter:", address(minter));
+        GatedEditionMinter minter = new GatedEditionMinter{ salt: salt }(IShowtimeVerifier(SHOWTIME_VERIFIER));
+        console2.log("GatedEditionMinter:", address(minter));
 
-        GatedEditionCreator creator = new GatedEditionCreator{ salt: 101 }(address(editionImpl), address(minter));
-        console2.log("creator:", address(creator));
+        GatedEditionCreator creator = new GatedEditionCreator{ salt: salt }(address(editionImpl), address(minter));
+        console2.log("GatedEditionCreator:", address(creator));
     }
 }
