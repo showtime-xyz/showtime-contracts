@@ -14,7 +14,7 @@ force = false
 # The verbosity of tests
 verbosity = 3
 
-solc_version = '0.8.17'
+solc_version = '0.8.16'
 optimizer = true
 optimizer_runs = 1000000
 via_ir = true
