@@ -41,23 +41,11 @@ def create_keyfile():
 def get_verifier_abi():
     return [
         {
-            "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                }
-            ],
+            "inputs": [{"internalType": "address", "name": "", "type": "address"}],
             "name": "nonces",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
         },
         {
             "inputs": [
@@ -68,50 +56,40 @@ def get_verifier_abi():
                                 {
                                     "internalType": "address",
                                     "name": "beneficiary",
-                                    "type": "address"
+                                    "type": "address",
                                 },
                                 {
                                     "internalType": "address",
                                     "name": "context",
-                                    "type": "address"
+                                    "type": "address",
                                 },
                                 {
                                     "internalType": "uint256",
                                     "name": "nonce",
-                                    "type": "uint256"
+                                    "type": "uint256",
                                 },
                                 {
                                     "internalType": "uint256",
                                     "name": "validUntil",
-                                    "type": "uint256"
-                                }
+                                    "type": "uint256",
+                                },
                             ],
                             "internalType": "struct Attestation",
                             "name": "attestation",
-                            "type": "tuple"
+                            "type": "tuple",
                         },
-                        {
-                            "internalType": "bytes",
-                            "name": "signature",
-                            "type": "bytes"
-                        }
+                        {"internalType": "bytes", "name": "signature", "type": "bytes"},
                     ],
                     "internalType": "struct SignedAttestation",
                     "name": "signedAttestation",
-                    "type": "tuple"
+                    "type": "tuple",
                 }
             ],
             "name": "verify",
-            "outputs": [
-                {
-                    "internalType": "bool",
-                    "name": "",
-                    "type": "bool"
-                }
-            ],
+            "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
             "stateMutability": "view",
-            "type": "function"
-        }
+            "type": "function",
+        },
     ]
 
 
@@ -122,12 +100,12 @@ def main():
         account = create_keyfile()
 
     print("Loaded account with address", account.address)
-    print(
-        f"Verifying on {active_chain.name} against {active_chain.verifierAddress}")
+    print(f"Verifying on {active_chain.name} against {active_chain.verifierAddress}")
 
     w3 = Web3(Web3.HTTPProvider(active_chain.rpcUrl))
     verifier = w3.eth.contract(
-        address=active_chain.verifierAddress, abi=get_verifier_abi())
+        address=active_chain.verifierAddress, abi=get_verifier_abi()
+    )
 
     beneficiary = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
     nonce = verifier.functions.nonces(beneficiary).call()
@@ -135,33 +113,31 @@ def main():
     structured_data = {
         "domain": {
             "chainId": active_chain.chainId,
-            "name": 'showtime.xyz',
+            "name": "showtime.xyz",
             "verifyingContract": active_chain.verifierAddress,
-            "version": 'v1',
+            "version": "v1",
         },
-
-        "types":  {
+        "types": {
             "EIP712Domain": [
-                {"name": 'name', "type": 'string'},
-                {"name": 'version', "type": 'string'},
-                {"name": 'chainId', "type": 'uint256'},
-                {"name": 'verifyingContract', "type": 'address'},
+                {"name": "name", "type": "string"},
+                {"name": "version", "type": "string"},
+                {"name": "chainId", "type": "uint256"},
+                {"name": "verifyingContract", "type": "address"},
             ],
             "Attestation": [
-                {"name": 'beneficiary', "type": 'address'},
-                {"name": 'context', "type": 'address'},
-                {"name": 'nonce', "type": 'uint256'},
-                {"name": 'validUntil', "type": 'uint256'},
-            ]
+                {"name": "beneficiary", "type": "address"},
+                {"name": "context", "type": "address"},
+                {"name": "nonce", "type": "uint256"},
+                {"name": "validUntil", "type": "uint256"},
+            ],
         },
-
         "primaryType": "Attestation",
         "message": {
             "beneficiary": beneficiary,
             "context": "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
             "nonce": nonce,
             "validUntil": int(time.time()) + 120,
-        }
+        },
     }
 
     signable_message = encode_structured_data(structured_data)
@@ -174,18 +150,18 @@ def main():
     print(signed_message)
 
     print("Result:")
-    attestation = tuple((structured_data["message"][x] for x in (
-        'beneficiary', 'context', 'nonce', 'validUntil')))
+    attestation = tuple(
+        (
+            structured_data["message"][x]
+            for x in ("beneficiary", "context", "nonce", "validUntil")
+        )
+    )
 
     try:
-        print(verifier.functions.verify(
-            [
-                attestation,
-                signed_message.signature
-            ]).call())
+        print(verifier.functions.verify([attestation, signed_message.signature]).call())
     except ContractLogicError as e:
         print("Error:", e)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
