@@ -3,7 +3,5 @@
 @openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 forge-std/=lib/forge-std/src/
 nft-editions/=lib/nft-editions/contracts
+operator-filter-registry/=lib/nft-editions/lib/operator-filter-registry/src/
 
-lib/=lib/
-src/=src/
-test/=test/

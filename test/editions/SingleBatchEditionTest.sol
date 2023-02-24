@@ -5,12 +5,11 @@ import {SingleBatchEdition} from "nft-editions/SingleBatchEdition.sol";
 import {Addresses} from "nft-editions/utils/Addresses.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 import "nft-editions/interfaces/Errors.sol";
+import {SSTORE2} from "solmate/utils/SSTORE2.sol";
 
-import {SingleBatchEditionMinter} from "src/editions/SingleBatchEditionMinter.sol";
-import {SingleBatchEditionCreator} from "src/editions/SingleBatchEditionCreator.sol";
+import {SingleBatchEditionFactory, EditionData} from "src/editions/SingleBatchEditionFactory.sol";
 import "test/fixtures/ShowtimeVerifierFixture.sol";
 import "src/editions/interfaces/Errors.sol";
-import {SSTORE2} from "lib/nft-editions/lib/solmate/src/utils/SSTORE2.sol";
 
 contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     event CreatedBatchEdition(
@@ -19,9 +18,8 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
     uint256 constant ROYALTY_BPS = 1000;
 
-    SingleBatchEditionCreator editionCreator;
+    SingleBatchEditionFactory editionFactory;
     ShowtimeVerifier verifier;
-    SingleBatchEditionMinter minter;
 
     address creator = makeAddr("creator");
     address relayer = makeAddr("relayer");
@@ -38,21 +36,19 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         vm.prank(verifierOwner);
         verifier.registerSigner(signerAddr, 7);
 
-        // configure minter
-        minter = new SingleBatchEditionMinter(verifier);
-
-        // configure editionCreator
+        // configure editionFactory
         SingleBatchEdition editionImpl = new SingleBatchEdition();
-
-        // configure editionCreator
-        editionCreator = new SingleBatchEditionCreator(address(editionImpl), address(minter));
+        editionFactory = new SingleBatchEditionFactory(
+            address(editionImpl),
+            address(verifier)
+        );
     }
 
     function getVerifier() public view override returns (ShowtimeVerifier) {
         return verifier;
     }
 
-    function createEdition(SignedAttestation memory signedAttestation, bytes memory expectedError)
+    function createEdition(SignedAttestation memory signedAttestation, bytes memory recipients, bytes memory expectedError)
         public
         returns (SingleBatchEdition newEdition)
     {
@@ -65,30 +61,33 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
         newEdition = SingleBatchEdition(
             address(
-                editionCreator.createEdition(
-                    "name",
-                    "description",
-                    "animationUrl",
-                    "imageUrl",
-                    ROYALTY_BPS,
-                    "externalUrl",
-                    "creatorName",
-                    "tag1,tag2",
+                editionFactory.createEdition(
+                    EditionData(
+                        "name",
+                        "description",
+                        "animationUrl",
+                        "imageUrl",
+                        ROYALTY_BPS,
+                        "externalUrl",
+                        "creatorName",
+                        "tag1,tag2"
+                    ),
+                    recipients,
                     signedAttestation
                 )
             )
         );
     }
 
-    function createEdition(Attestation memory attestation, bytes memory expectedError)
+    function createEdition(Attestation memory attestation, bytes memory recipients, bytes memory expectedError)
         public
         returns (SingleBatchEdition)
     {
-        return createEdition(signed(signerKey, attestation), expectedError);
+        return createEdition(signed(signerKey, attestation), recipients, expectedError);
     }
 
-    function createEdition(Attestation memory attestation) public returns (SingleBatchEdition) {
-        return createEdition(attestation, "");
+    function createEdition(Attestation memory attestation, bytes memory recipients) public returns (SingleBatchEdition) {
+        return createEdition(attestation, recipients, "");
     }
 
     function getCreatorAttestation() public view returns (Attestation memory creatorAttestation) {
@@ -98,31 +97,11 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     function getCreatorAttestation(address creatorAddr) public view returns (Attestation memory creatorAttestation) {
         // generate a valid attestation
         creatorAttestation = Attestation({
-            context: address(editionCreator),
+            context: address(editionFactory),
             beneficiary: creatorAddr,
             validUntil: block.timestamp + 2 minutes,
             nonce: verifier.nonces(creator)
         });
-    }
-
-    function getBatchAttestation(SingleBatchEdition _edition, address pointer, uint256 _validUntil, uint256 _nonce)
-        public
-        pure
-        returns (Attestation memory)
-    {
-        // generate a valid attestation
-        return Attestation({context: address(_edition), beneficiary: pointer, validUntil: _validUntil, nonce: _nonce});
-    }
-
-    function getBatchAttestation(SingleBatchEdition _edition, bytes memory addresses) public returns (Attestation memory) {
-        address pointer = SSTORE2.write(addresses);
-        return
-            getBatchAttestation(_edition, pointer, block.timestamp + 2 minutes, verifier.nonces(pointer));
-    }
-
-    function getSingleClaimerBatchAttestation(SingleBatchEdition _edition) public returns (Attestation memory) {
-        address pointer = SSTORE2.write(abi.encodePacked(claimer));
-        return getBatchAttestation(_edition, pointer, block.timestamp + 2 minutes, verifier.nonces(pointer));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -131,12 +110,12 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
     function testCreateEditionHappyPath() public {
         uint256 id = uint256(keccak256(abi.encodePacked(creator, "name", "animationUrl", "imageUrl")));
-        address expectedAddr = address(editionCreator.getEditionAtId(id));
+        address expectedAddr = address(editionFactory.getEditionAtId(id));
 
         // the edition creator emits the expected event
         vm.expectEmit(true, true, true, true);
         emit CreatedBatchEdition(id, creator, expectedAddr, "tag1,tag2");
-        SingleBatchEdition edition = createEdition(getCreatorAttestation());
+        SingleBatchEdition edition = createEdition(getCreatorAttestation(), abi.encodePacked(claimer));
 
         // the edition has the expected address
         assertEq(address(edition), expectedAddr);
@@ -149,13 +128,6 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
         // the creator no longer automatically receives the first token (because of the single mint mechanic)
         assertEq(edition.balanceOf(creator), 0);
-        assertEq(edition.balanceOf(claimer), 0);
-
-        // the edition is mintable by the global minter
-        Attestation memory batchAttestation = getSingleClaimerBatchAttestation(edition);
-
-        vm.prank(relayer);
-        minter.mintBatch(signed(signerKey, batchAttestation));
 
         // the claimer received a token
         assertEq(edition.balanceOf(claimer), 1);
@@ -167,7 +139,11 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         creatorAttestation.context = address(this); // nonsense context
 
         // creating a new edition should fail
-        createEdition(creatorAttestation, abi.encodeWithSignature("UnexpectedContext(address)", address(this)));
+        createEdition(
+            creatorAttestation,
+            abi.encodePacked(claimer),
+            abi.encodeWithSignature("UnexpectedContext(address)", address(this))
+        );
     }
 
     function testCreateEditionWithWrongNonce() public {
@@ -178,17 +154,25 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         creatorAttestation.nonce = badNonce;
 
         // creating a new edition should fail
-        createEdition(creatorAttestation, abi.encodeWithSignature("BadNonce(uint256,uint256)", 0, badNonce));
+        createEdition(
+            creatorAttestation,
+            abi.encodePacked(claimer),
+            abi.encodeWithSignature("BadNonce(uint256,uint256)", 0, badNonce)
+        );
     }
 
     function testCanNotReuseCreatorAttestation() public {
         Attestation memory creatorAttestation = getCreatorAttestation();
 
         // first one should work
-        createEdition(creatorAttestation);
+        createEdition(creatorAttestation, abi.encodePacked(claimer));
 
         // second one should fail
-        createEdition(creatorAttestation, abi.encodeWithSignature("BadNonce(uint256,uint256)", 1, 0));
+        createEdition(
+            creatorAttestation,
+            abi.encodePacked(claimer),
+            abi.encodeWithSignature("BadNonce(uint256,uint256)", 1, 0)
+        );
     }
 
     function testCanNotHijackCreatorAttestation() public {
@@ -198,56 +182,49 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         signedAttestation.attestation.beneficiary = badActor;
 
         // it does not work
-        createEdition(signedAttestation, abi.encodeWithSignature("UnknownSigner()"));
+        createEdition(
+            signedAttestation,
+            abi.encodePacked(claimer),
+            abi.encodeWithSignature("UnknownSigner()")
+        );
     }
 
-    function testCanNotReuseBatchAttestation() public {
-        // setup
-        SingleBatchEdition edition = createEdition(getCreatorAttestation());
-        Attestation memory batchAttestation = getSingleClaimerBatchAttestation(edition);
-        SignedAttestation memory signedAttestation = signed(signerKey, batchAttestation);
-
+    function testCanNotMintAfterInitialMint() public {
         // first one should work
-        minter.mintBatch(signedAttestation);
+        SingleBatchEdition edition = createEdition(getCreatorAttestation(), abi.encodePacked(claimer));
+
+        assertEq(edition.balanceOf(claimer), 1);
+
+        // the factory has minting rights, so pretend to be it
+        vm.prank(address(editionFactory));
 
         // second one should fail
         vm.expectRevert(SoldOut.selector);
-        minter.mintBatch(signedAttestation);
+        edition.mintBatch(abi.encodePacked(claimer));
     }
 
     function testEmptyBatchMint() public {
-        // setup
-        SingleBatchEdition edition = createEdition(getCreatorAttestation());
-        Attestation memory batchAttestation = getBatchAttestation(edition, "");
-        SignedAttestation memory signedAttestation = signed(signerKey, batchAttestation);
-
         // when we mint a batch with no claimers, it fails with InvalidBatch()
-        vm.expectRevert(InvalidBatch.selector);
-        minter.mintBatch(signedAttestation);
+        createEdition(getCreatorAttestation(), "", abi.encodeWithSignature("InvalidBatch()"));
     }
 
     function testBatchMintWithDuplicateClaimer() public {
-        // setup
-        SingleBatchEdition edition = createEdition(getCreatorAttestation());
-        bytes memory addresses = abi.encodePacked(claimer, claimer);
-        Attestation memory batchAttestation = getBatchAttestation(edition, addresses);
-        SignedAttestation memory signedAttestation = signed(signerKey, batchAttestation);
-
         // when we mint a batch with a duplicate claimer, it fails with ADDRESSES_NOT_SORTED
-        vm.expectRevert("ADDRESSES_NOT_SORTED");
-        minter.mintBatch(signedAttestation);
+        createEdition(
+            getCreatorAttestation(),
+            abi.encodePacked(claimer, claimer),
+            "ADDRESSES_NOT_SORTED"
+        );
     }
 
     function testBatchMintWithUniqueClaimers(uint256 n) public {
-        vm.assume(0 < n);
-        vm.assume(n < 1200);
-
-        // setup
-        SingleBatchEdition edition = createEdition(getCreatorAttestation());
-        Attestation memory batchAttestation = getBatchAttestation(edition, Addresses.make(n));
+        n = bound(n, 1, 1200);
 
         // when we mint a batch for n unique addresses
-        minter.mintBatch(signed(signerKey, batchAttestation));
+        SingleBatchEdition edition = createEdition(
+            getCreatorAttestation(),
+            Addresses.make(n)
+        );
 
         // then each claimer receives the expected tokens
         for (uint256 i = 0; i < n; i++) {
