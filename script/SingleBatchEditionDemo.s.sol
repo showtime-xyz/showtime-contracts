@@ -3,13 +3,12 @@ pragma solidity ^0.8.15;
 
 import {Script, console2} from "forge-std/Script.sol";
 
-import {SSTORE2} from "lib/nft-editions/lib/solmate/src/utils/SSTORE2.sol";
+import {SSTORE2} from "solmate/utils/SSTORE2.sol";
 import {SingleBatchEdition} from "nft-editions/SingleBatchEdition.sol";
 
 import {ShowtimeVerifier} from "src/ShowtimeVerifier.sol";
 import {IShowtimeVerifier, Attestation, SignedAttestation} from "src/interfaces/IShowtimeVerifier.sol";
-import {SingleBatchEditionCreator} from "src/editions/SingleBatchEditionCreator.sol";
-import {SingleBatchEditionMinter} from "src/editions/SingleBatchEditionMinter.sol";
+import {SingleBatchEditionFactory, EditionData} from "src/editions/SingleBatchEditionFactory.sol";
 
 import {ShowtimeVerifierFixture} from "test/fixtures/ShowtimeVerifierFixture.sol";
 
@@ -22,39 +21,19 @@ contract SingleBatchEditionDemo is Script, ShowtimeVerifierFixture {
         console2.log("from address:", owner);
         vm.startBroadcast(pk);
 
-        SingleBatchEditionCreator editionCreator = SingleBatchEditionCreator(
+        SingleBatchEditionFactory editionFactory = SingleBatchEditionFactory(
             0xE069D5a9f0A6d882e1D96101350a1A27D4967037
         );
 
-        verifier = ShowtimeVerifier(address(editionCreator.showtimeVerifier()));
+        verifier = ShowtimeVerifier(address(editionFactory.showtimeVerifier()));
         address creator = 0x9cc97852491fBB3B63c539f6C20Eb24A1c76568f;
 
         Attestation memory creatorAttestation = Attestation({
-            context: address(editionCreator),
+            context: address(editionFactory),
             beneficiary: creator,
             validUntil: block.timestamp + 2 minutes,
             nonce: verifier.nonces(creator)
         });
-
-        SingleBatchEdition edition = SingleBatchEdition(
-            address(
-                editionCreator.createEdition({
-                    // quotes will need to be escaped:
-                    name: unicode'"She gets visions" 👁️',
-                    // newlines will need to be escaped
-                    description: unicode"Playing in the background:\nKetto by Bonobo 🎶",
-                    animationUrl: "",
-                    imageUrl: "ipfs://QmSEBhh7A4JKjdRAVEwLGmfF5ckabAUnYVace9KjvyqMZj",
-                    royaltyBPS: 10_00,
-                    externalUrl: "https://showtime.xyz/nft/polygon/0x1D6378e337f49dA12eEf49Bd1D8de3a1720115f4/0",
-                    creatorName: "@AliceOnChain",
-                    tags: "art,limited-edition,time-limited",
-                    signedAttestation: signed(pk, creatorAttestation)
-                })
-            )
-        );
-
-        console2.log("Edition address:", address(edition));
 
         /// @dev addresses have to be sorted
         bytes memory recipients = abi.encodePacked(
@@ -67,18 +46,30 @@ contract SingleBatchEditionDemo is Script, ShowtimeVerifierFixture {
             0xF9984Db6A3bd7044f0d22c9008ddA296C0CC5468  // henryfontanier.eth
         );
 
-        address pointer = SSTORE2.write(recipients);
-
-        SingleBatchEditionMinter minter = SingleBatchEditionMinter(editionCreator.minter());
-
-        Attestation memory batchAttestation = Attestation({
-            context: address(edition),
-            beneficiary: pointer,
-            validUntil: block.timestamp + 2 minutes,
-            nonce: verifier.nonces(pointer) // expected to be 0
+        EditionData memory editionData = EditionData({
+            // quotes will need to be escaped:
+            name: unicode'"She gets visions" 👁️',
+            // newlines will need to be escaped
+            description: unicode"Playing in the background:\nKetto by Bonobo 🎶",
+            animationUrl: "",
+            imageUrl: "ipfs://QmSEBhh7A4JKjdRAVEwLGmfF5ckabAUnYVace9KjvyqMZj",
+            royaltyBPS: 10_00,
+            externalUrl: "https://showtime.xyz/nft/polygon/0x1D6378e337f49dA12eEf49Bd1D8de3a1720115f4/0",
+            creatorName: "@AliceOnChain",
+            tags: "art,limited-edition,time-limited"
         });
 
-        minter.mintBatch(signed(pk, batchAttestation));
+        SignedAttestation memory signedAttestation = signed(pk, creatorAttestation);
+
+        address editionAddress = address(
+            editionFactory.createEdition(
+                editionData,
+                recipients,
+                signedAttestation
+            )
+        );
+
+        console2.log("Edition address:", editionAddress);
 
         vm.stopBroadcast();
     }
