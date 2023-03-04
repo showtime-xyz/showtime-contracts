@@ -17,6 +17,16 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     );
 
     uint256 constant ROYALTY_BPS = 1000;
+    EditionData private DEFAULT_EDITION_DATA = EditionData(
+        "name",
+        "description",
+        "animationUrl",
+        "imageUrl",
+        ROYALTY_BPS,
+        "externalUrl",
+        "creatorName",
+        "tag1,tag2"
+    );
 
     SingleBatchEditionFactory editionFactory;
     ShowtimeVerifier verifier;
@@ -62,16 +72,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         newEdition = SingleBatchEdition(
             address(
                 editionFactory.createEdition(
-                    EditionData(
-                        "name",
-                        "description",
-                        "animationUrl",
-                        "imageUrl",
-                        ROYALTY_BPS,
-                        "externalUrl",
-                        "creatorName",
-                        "tag1,tag2"
-                    ),
+                    DEFAULT_EDITION_DATA,
                     recipients,
                     signedAttestation
                 )
@@ -95,9 +96,12 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     }
 
     function getCreatorAttestation(address creatorAddr) public view returns (Attestation memory creatorAttestation) {
-        // generate a valid attestation
+        // generate a valid attestation for the default edition data
+        uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creatorAddr);
+        address editionAddr = address(editionFactory.getEditionAtId(editionId));
+
         creatorAttestation = Attestation({
-            context: address(editionFactory),
+            context: editionAddr,
             beneficiary: creatorAddr,
             validUntil: block.timestamp + 2 minutes,
             nonce: verifier.nonces(creator)
@@ -136,13 +140,14 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     function testCreateEditionWithWrongContext() public {
         // when we have an attestation with the wrong context
         Attestation memory creatorAttestation = getCreatorAttestation();
+        address expectedAddr = creatorAttestation.context;
         creatorAttestation.context = address(this); // nonsense context
 
         // creating a new edition should fail
         createEdition(
             creatorAttestation,
             abi.encodePacked(claimer),
-            abi.encodeWithSignature("UnexpectedContext(address)", address(this))
+            abi.encodeWithSignature("AddressMismatch(address,address)", expectedAddr, creatorAttestation.context)
         );
     }
 
@@ -165,13 +170,13 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         Attestation memory creatorAttestation = getCreatorAttestation();
 
         // first one should work
-        createEdition(creatorAttestation, abi.encodePacked(claimer));
+        address editionAddr = address(createEdition(creatorAttestation, abi.encodePacked(claimer)));
 
         // second one should fail
         createEdition(
             creatorAttestation,
             abi.encodePacked(claimer),
-            abi.encodeWithSignature("BadNonce(uint256,uint256)", 1, 0)
+            abi.encodeWithSignature("DuplicateEdition(address)", editionAddr)
         );
     }
 
@@ -181,11 +186,15 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         // when the badActor tries to steal the attestation
         signedAttestation.attestation.beneficiary = badActor;
 
+        address expectedAddr = address(
+            editionFactory.getEditionAtId(
+                editionFactory.getEditionId(DEFAULT_EDITION_DATA, badActor)));
+
         // it does not work
         createEdition(
             signedAttestation,
             abi.encodePacked(claimer),
-            abi.encodeWithSignature("UnknownSigner()")
+            abi.encodeWithSignature("AddressMismatch(address,address)", expectedAddr, signedAttestation.attestation.context)
         );
     }
 
