@@ -11,7 +11,6 @@ import {IGatedEditionMinter} from "./interfaces/IGatedEditionMinter.sol";
 import {IShowtimeVerifier, Attestation, SignedAttestation} from "src/interfaces/IShowtimeVerifier.sol";
 import "./interfaces/Errors.sol";
 
-
 interface IOwnable {
     function transferOwnership(address newOwner) external;
 }
@@ -57,22 +56,41 @@ contract SingleBatchEditionFactory {
         showtimeVerifier = IShowtimeVerifier(_showtimeVerifier);
     }
 
+        /// Creates and mint a new SingleBatchEdition contract with a deterministic address
+    /// @dev we expect the signed attestation's context to correspond to this contract's address
+    /// @dev we expect the signed attestation's beneficiary to be the edition's creator
+    /// @param packedRecipients an abi.encodePacked() array of recipient addresses for the batch mint
+    /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
+    /// @return edition the address of the created edition
+    function createEdition(
+        EditionData calldata data,
+        bytes calldata packedRecipients,
+        SignedAttestation calldata signedAttestation
+    ) external returns (ISingleBatchEdition edition) {
+        if (packedRecipients.length == 0 || packedRecipients.length % 20 != 0) {
+            revert InvalidBatch();
+        }
+
+        address pointer = SSTORE2.write(packedRecipients);
+
+        return createEdition(data, pointer, signedAttestation);
+    }
+
     /// Creates and mint a new SingleBatchEdition contract with a deterministic address
     /// @dev we expect the signed attestation's context to correspond to this contract's address
     /// @dev we expect the signed attestation's beneficiary to be the edition's creator
     /// @param pointer the address of the SSTORE2 pointer with the recipients of the batch mint for this edition
     /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
     /// @return edition the address of the created edition
-    function createEdition(
-        EditionData calldata data,
-        address pointer,
-        SignedAttestation calldata signedAttestation
-    ) public returns (ISingleBatchEdition edition) {
-        validateAttestation(signedAttestation);
+    function createEdition(EditionData calldata data, address pointer, SignedAttestation calldata signedAttestation)
+        public
+        returns (ISingleBatchEdition edition)
+    {
         address creator = signedAttestation.attestation.beneficiary;
 
         bytes32 salt = keccak256(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl));
         address predicted = address(getEditionAtId(uint256(salt)));
+        validateAttestation(signedAttestation, predicted);
 
         // avoid burning all available gas if an edition already exists at this address
         if (predicted.code.length > 0) {
@@ -111,28 +129,9 @@ contract SingleBatchEditionFactory {
         IOwnable(address(edition)).transferOwnership(creator);
     }
 
-    /// Creates and mint a new SingleBatchEdition contract with a deterministic address
-    /// @dev we expect the signed attestation's context to correspond to this contract's address
-    /// @dev we expect the signed attestation's beneficiary to be the edition's creator
-    /// @param packedRecipients an abi.encodePacked() array of recipient addresses for the batch mint
-    /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
-    /// @return edition the address of the created edition
-    function createEdition(
-        EditionData calldata data,
-        bytes calldata packedRecipients,
-        SignedAttestation calldata signedAttestation
-    ) external returns (ISingleBatchEdition edition) {
-        if (packedRecipients.length == 0 || packedRecipients.length % 20 != 0) {
-            revert InvalidBatch();
-        }
 
-        address pointer = SSTORE2.write(packedRecipients);
-
-        return createEdition(
-            data,
-            pointer,
-            signedAttestation
-        );
+    function getEditionId(EditionData calldata data, address creator) public pure returns (uint256 editionId) {
+        return uint256(keccak256(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl)));
     }
 
     function getEditionAtId(uint256 editionId) public view returns (ISingleBatchEdition) {
@@ -141,15 +140,19 @@ contract SingleBatchEditionFactory {
         );
     }
 
-    function validateAttestation(SignedAttestation calldata signedAttestation) internal returns (bool) {
+    function validateAttestation(SignedAttestation calldata signedAttestation, address editionAddress)
+        public
+        view
+        returns (bool)
+    {
         // verify that the context for this attestation is valid
         address context = signedAttestation.attestation.context;
-        if (context != address(this)) {
-            revert UnexpectedContext(context);
+        if (context != editionAddress) {
+            revert AddressMismatch({expected: editionAddress, actual: context});
         }
 
-        // verify attestation
-        if (!showtimeVerifier.verifyAndBurn(signedAttestation)) {
+        // verify attestation without burning, because the editionAddress can not be reused
+        if (!showtimeVerifier.verify(signedAttestation)) {
             revert VerificationFailed();
         }
 
