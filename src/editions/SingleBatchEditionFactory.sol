@@ -88,8 +88,8 @@ contract SingleBatchEditionFactory {
     {
         address creator = signedAttestation.attestation.beneficiary;
 
-        bytes32 salt = keccak256(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl));
-        address predicted = address(getEditionAtId(uint256(salt)));
+        uint256 editionId = getEditionId(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl), creator);
+        address predicted = address(getEditionAtId(editionId));
         validateAttestation(signedAttestation, predicted);
 
         // avoid burning all available gas if an edition already exists at this address
