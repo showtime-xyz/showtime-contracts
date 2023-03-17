@@ -6,7 +6,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import {SingleBatchEdition} from "nft-editions/SingleBatchEdition.sol";
 
 import {IShowtimeVerifier, Attestation, SignedAttestation} from "src/interfaces/IShowtimeVerifier.sol";
-import {SingleBatchEditionFactory} from "src/editions/SingleBatchEditionFactory.sol";
+import {EditionFactory} from "src/editions/EditionFactory.sol";
 
 contract SingleBatchEditions is Script {
     address public constant SHOWTIME_VERIFIER = 0x50C0017836517dc49C9EBC7615d8B322A0f91F67;
@@ -20,7 +20,7 @@ contract SingleBatchEditions is Script {
         SingleBatchEdition editionImpl = new SingleBatchEdition{ salt: 0 }();
         console2.log("editionImpl:", address(editionImpl));
 
-        SingleBatchEditionFactory factory = new SingleBatchEditionFactory{ salt: 0 }(SHOWTIME_VERIFIER);
+        EditionFactory factory = new EditionFactory{ salt: 0 }(SHOWTIME_VERIFIER);
         console2.log("factory:", address(factory));
     }
 }

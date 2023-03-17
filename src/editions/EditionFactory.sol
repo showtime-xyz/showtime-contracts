@@ -37,7 +37,7 @@ struct EditionData {
     string tags;
 }
 
-contract SingleBatchEditionFactory {
+contract EditionFactory {
     /// @dev we expect tags to be a comma-separated list of strings e.g. "music,location,password"
     event CreatedBatchEdition(
         uint256 indexed editionId, address indexed creator, address editionContractAddress, string tags
