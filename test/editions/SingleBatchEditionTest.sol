@@ -7,7 +7,7 @@ import {Test} from "lib/forge-std/src/Test.sol";
 import "nft-editions/interfaces/Errors.sol";
 import {SSTORE2} from "solmate/utils/SSTORE2.sol";
 
-import {SingleBatchEditionFactory, EditionData} from "src/editions/SingleBatchEditionFactory.sol";
+import {EditionFactory, EditionData} from "src/editions/EditionFactory.sol";
 import "test/fixtures/ShowtimeVerifierFixture.sol";
 import "src/editions/interfaces/Errors.sol";
 
@@ -29,7 +29,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         "tag1,tag2"
     );
 
-    SingleBatchEditionFactory editionFactory;
+    EditionFactory editionFactory;
     ShowtimeVerifier verifier;
 
     address creator = makeAddr("creator");
@@ -48,7 +48,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         verifier.registerSigner(signerAddr, 7);
 
         // configure editionFactory
-        editionFactory = new SingleBatchEditionFactory(address(verifier));
+        editionFactory = new EditionFactory(address(verifier));
     }
 
     function getVerifier() public view override returns (ShowtimeVerifier) {

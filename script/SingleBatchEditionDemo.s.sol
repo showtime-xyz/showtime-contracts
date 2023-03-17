@@ -9,7 +9,7 @@ import {Addresses} from "nft-editions/utils/Addresses.sol";
 
 import {ShowtimeVerifier} from "src/ShowtimeVerifier.sol";
 import {IShowtimeVerifier, Attestation, SignedAttestation} from "src/interfaces/IShowtimeVerifier.sol";
-import {SingleBatchEditionFactory, EditionData} from "src/editions/SingleBatchEditionFactory.sol";
+import {EditionFactory, EditionData} from "src/editions/EditionFactory.sol";
 
 import {ShowtimeVerifierFixture} from "test/fixtures/ShowtimeVerifierFixture.sol";
 
@@ -24,7 +24,7 @@ contract SingleBatchEditionDemo is Script, ShowtimeVerifierFixture {
 
         vm.startBroadcast(pk);
 
-        SingleBatchEditionFactory editionFactory = new SingleBatchEditionFactory(VERIFIER);
+        EditionFactory editionFactory = new EditionFactory(VERIFIER);
 
         address creator = 0x9cc97852491fBB3B63c539f6C20Eb24A1c76568f;
 
