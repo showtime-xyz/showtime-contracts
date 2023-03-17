@@ -20,11 +20,7 @@ contract SingleBatchEditions is Script {
         SingleBatchEdition editionImpl = new SingleBatchEdition{ salt: 0 }();
         console2.log("editionImpl:", address(editionImpl));
 
-        SingleBatchEditionFactory factory = new SingleBatchEditionFactory{ salt: 0 }(
-            address(editionImpl),
-            SHOWTIME_VERIFIER
-        );
-
+        SingleBatchEditionFactory factory = new SingleBatchEditionFactory{ salt: 0 }(SHOWTIME_VERIFIER);
         console2.log("factory:", address(factory));
     }
 }

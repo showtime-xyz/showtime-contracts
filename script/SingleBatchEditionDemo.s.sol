@@ -24,10 +24,7 @@ contract SingleBatchEditionDemo is Script, ShowtimeVerifierFixture {
 
         vm.startBroadcast(pk);
 
-        SingleBatchEditionFactory editionFactory = new SingleBatchEditionFactory(
-            SINGLE_BATCH_EDITION_IMPL,
-            VERIFIER
-        );
+        SingleBatchEditionFactory editionFactory = new SingleBatchEditionFactory(VERIFIER);
 
         address creator = 0x9cc97852491fBB3B63c539f6C20Eb24A1c76568f;
 
@@ -53,6 +50,7 @@ contract SingleBatchEditionDemo is Script, ShowtimeVerifierFixture {
         bytes memory recipients = Addresses.make(1000);
 
         EditionData memory editionData = EditionData({
+            editionImpl: SINGLE_BATCH_EDITION_IMPL,
             // quotes will need to be escaped:
             name: unicode'"She gets visions" 👁️',
             // newlines will need to be escaped
@@ -80,7 +78,7 @@ contract SingleBatchEditionDemo is Script, ShowtimeVerifierFixture {
         vm.stopBroadcast();
     }
 
-    function getVerifier() public view override returns (ShowtimeVerifier) {
+    function getVerifier() public pure override returns (ShowtimeVerifier) {
         return ShowtimeVerifier(VERIFIER);
     }
 

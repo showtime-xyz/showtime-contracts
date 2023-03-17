@@ -15,6 +15,7 @@ interface IOwnable {
     function transferOwnership(address newOwner) external;
 }
 
+/// @param editionImpl the address of the implementation contract for the edition to clone
 /// @param name Name of the edition contract
 /// @param description Description of the edition entry
 /// @param animationUrl Animation url (optional) of the edition entry
@@ -25,6 +26,7 @@ interface IOwnable {
 /// @param creatorName Metadata: Creator name (optional) of the edition entry
 /// @param tags list of comma-separated tags for this edition, emitted as part of the CreatedBatchEdition event
 struct EditionData {
+    address editionImpl;
     string name;
     string description;
     string animationUrl;
@@ -43,20 +45,13 @@ contract SingleBatchEditionFactory {
 
     string internal constant SYMBOL = unicode"✦ SHOWTIME";
 
-    address public immutable editionImpl;
     IShowtimeVerifier public immutable showtimeVerifier;
 
-    /// @param _editionImpl the address of the implementation contract for SingleBatchEdition
-    constructor(address _editionImpl, address _showtimeVerifier) {
-        if (_editionImpl == address(0)) {
-            revert NullAddress();
-        }
-
-        editionImpl = _editionImpl;
+    constructor(address _showtimeVerifier) {
         showtimeVerifier = IShowtimeVerifier(_showtimeVerifier);
     }
 
-        /// Creates and mint a new SingleBatchEdition contract with a deterministic address
+    /// Creates and mint a new SingleBatchEdition contract with a deterministic address
     /// @dev we expect the signed attestation's context to correspond to this contract's address
     /// @dev we expect the signed attestation's beneficiary to be the edition's creator
     /// @param packedRecipients an abi.encodePacked() array of recipient addresses for the batch mint
@@ -86,10 +81,14 @@ contract SingleBatchEditionFactory {
         public
         returns (ISingleBatchEdition edition)
     {
-        address creator = signedAttestation.attestation.beneficiary;
+        address editionImpl = data.editionImpl;
+        if (editionImpl == address(0)) {
+            revert NullAddress();
+        }
 
-        uint256 editionId = getEditionId(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl), creator);
-        address predicted = address(getEditionAtId(editionId));
+        address creator = signedAttestation.attestation.beneficiary;
+        uint256 editionId = getEditionId(data, creator);
+        address predicted = address(getEditionAtId(editionImpl, editionId));
         validateAttestation(signedAttestation, predicted);
 
         // avoid burning all available gas if an edition already exists at this address
@@ -97,7 +96,7 @@ contract SingleBatchEditionFactory {
             revert DuplicateEdition(predicted);
         }
 
-        edition = ISingleBatchEdition(ClonesUpgradeable.cloneDeterministic(editionImpl, salt));
+        edition = ISingleBatchEdition(ClonesUpgradeable.cloneDeterministic(editionImpl, bytes32(editionId)));
 
         try edition.initialize(
             address(this),
@@ -121,7 +120,7 @@ contract SingleBatchEditionFactory {
 
         edition.mintBatch(pointer);
 
-        emit CreatedBatchEdition(uint256(salt), creator, address(edition), data.tags);
+        emit CreatedBatchEdition(editionId, creator, address(edition), data.tags);
 
         configureEdition(edition, signedAttestation, data.externalUrl, data.creatorName);
 
@@ -129,12 +128,12 @@ contract SingleBatchEditionFactory {
         IOwnable(address(edition)).transferOwnership(creator);
     }
 
-
     function getEditionId(EditionData calldata data, address creator) public pure returns (uint256 editionId) {
-        return uint256(keccak256(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl)));
+        return
+            uint256(keccak256(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl)));
     }
 
-    function getEditionAtId(uint256 editionId) public view returns (ISingleBatchEdition) {
+    function getEditionAtId(address editionImpl, uint256 editionId) public view returns (ISingleBatchEdition) {
         return ISingleBatchEdition(
             ClonesUpgradeable.predictDeterministicAddress(editionImpl, bytes32(editionId), address(this))
         );

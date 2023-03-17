@@ -18,6 +18,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
     uint256 constant ROYALTY_BPS = 1000;
     EditionData private DEFAULT_EDITION_DATA = EditionData(
+        address(new SingleBatchEdition()),
         "name",
         "description",
         "animationUrl",
@@ -47,11 +48,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
         verifier.registerSigner(signerAddr, 7);
 
         // configure editionFactory
-        SingleBatchEdition editionImpl = new SingleBatchEdition();
-        editionFactory = new SingleBatchEditionFactory(
-            address(editionImpl),
-            address(verifier)
-        );
+        editionFactory = new SingleBatchEditionFactory(address(verifier));
     }
 
     function getVerifier() public view override returns (ShowtimeVerifier) {
@@ -98,7 +95,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     function getCreatorAttestation(address creatorAddr) public view returns (Attestation memory creatorAttestation) {
         // generate a valid attestation for the default edition data
         uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creatorAddr);
-        address editionAddr = address(editionFactory.getEditionAtId(editionId));
+        address editionAddr = address(editionFactory.getEditionAtId(DEFAULT_EDITION_DATA.editionImpl, editionId));
 
         creatorAttestation = Attestation({
             context: editionAddr,
@@ -113,8 +110,8 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
     //////////////////////////////////////////////////////////////*/
 
     function testCreateEditionHappyPath() public {
-        uint256 id = uint256(keccak256(abi.encodePacked(creator, "name", "animationUrl", "imageUrl")));
-        address expectedAddr = address(editionFactory.getEditionAtId(id));
+        uint256 id = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creator);
+        address expectedAddr = address(editionFactory.getEditionAtId(DEFAULT_EDITION_DATA.editionImpl, id));
 
         // the edition creator emits the expected event
         vm.expectEmit(true, true, true, true);
@@ -188,6 +185,7 @@ contract SingleBatchEditionTest is Test, ShowtimeVerifierFixture {
 
         address expectedAddr = address(
             editionFactory.getEditionAtId(
+                DEFAULT_EDITION_DATA.editionImpl,
                 editionFactory.getEditionId(DEFAULT_EDITION_DATA, badActor)));
 
         // it does not work
