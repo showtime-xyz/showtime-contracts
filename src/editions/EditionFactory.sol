@@ -82,12 +82,10 @@ contract EditionFactory {
         returns (ISingleBatchEdition edition)
     {
         address editionImpl = data.editionImpl;
-        if (editionImpl == address(0)) {
-            revert NullAddress();
-        }
-
         address creator = signedAttestation.attestation.beneficiary;
         uint256 editionId = getEditionId(data, creator);
+
+        // we expect this to revert if editionImpl is null
         address predicted = address(getEditionAtId(editionImpl, editionId));
         validateAttestation(signedAttestation, predicted);
 
@@ -134,6 +132,10 @@ contract EditionFactory {
     }
 
     function getEditionAtId(address editionImpl, uint256 editionId) public view returns (ISingleBatchEdition) {
+        if (editionImpl == address(0)) {
+            revert NullAddress();
+        }
+
         return ISingleBatchEdition(
             ClonesUpgradeable.predictDeterministicAddress(editionImpl, bytes32(editionId), address(this))
         );
