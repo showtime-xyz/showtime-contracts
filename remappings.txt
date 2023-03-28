@@ -4,4 +4,4 @@
 forge-std/=lib/forge-std/src/
 nft-editions/=lib/nft-editions/contracts
 operator-filter-registry/=lib/nft-editions/lib/operator-filter-registry/src/
-
+SS2ERC721/=lib/nft-editions/lib/SS2ERC721/src/

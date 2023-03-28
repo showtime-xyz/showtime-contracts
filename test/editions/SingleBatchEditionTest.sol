@@ -125,13 +125,13 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
         vm.prank(address(editionFactory));
 
         // second one should fail
-        vm.expectRevert(SoldOut.selector);
+        vm.expectRevert("ALREADY_MINTED");
         edition.mintBatch(abi.encodePacked(claimer));
     }
 
     function testEmptyBatchMint() public {
         // when we mint a batch with no claimers, it fails with InvalidBatch()
-        createEdition(getCreatorAttestation(), "", abi.encodeWithSignature("InvalidBatch()"));
+        createEdition(getCreatorAttestation(), "", "INVALID_ADDRESSES");
     }
 
     function testBatchMintWithDuplicateClaimer() public {
