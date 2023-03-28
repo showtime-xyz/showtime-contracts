@@ -15,7 +15,6 @@ interface IOwnable {
     function transferOwnership(address newOwner) external;
 }
 
-/// @param editionImpl the address of the implementation contract for the edition to clone
 /// @param name Name of the edition contract
 /// @param description Description of the edition entry
 /// @param animationUrl Animation url (optional) of the edition entry
@@ -26,7 +25,6 @@ interface IOwnable {
 /// @param creatorName Metadata: Creator name (optional) of the edition entry
 /// @param tags list of comma-separated tags for this edition, emitted as part of the CreatedBatchEdition event
 struct EditionData {
-    address editionImpl;
     string name;
     string description;
     string animationUrl;
@@ -51,37 +49,46 @@ contract EditionFactory {
         showtimeVerifier = IShowtimeVerifier(_showtimeVerifier);
     }
 
-    /// Creates and mint a new SingleBatchEdition contract with a deterministic address
-    /// @dev we expect the signed attestation's context to correspond to this contract's address
+    /// Creates and mint a new batch edition contract with a deterministic address
+    /// @dev we expect the signed attestation's context to correspond to the predicted edition address
     /// @dev we expect the signed attestation's beneficiary to be the edition's creator
+    /// @param editionImpl the address of the implementation contract for the edition to clone
     /// @param packedRecipients an abi.encodePacked() array of recipient addresses for the batch mint
     /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
-    /// @return edition the address of the created edition
+    /// @return editionAddress the address of the created edition
     function createEdition(
+        address editionImpl,
         EditionData calldata data,
         bytes calldata packedRecipients,
         SignedAttestation calldata signedAttestation
-    ) external returns (ISingleBatchEdition edition) {
-        if (packedRecipients.length == 0 || packedRecipients.length % 20 != 0) {
-            revert InvalidBatch();
-        }
-
-        address pointer = SSTORE2.write(packedRecipients);
-
-        return createEdition(data, pointer, signedAttestation);
+    ) external returns (address editionAddress) {
+        editionAddress = beforeMint(editionImpl, data, signedAttestation);
+        ISingleBatchEdition(editionAddress).mintBatch(packedRecipients);
+        afterMint(editionAddress, signedAttestation, data);
     }
 
-    /// Creates and mint a new SingleBatchEdition contract with a deterministic address
-    /// @dev we expect the signed attestation's context to correspond to this contract's address
+    /// Creates and mint a new batch edition contract with a deterministic address
+    /// @dev we expect the signed attestation's context to correspond to the predicted edition address
     /// @dev we expect the signed attestation's beneficiary to be the edition's creator
+    /// @param editionImpl the address of the implementation contract for the edition to clone
     /// @param pointer the address of the SSTORE2 pointer with the recipients of the batch mint for this edition
     /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
-    /// @return edition the address of the created edition
-    function createEdition(EditionData calldata data, address pointer, SignedAttestation calldata signedAttestation)
-        public
-        returns (ISingleBatchEdition edition)
+    /// @return editionAddress the address of the created edition
+    function createEdition(
+        address editionImpl,
+        EditionData calldata data,
+        address pointer,
+        SignedAttestation calldata signedAttestation
+    ) public returns (address editionAddress) {
+        editionAddress = beforeMint(editionImpl, data, signedAttestation);
+        ISingleBatchEdition(editionAddress).mintBatch(pointer);
+        afterMint(editionAddress, signedAttestation, data);
+    }
+
+    function beforeMint(address editionImpl, EditionData calldata data, SignedAttestation calldata signedAttestation)
+        internal
+        returns (address editionAddress)
     {
-        address editionImpl = data.editionImpl;
         address creator = signedAttestation.attestation.beneficiary;
         uint256 editionId = getEditionId(data, creator);
 
@@ -94,7 +101,8 @@ contract EditionFactory {
             revert DuplicateEdition(predicted);
         }
 
-        edition = ISingleBatchEdition(ClonesUpgradeable.cloneDeterministic(editionImpl, bytes32(editionId)));
+        editionAddress = ClonesUpgradeable.cloneDeterministic(editionImpl, bytes32(editionId));
+        ISingleBatchEdition edition = ISingleBatchEdition(editionAddress);
 
         try edition.initialize(
             address(this),
@@ -104,7 +112,7 @@ contract EditionFactory {
             data.animationUrl,
             data.imageUrl,
             data.royaltyBPS,
-            address(this)
+            address(this) //
         ) {
             // nothing to do
         } catch {
@@ -116,19 +124,21 @@ contract EditionFactory {
             }
         }
 
-        edition.mintBatch(pointer);
-
         emit CreatedBatchEdition(editionId, creator, address(edition), data.tags);
+    }
 
-        configureEdition(edition, signedAttestation, data.externalUrl, data.creatorName);
+    function afterMint(address editionAddress, SignedAttestation calldata signedAttestation, EditionData calldata data)
+        internal
+    {
+        address creator = signedAttestation.attestation.beneficiary;
+        configureEdition(ISingleBatchEdition(editionAddress), signedAttestation, data.externalUrl, data.creatorName);
 
         // and finally transfer ownership of the configured contract to the actual creator
-        IOwnable(address(edition)).transferOwnership(creator);
+        IOwnable(editionAddress).transferOwnership(creator);
     }
 
     function getEditionId(EditionData calldata data, address creator) public pure returns (uint256 editionId) {
-        return
-            uint256(keccak256(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl)));
+        return uint256(keccak256(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl)));
     }
 
     function getEditionAtId(address editionImpl, uint256 editionId) public view returns (ISingleBatchEdition) {

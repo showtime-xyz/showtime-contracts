@@ -50,7 +50,6 @@ contract SingleBatchEditionDemo is Script, ShowtimeVerifierFixture {
         bytes memory recipients = Addresses.make(1000);
 
         EditionData memory editionData = EditionData({
-            editionImpl: SINGLE_BATCH_EDITION_IMPL,
             // quotes will need to be escaped:
             name: unicode'"She gets visions" 👁️',
             // newlines will need to be escaped
@@ -67,6 +66,7 @@ contract SingleBatchEditionDemo is Script, ShowtimeVerifierFixture {
 
         address editionAddress = address(
             editionFactory.createEdition(
+                SINGLE_BATCH_EDITION_IMPL,
                 editionData,
                 recipients,
                 signedAttestation

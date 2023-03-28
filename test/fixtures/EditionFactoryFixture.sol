@@ -14,8 +14,8 @@ import {ShowtimeVerifierFixture} from "test/fixtures/ShowtimeVerifierFixture.sol
 
 contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
     uint256 internal constant ROYALTY_BPS = 1000;
+    address internal immutable SINGLE_BATCH_EDITION_IMPL = address(new SingleBatchEdition());
     EditionData internal DEFAULT_EDITION_DATA = EditionData(
-        address(new SingleBatchEdition()),
         "name",
         "description",
         "animationUrl",
@@ -65,6 +65,7 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         newEdition = SingleBatchEdition(
             address(
                 editionFactory.createEdition(
+                    SINGLE_BATCH_EDITION_IMPL,
                     DEFAULT_EDITION_DATA,
                     recipients,
                     signedAttestation
@@ -91,7 +92,7 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
     function getCreatorAttestation(address creatorAddr) public view returns (Attestation memory creatorAttestation) {
         // generate a valid attestation for the default edition data
         uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creatorAddr);
-        address editionAddr = address(editionFactory.getEditionAtId(DEFAULT_EDITION_DATA.editionImpl, editionId));
+        address editionAddr = address(editionFactory.getEditionAtId(SINGLE_BATCH_EDITION_IMPL, editionId));
 
         creatorAttestation = Attestation({
             context: editionAddr,
