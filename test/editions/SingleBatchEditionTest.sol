@@ -30,7 +30,7 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
 
     function testCreateEditionHappyPath() public {
         uint256 id = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creator);
-        address expectedAddr = address(editionFactory.getEditionAtId(DEFAULT_EDITION_DATA.editionImpl, id));
+        address expectedAddr = address(editionFactory.getEditionAtId(SINGLE_BATCH_EDITION_IMPL, id));
 
         // the edition creator emits the expected event
         vm.expectEmit(true, true, true, true);
@@ -104,7 +104,7 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
 
         address expectedAddr = address(
             editionFactory.getEditionAtId(
-                DEFAULT_EDITION_DATA.editionImpl,
+                SINGLE_BATCH_EDITION_IMPL,
                 editionFactory.getEditionId(DEFAULT_EDITION_DATA, badActor)));
 
         // it does not work
