@@ -11,19 +11,11 @@ import {ShowtimeVerifier} from "src/ShowtimeVerifier.sol";
 
 import {ShowtimeVerifierFixture} from "test/fixtures/ShowtimeVerifierFixture.sol";
 
-
 contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
     uint256 internal constant ROYALTY_BPS = 1000;
     address internal immutable SINGLE_BATCH_EDITION_IMPL = address(new SingleBatchEdition());
     EditionData internal DEFAULT_EDITION_DATA = EditionData(
-        "name",
-        "description",
-        "animationUrl",
-        "imageUrl",
-        ROYALTY_BPS,
-        "externalUrl",
-        "creatorName",
-        "tag1,tag2"
+        "name", "description", "animationUrl", "imageUrl", ROYALTY_BPS, "externalUrl", "creatorName", "tag1,tag2"
     );
 
     EditionFactory internal editionFactory;
@@ -34,7 +26,6 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
     address verifierOwner = makeAddr("verifierOwner");
     address signerAddr;
     uint256 signerKey;
-
 
     function __EditionFactoryFixture_setUp() internal {
         // configure verifier
@@ -51,10 +42,12 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         return verifier;
     }
 
-    function createEdition(SignedAttestation memory signedAttestation, bytes memory recipients, bytes memory expectedError)
-        public
-        returns (SingleBatchEdition newEdition)
-    {
+    function createEdition(
+        address editionImpl,
+        SignedAttestation memory signedAttestation,
+        bytes memory recipients,
+        bytes memory expectedError
+    ) public returns (SingleBatchEdition newEdition) {
         // anyone can broadcast the transaction as long as it has the right signed attestation
         vm.prank(relayer);
 
@@ -63,25 +56,32 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         }
 
         newEdition = SingleBatchEdition(
-            address(
-                editionFactory.createEdition(
-                    SINGLE_BATCH_EDITION_IMPL,
-                    DEFAULT_EDITION_DATA,
-                    recipients,
-                    signedAttestation
-                )
+            editionFactory.createEdition(
+                editionImpl, DEFAULT_EDITION_DATA, recipients, signedAttestation
             )
         );
     }
+
+    function createEdition(
+        SignedAttestation memory signedAttestation,
+        bytes memory recipients,
+        bytes memory expectedError
+    ) public returns (SingleBatchEdition newEdition) {
+        return createEdition(SINGLE_BATCH_EDITION_IMPL, signedAttestation, recipients, expectedError);
+    }
+
 
     function createEdition(Attestation memory attestation, bytes memory recipients, bytes memory expectedError)
         public
         returns (SingleBatchEdition)
     {
-        return createEdition(signed(signerKey, attestation), recipients, expectedError);
+        return createEdition(SINGLE_BATCH_EDITION_IMPL, signed(signerKey, attestation), recipients, expectedError);
     }
 
-    function createEdition(Attestation memory attestation, bytes memory recipients) public returns (SingleBatchEdition) {
+    function createEdition(Attestation memory attestation, bytes memory recipients)
+        public
+        returns (SingleBatchEdition)
+    {
         return createEdition(attestation, recipients, "");
     }
 
@@ -90,9 +90,17 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
     }
 
     function getCreatorAttestation(address creatorAddr) public view returns (Attestation memory creatorAttestation) {
+        return getCreatorAttestation(SINGLE_BATCH_EDITION_IMPL, DEFAULT_EDITION_DATA, creatorAddr);
+    }
+
+    function getCreatorAttestation(address editionImpl, EditionData memory editionData, address creatorAddr)
+        public
+        view
+        returns (Attestation memory creatorAttestation)
+    {
         // generate a valid attestation for the default edition data
-        uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creatorAddr);
-        address editionAddr = address(editionFactory.getEditionAtId(SINGLE_BATCH_EDITION_IMPL, editionId));
+        uint256 editionId = editionFactory.getEditionId(editionData, creatorAddr);
+        address editionAddr = address(editionFactory.getEditionAtId(editionImpl, editionId));
 
         creatorAttestation = Attestation({
             context: editionAddr,
