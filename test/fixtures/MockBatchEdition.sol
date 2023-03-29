@@ -3,12 +3,16 @@ pragma solidity ^0.8.17;
 
 import {ISingleBatchEdition} from "nft-editions/SingleBatchEdition.sol";
 
-contract MockBatchEdition is ISingleBatchEdition {
+import {IBatchMintable} from "src/editions/interfaces/IBatchMintable.sol";
+
+contract MockBatchEdition is ISingleBatchEdition, IBatchMintable {
+    mapping (address => bool) public approvedMinter;
+
     function contractURI() external pure returns (string memory) {
         return "mock";
     }
 
-    function getPrimaryOwnersPointer() external pure returns(address) {
+    function getPrimaryOwnersPointer() external pure returns (address) {
         return address(0);
     }
 
@@ -22,29 +26,36 @@ contract MockBatchEdition is ISingleBatchEdition {
         uint256 _royaltyBPS,
         address _minter
     ) external {
-        // mockedy mock mock
+        approvedMinter[_owner] = true;
     }
 
-    function isPrimaryOwner(address tokenOwner) external pure returns(bool) {
+    function isPrimaryOwner(address tokenOwner) external pure returns (bool) {
         return false;
     }
 
-    function mintBatch(bytes calldata addresses) external returns (uint256) {
-        // mockedy mock mock
+    function mintBatch(bytes calldata addresses)
+        external
+        override(IBatchMintable, ISingleBatchEdition)
+        returns (uint256)
+    {
+        require(approvedMinter[msg.sender], "UNAUTHORIZED_MINTER");
+        return addresses.length / 20;
     }
 
     function mintBatch(address pointer) external returns (uint256) {
         // mockedy mock mock
     }
 
+    // you'd want this to be onlyOwner or something, but we're a mock
+    function setApprovedMinter(address minter, bool allowed) external {
+        approvedMinter[minter] = allowed;
+    }
+
     function setExternalUrl(string calldata _externalUrl) external {
         // mockedy mock mock
     }
 
-    function setStringProperties(
-        string[] calldata names,
-        string[] calldata values
-    ) external {
+    function setStringProperties(string[] calldata names, string[] calldata values) external {
         // mockedy mock mock
     }
 
