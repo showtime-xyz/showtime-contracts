@@ -67,7 +67,9 @@ contract EditionFactory is IBatchEditionMinter {
         SignedAttestation calldata signedAttestation
     ) public returns (address editionAddress) {
         editionAddress = beforeMint(editionImpl, data, signedAttestation);
-        // no mint! will happen later
+
+        // we don't mint at this stage, we expect subsequent calls to `mintBatch`
+
         afterMint(editionAddress, minterAddr, signedAttestation, data);
     }
 
@@ -107,9 +109,10 @@ contract EditionFactory is IBatchEditionMinter {
         afterMint(editionAddress, address(0), signedAttestation, data);
     }
 
-    function mintBatch(SignedAttestation calldata signedAttestation, bytes calldata packedRecipients)
+    function mintBatch(bytes calldata packedRecipients, SignedAttestation calldata signedAttestation)
         external
         override
+        returns (uint256 numMinted)
     {
         // verify that the context for this attestation is valid
         address context = signedAttestation.attestation.context;
@@ -123,7 +126,7 @@ contract EditionFactory is IBatchEditionMinter {
         }
 
         address editionAddress = signedAttestation.attestation.beneficiary;
-        IBatchMintable(editionAddress).mintBatch(packedRecipients);
+        return IBatchMintable(editionAddress).mintBatch(packedRecipients);
     }
 
     /*//////////////////////////////////////////////////////////////

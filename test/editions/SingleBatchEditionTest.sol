@@ -35,7 +35,8 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
         // the edition creator emits the expected event
         vm.expectEmit(true, true, true, true);
         emit CreatedBatchEdition(id, creator, expectedAddr, "tag1,tag2");
-        SingleBatchEdition edition = createEdition(getCreatorAttestation(), abi.encodePacked(claimer));
+        SingleBatchEdition edition =
+            SingleBatchEdition(createEdition(getCreatorAttestation(), abi.encodePacked(claimer)));
 
         // the edition has the expected address
         assertEq(address(edition), expectedAddr);
@@ -104,20 +105,24 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
 
         address expectedAddr = address(
             editionFactory.getEditionAtId(
-                SINGLE_BATCH_EDITION_IMPL,
-                editionFactory.getEditionId(DEFAULT_EDITION_DATA, badActor)));
+                SINGLE_BATCH_EDITION_IMPL, editionFactory.getEditionId(DEFAULT_EDITION_DATA, badActor)
+            )
+        );
 
         // it does not work
         createEdition(
             signedAttestation,
             abi.encodePacked(claimer),
-            abi.encodeWithSignature("AddressMismatch(address,address)", expectedAddr, signedAttestation.attestation.context)
+            abi.encodeWithSignature(
+                "AddressMismatch(address,address)", expectedAddr, signedAttestation.attestation.context
+            )
         );
     }
 
     function testCanNotMintAfterInitialMint() public {
         // first one should work
-        SingleBatchEdition edition = createEdition(getCreatorAttestation(), abi.encodePacked(claimer));
+        SingleBatchEdition edition =
+            SingleBatchEdition(createEdition(getCreatorAttestation(), abi.encodePacked(claimer)));
 
         assertEq(edition.balanceOf(claimer), 1);
 
@@ -136,21 +141,14 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
 
     function testBatchMintWithDuplicateClaimer() public {
         // when we mint a batch with a duplicate claimer, it fails with ADDRESSES_NOT_SORTED
-        createEdition(
-            getCreatorAttestation(),
-            abi.encodePacked(claimer, claimer),
-            "ADDRESSES_NOT_SORTED"
-        );
+        createEdition(getCreatorAttestation(), abi.encodePacked(claimer, claimer), "ADDRESSES_NOT_SORTED");
     }
 
     function testBatchMintWithUniqueClaimers(uint256 n) public {
         n = bound(n, 1, 1200);
 
         // when we mint a batch for n unique addresses
-        SingleBatchEdition edition = createEdition(
-            getCreatorAttestation(),
-            Addresses.make(n)
-        );
+        SingleBatchEdition edition = SingleBatchEdition(createEdition(getCreatorAttestation(), Addresses.make(n)));
 
         // then each claimer receives the expected tokens
         for (uint256 i = 0; i < n; i++) {

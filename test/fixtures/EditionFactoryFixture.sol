@@ -47,7 +47,7 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         SignedAttestation memory signedAttestation,
         bytes memory recipients,
         bytes memory expectedError
-    ) public returns (SingleBatchEdition newEdition) {
+    ) public returns (address newEdition) {
         // anyone can broadcast the transaction as long as it has the right signed attestation
         vm.prank(relayer);
 
@@ -55,32 +55,31 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
             vm.expectRevert(expectedError);
         }
 
-        newEdition = SingleBatchEdition(
+        newEdition =
             editionFactory.createEdition(
                 editionImpl, DEFAULT_EDITION_DATA, recipients, signedAttestation
-            )
-        );
+            );
     }
 
     function createEdition(
         SignedAttestation memory signedAttestation,
         bytes memory recipients,
         bytes memory expectedError
-    ) public returns (SingleBatchEdition newEdition) {
+    ) public returns (address newEdition) {
         return createEdition(SINGLE_BATCH_EDITION_IMPL, signedAttestation, recipients, expectedError);
     }
 
 
     function createEdition(Attestation memory attestation, bytes memory recipients, bytes memory expectedError)
         public
-        returns (SingleBatchEdition)
+        returns (address)
     {
         return createEdition(SINGLE_BATCH_EDITION_IMPL, signed(signerKey, attestation), recipients, expectedError);
     }
 
     function createEdition(Attestation memory attestation, bytes memory recipients)
         public
-        returns (SingleBatchEdition)
+        returns (address)
     {
         return createEdition(attestation, recipients, "");
     }
