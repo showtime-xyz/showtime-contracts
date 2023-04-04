@@ -64,13 +64,16 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         // the attestation is bound to a specific relayer
         vm.prank(relayer);
 
+        EditionData memory editionData = DEFAULT_EDITION_DATA;
+        editionData.editionImpl = editionImpl;
+
         if (expectedError.length > 0) {
             vm.expectRevert(expectedError);
         }
 
         newEdition =
             editionFactory.createEdition(
-                DEFAULT_EDITION_DATA, recipients, signedAttestation
+                editionData, recipients, signedAttestation
             );
     }
 
