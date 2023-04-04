@@ -126,6 +126,7 @@ contract EditionFactory is IBatchEditionMinter {
                              VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+
     /// @dev we expect the signed attestation's context to correspond to the address of this contract (EditionFactory)
     /// @dev we expect the signed attestation's beneficiary to be the lowest 160 bits of hash(edition || relayer)
     /// @dev note: this function does _not_ burn the nonce for the attestation

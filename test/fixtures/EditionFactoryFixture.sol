@@ -154,7 +154,7 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         return getExpectedEditionAddr(SINGLE_BATCH_EDITION_IMPL, getEditionId());
     }
 
-    function getBeneficiary(address edition, address msgSender) public view returns (address) {
+    function getBeneficiary(address edition, address msgSender) public pure returns (address) {
         return address(uint160(uint256(keccak256(abi.encodePacked(edition, msgSender)))));
     }
 

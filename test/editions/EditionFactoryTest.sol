@@ -7,6 +7,7 @@ import "nft-editions/interfaces/Errors.sol";
 
 import {EditionFactory, EditionData} from "src/editions/EditionFactory.sol";
 import {EditionFactoryFixture, EditionDataWither} from "test/fixtures/EditionFactoryFixture.sol";
+import {IBatchMintable} from "src/editions/interfaces/IBatchMintable.sol";
 import {MockBatchEdition} from "test/fixtures/MockBatchEdition.sol";
 import {ShowtimeVerifierFixture, Attestation, SignedAttestation} from "test/fixtures/ShowtimeVerifierFixture.sol";
 import "src/editions/interfaces/Errors.sol";
@@ -59,7 +60,6 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
     function test_create_canNotReuseSignedAttestation() public {
         // a hijacker wants to lift a signed attestation and use it for a different impl address
         address altEditionImpl = address(new SingleBatchEdition());
-        bytes memory recipients = abi.encodePacked(address(this));
         SignedAttestation memory ogAttestation = signed(signerKey, getCreatorAttestation());
 
         EditionData memory editionData = DEFAULT_EDITION_DATA.withEditionImpl(altEditionImpl);
@@ -123,18 +123,25 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
         editionFactory.create(editionData, signedAttestation);
     }
 
-    function test_create_multiBatchSupportWrongBeneficiaryReverts() public {
-        Attestation memory attestation = Attestation({
-            context: address(editionFactory),
-            beneficiary: batchImpl,
-            nonce: 0,
-            validUntil: block.timestamp + 120
-        });
+    function test_create_multiBatchSupportWrongRelayerReverts() public {
+        EditionData memory editionData = DEFAULT_EDITION_DATA.withEditionImpl(batchImpl);
+        address edition = create(editionData);
 
-        SignedAttestation memory signedAttestation = signed(signerKey, attestation);
+        SignedAttestation memory signedAttestation = signed(signerKey, getCreatorAttestation(editionData));
 
+        // the factory will reject the call because it is not coming from the expected relayer
+        vm.expectRevert(
+            abi.encodeWithSignature(
+                "AddressMismatch(address,address)",
+                getBeneficiary(edition, address(this)), // actual
+                getBeneficiary(edition, relayer) // expected
+            )
+        );
+        editionFactory.mintBatch(edition, abi.encodePacked(address(this)), signedAttestation);
+
+        // we also can't mint directly against the edition
         vm.expectRevert("UNAUTHORIZED_MINTER");
-        editionFactory.mintBatch(batchImpl, abi.encodePacked(address(this)), signedAttestation);
+        IBatchMintable(edition).mintBatch(abi.encodePacked(address(this)));
     }
 
     function test_mintBatch_canNotReuseAttestationForDifferentRecipients() public {
