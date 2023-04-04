@@ -6,7 +6,7 @@ import {ISingleBatchEdition} from "nft-editions/SingleBatchEdition.sol";
 import {IBatchMintable} from "src/editions/interfaces/IBatchMintable.sol";
 
 contract MockBatchEdition is ISingleBatchEdition, IBatchMintable {
-    mapping (address => bool) public approvedMinter;
+    mapping(address => bool) public approvedMinter;
 
     function contractURI() external pure returns (string memory) {
         return "mock";
@@ -42,7 +42,7 @@ contract MockBatchEdition is ISingleBatchEdition, IBatchMintable {
         return addresses.length / 20;
     }
 
-    function mintBatch(address pointer) external returns (uint256) {
+    function mintBatch(address pointer) external override(IBatchMintable, ISingleBatchEdition) returns (uint256) {
         // mockedy mock mock
     }
 

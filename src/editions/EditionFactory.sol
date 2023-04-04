@@ -15,6 +15,9 @@ interface IOwnable {
     function transferOwnership(address newOwner) external;
 }
 
+/// @param editionImpl the address of the implementation contract for the edition to clone
+/// @param creatorAddr the address that will be configured as the owner of the edition
+/// @param minterAddr the address that will be configured as the allowed minter for the edition
 /// @param name Name of the edition contract
 /// @param description Description of the edition entry
 /// @param animationUrl Animation url (optional) of the edition entry
@@ -25,6 +28,9 @@ interface IOwnable {
 /// @param creatorName Metadata: Creator name (optional) of the edition entry
 /// @param tags list of comma-separated tags for this edition, emitted as part of the CreatedBatchEdition event
 struct EditionData {
+    address editionImpl;
+    address creatorAddr;
+    address minterAddr;
     string name;
     string description;
     string animationUrl;
@@ -54,78 +60,65 @@ contract EditionFactory is IBatchEditionMinter {
     //////////////////////////////////////////////////////////////*/
 
     /// Create a new batch edition contract with a deterministic address, with delayed batch minting
-    /// @dev we expect the signed attestation's context to correspond to the predicted edition address
-    /// @dev we expect the signed attestation's beneficiary to be the edition's creator
-    /// @param editionImpl the address of the implementation contract for the edition to clone
-    /// @param minterAddr the address that will be configured as the allowed minter for the edition
     /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
     /// @return editionAddress the address of the created edition
     function createEdition(
-        address editionImpl,
-        address minterAddr,
         EditionData calldata data,
         SignedAttestation calldata signedAttestation
     ) public returns (address editionAddress) {
-        editionAddress = beforeMint(editionImpl, data, signedAttestation);
+        editionAddress = beforeMint(data, signedAttestation);
 
         // we don't mint at this stage, we expect subsequent calls to `mintBatch`
 
-        afterMint(editionAddress, minterAddr, signedAttestation, data);
+        afterMint(editionAddress, data);
     }
 
     /// Create and mint a new batch edition contract with a deterministic address
-    /// @dev we expect the signed attestation's context to correspond to the predicted edition address
-    /// @dev we expect the signed attestation's beneficiary to be the edition's creator
-    /// @param editionImpl the address of the implementation contract for the edition to clone
+
     /// @param packedRecipients an abi.encodePacked() array of recipient addresses for the batch mint
     /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
     /// @return editionAddress the address of the created edition
     function createEdition(
-        address editionImpl,
         EditionData calldata data,
         bytes calldata packedRecipients,
         SignedAttestation calldata signedAttestation
     ) external returns (address editionAddress) {
-        editionAddress = beforeMint(editionImpl, data, signedAttestation);
-        ISingleBatchEdition(editionAddress).mintBatch(packedRecipients);
-        afterMint(editionAddress, address(0), signedAttestation, data);
+        // this will revert if the attestation is invalid
+        editionAddress = beforeMint(data, signedAttestation);
+
+        // mint a batch, using a direct list of recipients
+        IBatchMintable(editionAddress).mintBatch(packedRecipients);
+
+        // finish configuring the edition
+        afterMint(editionAddress, data);
     }
 
     /// Create and mint a new batch edition contract with a deterministic address
-    /// @dev we expect the signed attestation's context to correspond to the predicted edition address
-    /// @dev we expect the signed attestation's beneficiary to be the edition's creator
-    /// @param editionImpl the address of the implementation contract for the edition to clone
     /// @param pointer the address of the SSTORE2 pointer with the recipients of the batch mint for this edition
     /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
     /// @return editionAddress the address of the created edition
     function createEdition(
-        address editionImpl,
         EditionData calldata data,
         address pointer,
         SignedAttestation calldata signedAttestation
     ) public returns (address editionAddress) {
-        editionAddress = beforeMint(editionImpl, data, signedAttestation);
-        ISingleBatchEdition(editionAddress).mintBatch(pointer);
-        afterMint(editionAddress, address(0), signedAttestation, data);
+        // this will revert if the attestation is invalid
+        editionAddress = beforeMint(data, signedAttestation);
+
+        // mint a batch, using an SSTORE2 pointer
+        IBatchMintable(editionAddress).mintBatch(pointer);
+
+        // finish configuring the edition
+        afterMint(editionAddress, data);
     }
 
-    function mintBatch(bytes calldata packedRecipients, SignedAttestation calldata signedAttestation)
-        external
-        override
-        returns (uint256 numMinted)
-    {
-        // verify that the context for this attestation is valid
-        address context = signedAttestation.attestation.context;
-        if (context != address(this)) {
-            revert AddressMismatch({expected: address(this), actual: context});
-        }
+    function mintBatch(
+        address editionAddress,
+        bytes calldata packedRecipients,
+        SignedAttestation calldata signedAttestation
+    ) external override returns (uint256 numMinted) {
+        validateAttestation(signedAttestation, editionAddress, msg.sender);
 
-        // verify attestation without burning, because we expect that we can't mint to the same recipients twice
-        if (!showtimeVerifier.verify(signedAttestation)) {
-            revert VerificationFailed();
-        }
-
-        address editionAddress = signedAttestation.attestation.beneficiary;
         return IBatchMintable(editionAddress).mintBatch(packedRecipients);
     }
 
@@ -133,18 +126,33 @@ contract EditionFactory is IBatchEditionMinter {
                              VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function validateAttestation(SignedAttestation calldata signedAttestation, address editionAddress)
+    /// @dev we expect the signed attestation's context to correspond to the address of this contract (EditionFactory)
+    /// @dev we expect the signed attestation's beneficiary to be the lowest 160 bits of hash(edition || relayer)
+    /// @dev note: this function does _not_ burn the nonce for the attestation
+    function validateAttestation(SignedAttestation calldata signedAttestation, address edition, address relayer)
         public
         view
         returns (bool)
     {
-        // verify that the context for this attestation is valid
+        // verify that the context is valid
         address context = signedAttestation.attestation.context;
-        if (context != editionAddress) {
-            revert AddressMismatch({expected: editionAddress, actual: context});
+        address expectedContext = address(this);
+        if (context != expectedContext) {
+            revert AddressMismatch({expected: expectedContext, actual: context});
         }
 
-        // verify attestation without burning, because the editionAddress can not be reused
+        // verify that the beneficiary is valid
+        address expectedBeneficiary = address(uint160(uint256(keccak256(abi.encodePacked(edition, relayer)))));
+        address beneficiary = signedAttestation.attestation.beneficiary;
+        if (beneficiary != expectedBeneficiary) {
+            revert AddressMismatch({expected: expectedBeneficiary, actual: beneficiary});
+        }
+
+        // verify the signature _without_ burning
+        // important: it's up to the clients of this function to make sure that the attestation can not be reused
+        // for example:
+        // - trying to deploy to an existing edition address will revert
+        // - trying to deploy the same batch twice should revert
         if (!showtimeVerifier.verify(signedAttestation)) {
             revert VerificationFailed();
         }
@@ -152,8 +160,8 @@ contract EditionFactory is IBatchEditionMinter {
         return true;
     }
 
-    function getEditionId(EditionData calldata data, address creator) public pure returns (uint256 editionId) {
-        return uint256(keccak256(abi.encodePacked(creator, data.name, data.animationUrl, data.imageUrl)));
+    function getEditionId(EditionData calldata data) public pure returns (uint256 editionId) {
+        return uint256(keccak256(abi.encodePacked(data.creatorAddr, data.name, data.animationUrl, data.imageUrl)));
     }
 
     function getEditionAtId(address editionImpl, uint256 editionId) public view returns (ISingleBatchEdition) {
@@ -170,16 +178,16 @@ contract EditionFactory is IBatchEditionMinter {
                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function beforeMint(address editionImpl, EditionData calldata data, SignedAttestation calldata signedAttestation)
+    function beforeMint(EditionData calldata data, SignedAttestation calldata signedAttestation)
         internal
         returns (address editionAddress)
     {
-        address creator = signedAttestation.attestation.beneficiary;
-        uint256 editionId = getEditionId(data, creator);
+        uint256 editionId = getEditionId(data);
+        address editionImpl = data.editionImpl;
 
         // we expect this to revert if editionImpl is null
         address predicted = address(getEditionAtId(editionImpl, editionId));
-        validateAttestation(signedAttestation, predicted);
+        validateAttestation(signedAttestation, predicted, msg.sender);
 
         // avoid burning all available gas if an edition already exists at this address
         if (predicted.code.length > 0) {
@@ -198,7 +206,8 @@ contract EditionFactory is IBatchEditionMinter {
             data.imageUrl,
             data.royaltyBPS,
             address(this) //
-        ) { // nothing to do
+        ) {
+            // nothing to do
         } catch {
             // rethrow the problematic way until we have a better way
             // see https://github.com/ethereum/solidity/issues/12654
@@ -208,30 +217,35 @@ contract EditionFactory is IBatchEditionMinter {
             }
         }
 
-        emit CreatedBatchEdition(editionId, creator, address(edition), data.tags);
+        emit CreatedBatchEdition(editionId, data.creatorAddr, address(edition), data.tags);
     }
 
     function afterMint(
         address edition,
-        address minter,
-        SignedAttestation calldata signedAttestation,
         EditionData calldata data
     ) internal {
+        address minter = data.minterAddr;
         if (minter != address(0)) {
             IBatchMintable(edition).setApprovedMinter(minter, true);
         }
 
-        string[] memory propertyNames = new string[](1);
-        propertyNames[0] = "Creator";
+        string memory creatorName = data.creatorName;
+        if (bytes(creatorName).length > 0) {
+            string[] memory propertyNames = new string[](1);
+            propertyNames[0] = "Creator";
 
-        string[] memory propertyValues = new string[](1);
-        propertyValues[0] = data.creatorName;
+            string[] memory propertyValues = new string[](1);
+            propertyValues[0] = data.creatorName;
 
-        ISingleBatchEdition(edition).setStringProperties(propertyNames, propertyValues);
-        ISingleBatchEdition(edition).setExternalUrl(data.externalUrl);
+            ISingleBatchEdition(edition).setStringProperties(propertyNames, propertyValues);
+        }
+
+        string memory externalUrl = data.externalUrl;
+        if (bytes(externalUrl).length > 0) {
+            ISingleBatchEdition(edition).setExternalUrl(data.externalUrl);
+        }
 
         // and finally transfer ownership of the configured contract to the actual creator
-        address creator = signedAttestation.attestation.beneficiary;
-        IOwnable(edition).transferOwnership(creator);
+        IOwnable(edition).transferOwnership(data.creatorAddr);
     }
 }

@@ -14,9 +14,7 @@ import {ShowtimeVerifierFixture} from "test/fixtures/ShowtimeVerifierFixture.sol
 contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
     uint256 internal constant ROYALTY_BPS = 1000;
     address internal immutable SINGLE_BATCH_EDITION_IMPL = address(new SingleBatchEdition());
-    EditionData internal DEFAULT_EDITION_DATA = EditionData(
-        "name", "description", "animationUrl", "imageUrl", ROYALTY_BPS, "externalUrl", "creatorName", "tag1,tag2"
-    );
+    EditionData internal DEFAULT_EDITION_DATA;
 
     EditionFactory internal editionFactory;
     ShowtimeVerifier internal verifier;
@@ -36,6 +34,21 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
 
         // configure editionFactory
         editionFactory = new EditionFactory(address(verifier));
+
+        // configure default edition data
+        DEFAULT_EDITION_DATA = EditionData({
+            editionImpl: SINGLE_BATCH_EDITION_IMPL,
+            creatorAddr: creator,
+            minterAddr: address(editionFactory),
+            name: "name",
+            description: "description",
+            animationUrl: "animationUrl",
+            imageUrl: "imageUrl",
+            royaltyBPS: ROYALTY_BPS,
+            externalUrl: "externalUrl",
+            creatorName: "creatorName",
+            tags: "tag1,tag2"
+        });
     }
 
     function getVerifier() public view override returns (ShowtimeVerifier) {
@@ -48,7 +61,7 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         bytes memory recipients,
         bytes memory expectedError
     ) public returns (address newEdition) {
-        // anyone can broadcast the transaction as long as it has the right signed attestation
+        // the attestation is bound to a specific relayer
         vm.prank(relayer);
 
         if (expectedError.length > 0) {
@@ -57,7 +70,7 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
 
         newEdition =
             editionFactory.createEdition(
-                editionImpl, DEFAULT_EDITION_DATA, recipients, signedAttestation
+                DEFAULT_EDITION_DATA, recipients, signedAttestation
             );
     }
 
@@ -84,28 +97,51 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         return createEdition(attestation, recipients, "");
     }
 
-    function getCreatorAttestation() public view returns (Attestation memory creatorAttestation) {
-        return getCreatorAttestation(creator);
+    function getCreatorAttestation() public view returns (Attestation memory) {
+        return getCreatorAttestation(DEFAULT_EDITION_DATA);
     }
 
-    function getCreatorAttestation(address creatorAddr) public view returns (Attestation memory creatorAttestation) {
-        return getCreatorAttestation(SINGLE_BATCH_EDITION_IMPL, DEFAULT_EDITION_DATA, creatorAddr);
-    }
-
-    function getCreatorAttestation(address editionImpl, EditionData memory editionData, address creatorAddr)
+    function getCreatorAttestation(EditionData memory editionData)
         public
         view
         returns (Attestation memory creatorAttestation)
     {
-        // generate a valid attestation for the default edition data
-        uint256 editionId = editionFactory.getEditionId(editionData, creatorAddr);
-        address editionAddr = address(editionFactory.getEditionAtId(editionImpl, editionId));
+        uint256 editionId = getEditionId(editionData);
+        address editionAddr = getExpectedEditionAddr(editionData.editionImpl, editionId);
 
         creatorAttestation = Attestation({
-            context: editionAddr,
-            beneficiary: creatorAddr,
+            context: getExpectedContext(),
+            beneficiary: getBeneficiary(editionAddr, relayer),
             validUntil: block.timestamp + 2 minutes,
-            nonce: verifier.nonces(creator)
+            nonce: verifier.nonces(editionData.creatorAddr)
         });
+    }
+
+    function getExpectedContext() public view returns (address) {
+        return address(editionFactory);
+    }
+
+    function getEditionId(EditionData memory editionData) public view returns (uint256) {
+        return editionFactory.getEditionId(editionData);
+    }
+
+    function getEditionId() public view returns (uint256) {
+        return getEditionId(DEFAULT_EDITION_DATA);
+    }
+
+    function getExpectedEditionAddr(address editionImpl, uint256 editionId) public view returns (address) {
+        return address(editionFactory.getEditionAtId(editionImpl, editionId));
+    }
+
+    function getExpectedEditionAddr() public view returns (address) {
+        return getExpectedEditionAddr(SINGLE_BATCH_EDITION_IMPL, getEditionId());
+    }
+
+    function getBeneficiary(address edition, address msgSender) public pure returns (address) {
+        return address(uint160(uint256(keccak256(abi.encodePacked(edition, msgSender)))));
+    }
+
+    function getBeneficiary() public view returns (address) {
+        return getBeneficiary(getExpectedEditionAddr(), relayer);
     }
 }
