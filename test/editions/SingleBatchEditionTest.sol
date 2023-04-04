@@ -13,6 +13,8 @@ import "test/fixtures/EditionFactoryFixture.sol";
 import "src/editions/interfaces/Errors.sol";
 
 contract SingleBatchEditionTest is Test, EditionFactoryFixture {
+    using EditionDataWither for EditionData;
+
     event CreatedBatchEdition(
         uint256 indexed editionId, address indexed creator, address editionContractAddress, string tags
     );
@@ -28,15 +30,14 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
                             VERIFICATION LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function testCreateEditionHappyPath() public {
+    function test_createWithBatch_happyPath() public {
         uint256 id = editionFactory.getEditionId(DEFAULT_EDITION_DATA);
         address expectedAddr = address(editionFactory.getEditionAtId(SINGLE_BATCH_EDITION_IMPL, id));
 
         // the edition creator emits the expected event
         vm.expectEmit(true, true, true, true);
         emit CreatedBatchEdition(id, creator, expectedAddr, "tag1,tag2");
-        SingleBatchEdition edition =
-            SingleBatchEdition(createEdition(getCreatorAttestation(), abi.encodePacked(claimer)));
+        SingleBatchEdition edition = SingleBatchEdition(createWithBatch(abi.encodePacked(claimer)));
 
         // the edition has the expected address
         assertEq(address(edition), expectedAddr);
@@ -54,21 +55,22 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
         assertEq(edition.balanceOf(claimer), 1);
     }
 
-    function testCreateEditionWithWrongContext() public {
+    function test_createWithBatch_withWrongContext() public {
         // when we have an attestation with the wrong context
         Attestation memory creatorAttestation = getCreatorAttestation();
         address expectedAddr = creatorAttestation.context;
         creatorAttestation.context = address(this); // nonsense context
 
         // creating a new edition should fail
-        createEdition(
-            creatorAttestation,
+        createWithBatch(
+            DEFAULT_EDITION_DATA,
+            signed(signerKey, creatorAttestation),
             abi.encodePacked(claimer),
             abi.encodeWithSignature("AddressMismatch(address,address)", expectedAddr, creatorAttestation.context)
         );
     }
 
-    function testCreateEditionWithWrongNonce() public {
+    function test_createWithBatch_withWrongNonce() public {
         // when we have an attestation with the wrong context
         Attestation memory creatorAttestation = getCreatorAttestation();
 
@@ -76,43 +78,40 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
         creatorAttestation.nonce = badNonce;
 
         // creating a new edition should fail
-        createEdition(
-            creatorAttestation,
+        createWithBatch(
+            DEFAULT_EDITION_DATA,
+            signed(signerKey, creatorAttestation),
             abi.encodePacked(claimer),
             abi.encodeWithSignature("BadNonce(uint256,uint256)", 0, badNonce)
         );
     }
 
-    function testCanNotReuseCreatorAttestation() public {
-        Attestation memory creatorAttestation = getCreatorAttestation();
-
+    function test_createWithBatch_canNotReuseCreatorAttestation() public {
         // first one should work
-        address editionAddr = address(createEdition(creatorAttestation, abi.encodePacked(claimer)));
+        address editionAddr = address(createWithBatch(abi.encodePacked(claimer)));
 
         // second one should fail
-        createEdition(
-            creatorAttestation,
+        createWithBatch(
+            DEFAULT_EDITION_DATA,
+            signed(signerKey, getCreatorAttestation()),
             abi.encodePacked(claimer),
             abi.encodeWithSignature("DuplicateEdition(address)", editionAddr)
         );
     }
 
-    function testCanNotHijackCreatorAttestation() public {
+    function test_createWithBatch_canNotHijackCreatorAttestation() public {
         SignedAttestation memory signedAttestation = signed(signerKey, getCreatorAttestation());
 
         // when the badActor tries to steal the attestation
         signedAttestation.attestation.beneficiary = badActor;
-        EditionData memory editionData = DEFAULT_EDITION_DATA;
-        editionData.creatorAddr = badActor;
+        EditionData memory editionData = DEFAULT_EDITION_DATA.withCreatorAddr(badActor);
 
-        address expectedAddr = address(
-            editionFactory.getEditionAtId(
-                SINGLE_BATCH_EDITION_IMPL, editionFactory.getEditionId(editionData)
-            )
-        );
+        address expectedAddr =
+            address(editionFactory.getEditionAtId(SINGLE_BATCH_EDITION_IMPL, editionFactory.getEditionId(editionData)));
 
         // it does not work
-        createEdition(
+        createWithBatch(
+            editionData,
             signedAttestation,
             abi.encodePacked(claimer),
             abi.encodeWithSignature(
@@ -121,10 +120,9 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
         );
     }
 
-    function testCanNotMintAfterInitialMint() public {
+    function test_createWithBatch_canNotMintAfterInitialMint() public {
         // first one should work
-        SingleBatchEdition edition =
-            SingleBatchEdition(createEdition(getCreatorAttestation(), abi.encodePacked(claimer)));
+        SingleBatchEdition edition = SingleBatchEdition(createWithBatch(abi.encodePacked(claimer)));
 
         assertEq(edition.balanceOf(claimer), 1);
 
@@ -136,21 +134,26 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
         edition.mintBatch(abi.encodePacked(claimer));
     }
 
-    function testEmptyBatchMint() public {
-        // when we mint a batch with no claimers, it fails with InvalidBatch()
-        createEdition(getCreatorAttestation(), "", "INVALID_ADDRESSES");
+    function test_createWithBatch_emptyBatchMint() public {
+        // when we mint a batch with no claimers, it fails with INVALID_ADDRESSES
+        createWithBatch(DEFAULT_EDITION_DATA, signed(signerKey, getCreatorAttestation()), "", "INVALID_ADDRESSES");
     }
 
-    function testBatchMintWithDuplicateClaimer() public {
+    function test_createWithBatch_mintWithDuplicateClaimer() public {
         // when we mint a batch with a duplicate claimer, it fails with ADDRESSES_NOT_SORTED
-        createEdition(getCreatorAttestation(), abi.encodePacked(claimer, claimer), "ADDRESSES_NOT_SORTED");
+        createWithBatch(
+            DEFAULT_EDITION_DATA,
+            signed(signerKey, getCreatorAttestation()),
+            abi.encodePacked(claimer, claimer),
+            "ADDRESSES_NOT_SORTED"
+        );
     }
 
-    function testBatchMintWithUniqueClaimers(uint256 n) public {
+    function test_createWithBatch_mintWithUniqueClaimers(uint256 n) public {
         n = bound(n, 1, 1200);
 
         // when we mint a batch for n unique addresses
-        SingleBatchEdition edition = SingleBatchEdition(createEdition(getCreatorAttestation(), Addresses.make(n)));
+        SingleBatchEdition edition = SingleBatchEdition(createWithBatch(Addresses.make(n)));
 
         // then each claimer receives the expected tokens
         for (uint256 i = 0; i < n; i++) {

@@ -62,7 +62,7 @@ contract EditionFactory is IBatchEditionMinter {
     /// Create a new batch edition contract with a deterministic address, with delayed batch minting
     /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
     /// @return editionAddress the address of the created edition
-    function createEdition(
+    function create(
         EditionData calldata data,
         SignedAttestation calldata signedAttestation
     ) public returns (address editionAddress) {
@@ -78,7 +78,7 @@ contract EditionFactory is IBatchEditionMinter {
     /// @param packedRecipients an abi.encodePacked() array of recipient addresses for the batch mint
     /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
     /// @return editionAddress the address of the created edition
-    function createEdition(
+    function createWithBatch(
         EditionData calldata data,
         bytes calldata packedRecipients,
         SignedAttestation calldata signedAttestation
@@ -97,7 +97,7 @@ contract EditionFactory is IBatchEditionMinter {
     /// @param pointer the address of the SSTORE2 pointer with the recipients of the batch mint for this edition
     /// @param signedAttestation a signed message from Showtime authorizing this action on behalf of the edition creator
     /// @return editionAddress the address of the created edition
-    function createEdition(
+    function createWithBatch(
         EditionData calldata data,
         address pointer,
         SignedAttestation calldata signedAttestation
@@ -198,14 +198,14 @@ contract EditionFactory is IBatchEditionMinter {
         ISingleBatchEdition edition = ISingleBatchEdition(editionAddress);
 
         try edition.initialize(
-            address(this),
+            address(this), // owner
             data.name,
             SYMBOL,
             data.description,
             data.animationUrl,
             data.imageUrl,
             data.royaltyBPS,
-            address(this) //
+            address(this) // minter
         ) {
             // nothing to do
         } catch {
@@ -224,11 +224,6 @@ contract EditionFactory is IBatchEditionMinter {
         address edition,
         EditionData calldata data
     ) internal {
-        address minter = data.minterAddr;
-        if (minter != address(0)) {
-            IBatchMintable(edition).setApprovedMinter(minter, true);
-        }
-
         string memory creatorName = data.creatorName;
         if (bytes(creatorName).length > 0) {
             string[] memory propertyNames = new string[](1);
