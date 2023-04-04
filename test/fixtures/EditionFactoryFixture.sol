@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console2} from "forge-std/Test.sol";
 
 import {SingleBatchEdition} from "nft-editions/SingleBatchEdition.sol";
 
@@ -10,6 +10,18 @@ import {EditionFactory, EditionData} from "src/editions/EditionFactory.sol";
 import {ShowtimeVerifier} from "src/ShowtimeVerifier.sol";
 
 import {ShowtimeVerifierFixture} from "test/fixtures/ShowtimeVerifierFixture.sol";
+
+library EditionDataWither {
+    function withEditionImpl(EditionData memory self, address editionImpl) internal pure returns (EditionData memory) {
+        self.editionImpl = editionImpl;
+        return self;
+    }
+
+    function withCreatorAddr(EditionData memory self, address creatorAddr) internal pure returns (EditionData memory) {
+        self.creatorAddr = creatorAddr;
+        return self;
+    }
+}
 
 contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
     uint256 internal constant ROYALTY_BPS = 1000;
@@ -55,8 +67,9 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         return verifier;
     }
 
-    function createEdition(
-        address editionImpl,
+    /// @dev takes care of pranking the relayer
+    function createWithBatch(
+        EditionData memory editionData,
         SignedAttestation memory signedAttestation,
         bytes memory recipients,
         bytes memory expectedError
@@ -64,40 +77,41 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         // the attestation is bound to a specific relayer
         vm.prank(relayer);
 
-        EditionData memory editionData = DEFAULT_EDITION_DATA;
-        editionData.editionImpl = editionImpl;
+        if (expectedError.length > 0) {
+            vm.expectRevert(expectedError);
+        }
+
+        newEdition = editionFactory.createWithBatch(editionData, recipients, signedAttestation);
+    }
+
+    function createWithBatch(
+        bytes memory recipients
+    ) public returns (address newEdition) {
+        return createWithBatch(DEFAULT_EDITION_DATA, signed(signerKey, getCreatorAttestation()), recipients, "");
+    }
+
+    /// @dev takes care of pranking the relayer
+    function create(
+        EditionData memory editionData,
+        SignedAttestation memory signedAttestation,
+        bytes memory expectedError
+    ) public returns (address newEdition) {
+        // the attestation is bound to a specific relayer
+        vm.prank(relayer);
 
         if (expectedError.length > 0) {
             vm.expectRevert(expectedError);
         }
 
-        newEdition =
-            editionFactory.createEdition(
-                editionData, recipients, signedAttestation
-            );
+        newEdition = editionFactory.create(editionData, signedAttestation);
     }
 
-    function createEdition(
-        SignedAttestation memory signedAttestation,
-        bytes memory recipients,
-        bytes memory expectedError
-    ) public returns (address newEdition) {
-        return createEdition(SINGLE_BATCH_EDITION_IMPL, signedAttestation, recipients, expectedError);
+    function create(EditionData memory editionData) public returns (address newEdition) {
+        return create(editionData, signed(signerKey, getCreatorAttestation(editionData)), "");
     }
 
-
-    function createEdition(Attestation memory attestation, bytes memory recipients, bytes memory expectedError)
-        public
-        returns (address)
-    {
-        return createEdition(SINGLE_BATCH_EDITION_IMPL, signed(signerKey, attestation), recipients, expectedError);
-    }
-
-    function createEdition(Attestation memory attestation, bytes memory recipients)
-        public
-        returns (address)
-    {
-        return createEdition(attestation, recipients, "");
+    function create() public returns (address newEdition) {
+        return create(DEFAULT_EDITION_DATA, signed(signerKey, getCreatorAttestation()), "");
     }
 
     function getCreatorAttestation() public view returns (Attestation memory) {
@@ -140,7 +154,7 @@ contract EditionFactoryFixture is Test, ShowtimeVerifierFixture {
         return getExpectedEditionAddr(SINGLE_BATCH_EDITION_IMPL, getEditionId());
     }
 
-    function getBeneficiary(address edition, address msgSender) public pure returns (address) {
+    function getBeneficiary(address edition, address msgSender) public view returns (address) {
         return address(uint160(uint256(keccak256(abi.encodePacked(edition, msgSender)))));
     }
 

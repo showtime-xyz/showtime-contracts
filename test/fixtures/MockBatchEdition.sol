@@ -18,23 +18,24 @@ contract MockBatchEdition is ISingleBatchEdition, IBatchMintable {
 
     function initialize(
         address _owner,
-        string calldata _name,
-        string calldata _symbol,
-        string calldata _description,
-        string calldata _animationUrl,
-        string calldata _imageUrl,
-        uint256 _royaltyBPS,
-        address _minter
+        string calldata, // _name,
+        string calldata, // _symbol,
+        string calldata, // _description,
+        string calldata, // _animationUrl,
+        string calldata, // _imageUrl,
+        uint256, // _royaltyBPS,
+        address // _minter
     ) external {
         approvedMinter[_owner] = true;
     }
 
-    function isPrimaryOwner(address tokenOwner) external pure returns (bool) {
+    function isPrimaryOwner(address /* tokenOwner */) external pure returns (bool) {
         return false;
     }
 
     function mintBatch(bytes calldata addresses)
         external
+        view
         override(IBatchMintable, ISingleBatchEdition)
         returns (uint256)
     {

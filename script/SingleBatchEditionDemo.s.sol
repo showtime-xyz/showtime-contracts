@@ -69,7 +69,7 @@ contract SingleBatchEditionDemo is Script, ShowtimeVerifierFixture {
         SignedAttestation memory signedAttestation = signed(pk, creatorAttestation);
 
         address editionAddress = address(
-            editionFactory.createEdition(
+            editionFactory.createWithBatch(
                 editionData,
                 recipients,
                 signedAttestation
