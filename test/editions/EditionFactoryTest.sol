@@ -22,7 +22,7 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
     }
 
     function test_createEdition_nullEditionImplReverts() public {
-        uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creator);
+        uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA);
 
         vm.expectRevert(NullAddress.selector);
         editionFactory.getEditionAtId(address(0), editionId);
@@ -30,7 +30,7 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
 
     // test that changing the edition impl changes the predicted address
     function test_getEditionAtId_differentEditionImpls() public {
-        uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creator);
+        uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA);
 
         address edition1 = address(editionFactory.getEditionAtId(SINGLE_BATCH_EDITION_IMPL, editionId));
         address edition2 = address(editionFactory.getEditionAtId(address(new SingleBatchEdition()), editionId));
@@ -40,8 +40,14 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
 
     // test that changing the edition impl changes the actual address after createEdition
     function test_createEdition_differentEditionImpls() public {
+        // deploy a new edition impl
         address altEditionImpl = address(new SingleBatchEdition());
-        Attestation memory altAttestation = getCreatorAttestation(altEditionImpl, DEFAULT_EDITION_DATA, creator);
+
+        // configure edition data to use it
+        EditionData memory editionData = DEFAULT_EDITION_DATA;
+        editionData.editionImpl = altEditionImpl;
+
+        Attestation memory altAttestation = getCreatorAttestation(editionData);
         SignedAttestation memory altSignedAttestation = signed(signerKey, altAttestation);
 
         bytes memory recipients = abi.encodePacked(address(this));
@@ -59,7 +65,7 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
         bytes memory recipients = abi.encodePacked(address(this));
         SignedAttestation memory ogAttestation = signed(signerKey, getCreatorAttestation());
 
-        uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creator);
+        uint256 editionId = editionFactory.getEditionId(DEFAULT_EDITION_DATA);
         address hijackedAddr = address(editionFactory.getEditionAtId(altEditionImpl, editionId));
 
         // the creator can create an edition with the original attestation, but a hijacker can not
@@ -79,9 +85,12 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
     function test_createEdition_canCreateAlternateContract() public {
         address altEditionImpl = address(new MockBatchEdition());
 
+        EditionData memory editionData = DEFAULT_EDITION_DATA;
+        editionData.editionImpl = altEditionImpl;
+
         SingleBatchEdition edition = SingleBatchEdition(createEdition(
             altEditionImpl,
-            signed(signerKey, getCreatorAttestation(altEditionImpl, DEFAULT_EDITION_DATA, creator)),
+            signed(signerKey, getCreatorAttestation(editionData)),
             "",
             ""
         ));
@@ -90,11 +99,12 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
     }
 
     function test_createEdition_multiBatchSupportHappyPath() public {
+        EditionData memory editionData = DEFAULT_EDITION_DATA;
+        editionData.editionImpl = batchImpl;
+
         address edition = editionFactory.createEdition(
-            batchImpl,
-            address(editionFactory),
-            DEFAULT_EDITION_DATA,
-            signed(signerKey, getCreatorAttestation(batchImpl, DEFAULT_EDITION_DATA, creator))
+            editionData,
+            signed(signerKey, getCreatorAttestation(editionData))
         );
 
         Attestation memory attestation = Attestation({
@@ -107,12 +117,15 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
         bytes memory recipients_1 = abi.encodePacked(address(this));
         bytes memory recipients_2 = abi.encodePacked(address(0x1), address(0x2));
 
-        assertEq(editionFactory.mintBatch(recipients_1, signed(signerKey, attestation)), 1);
-        assertEq(editionFactory.mintBatch(recipients_2, signed(signerKey, attestation)), 2);
+        assertEq(editionFactory.mintBatch(batchImpl, recipients_1, signed(signerKey, attestation)), 1);
+        assertEq(editionFactory.mintBatch(batchImpl, recipients_2, signed(signerKey, attestation)), 2);
     }
 
     function test_createEdition_multiBatchSupportWrongContextReverts() public {
-        Attestation memory attestation = getCreatorAttestation(batchImpl, DEFAULT_EDITION_DATA, creator);
+        EditionData memory editionData = DEFAULT_EDITION_DATA;
+        editionData.editionImpl = batchImpl;
+
+        Attestation memory attestation = getCreatorAttestation(editionData);
         address predicted = attestation.context;
 
         // tamper with the context before signing
@@ -124,7 +137,7 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
             predicted,
             address(0xC0FFEE)
         ));
-        editionFactory.createEdition(batchImpl, address(editionFactory), DEFAULT_EDITION_DATA, signedAttestation);
+        editionFactory.createEdition(editionData, signedAttestation);
     }
 
     function test_createEdition_multiBatchSupportWrongBeneficiaryReverts() public {
@@ -138,15 +151,16 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
         SignedAttestation memory signedAttestation = signed(signerKey, attestation);
 
         vm.expectRevert("UNAUTHORIZED_MINTER");
-        editionFactory.mintBatch(abi.encodePacked(address(this)), signedAttestation);
+        editionFactory.mintBatch(batchImpl, abi.encodePacked(address(this)), signedAttestation);
     }
 
     function test_createEdition_canNotReuseAttestationForDifferentRecipients() public {
+        EditionData memory editionData = DEFAULT_EDITION_DATA;
+        editionData.editionImpl = batchImpl;
+
         address edition = editionFactory.createEdition(
-            batchImpl,
-            address(editionFactory),
-            DEFAULT_EDITION_DATA,
-            signed(signerKey, getCreatorAttestation(batchImpl, DEFAULT_EDITION_DATA, creator))
+            editionData,
+            signed(signerKey, getCreatorAttestation(editionData))
         );
 
         Attestation memory attestation = Attestation({
@@ -161,10 +175,10 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
         bytes memory recipients_1 = abi.encodePacked(address(this));
         bytes memory recipients_2 = abi.encodePacked(address(0x1), address(0x2));
 
-        editionFactory.mintBatch(recipients_1, signedAttestation);
+        editionFactory.mintBatch(edition, recipients_1, signedAttestation);
 
         // reusing the same attestation for 2 different mints should NOT work!
         vm.expectRevert();
-        editionFactory.mintBatch(recipients_2, signedAttestation);
+        editionFactory.mintBatch(edition, recipients_2, signedAttestation);
     }
 }

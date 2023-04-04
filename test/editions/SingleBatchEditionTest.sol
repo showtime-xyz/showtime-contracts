@@ -29,7 +29,7 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
     //////////////////////////////////////////////////////////////*/
 
     function testCreateEditionHappyPath() public {
-        uint256 id = editionFactory.getEditionId(DEFAULT_EDITION_DATA, creator);
+        uint256 id = editionFactory.getEditionId(DEFAULT_EDITION_DATA);
         address expectedAddr = address(editionFactory.getEditionAtId(SINGLE_BATCH_EDITION_IMPL, id));
 
         // the edition creator emits the expected event
@@ -102,10 +102,12 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
 
         // when the badActor tries to steal the attestation
         signedAttestation.attestation.beneficiary = badActor;
+        EditionData memory editionData = DEFAULT_EDITION_DATA;
+        editionData.creatorAddr = badActor;
 
         address expectedAddr = address(
             editionFactory.getEditionAtId(
-                SINGLE_BATCH_EDITION_IMPL, editionFactory.getEditionId(DEFAULT_EDITION_DATA, badActor)
+                SINGLE_BATCH_EDITION_IMPL, editionFactory.getEditionId(editionData)
             )
         );
 
