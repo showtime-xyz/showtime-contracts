@@ -1,6 +1,12 @@
 # Showtime Contracts
 
-This repository contains the Solidity Smart Contracts for the Showtime NFT and its Marketplace.
+⚠️ _This repository is archived and won't be getting new updates. New development is happening at [showtime-contracts-v2](https://github.com/showtime-xyz/showtime-contracts-v2)_
+
+This repository contains the Solidity smart contracts for the the early versions of Showtime:
+- the shared Showtime NFT collection
+- the built-in marketplace
+- the meta-transaction framework
+- the gated transaction framework
 
 [![Foundry tests](https://github.com/showtime-xyz/smart-contracts-private/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/showtime-xyz/smart-contracts-private/actions/workflows/ci.yml)
 
