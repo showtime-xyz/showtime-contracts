@@ -1,6 +1,7 @@
 # Showtime Contracts
 
 ⚠️ _This repository is archived and won't be getting new updates._
+
 👉 _New development is happening at [showtime-contracts-v2](https://github.com/showtime-xyz/showtime-contracts-v2)_
 
 This repository contains the Solidity smart contracts for the the early versions of Showtime:
