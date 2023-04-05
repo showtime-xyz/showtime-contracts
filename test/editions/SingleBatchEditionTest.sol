@@ -109,15 +109,14 @@ contract SingleBatchEditionTest is Test, EditionFactoryFixture {
         address expectedAddr =
             address(editionFactory.getEditionAtId(SINGLE_BATCH_EDITION_IMPL, editionFactory.getEditionId(editionData)));
 
-        // it does not work
-        createWithBatch(
-            editionData,
-            signedAttestation,
-            abi.encodePacked(claimer),
-            abi.encodeWithSignature(
-                "AddressMismatch(address,address)", expectedAddr, signedAttestation.attestation.context
-            )
+        bytes memory errorBytes = abi.encodeWithSignature(
+            "AddressMismatch(address,address)",
+            getBeneficiary(expectedAddr, relayer),
+            signedAttestation.attestation.beneficiary
         );
+
+        // it does not work
+        createWithBatch(editionData, signedAttestation, abi.encodePacked(claimer), errorBytes);
     }
 
     function test_createWithBatch_canNotMintAfterInitialMint() public {

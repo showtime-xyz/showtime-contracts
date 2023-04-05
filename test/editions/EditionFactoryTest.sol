@@ -103,6 +103,9 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
         uint256 numMinted = editionFactory.mintBatch(edition, recipients_1, signedAttestation);
         assertEq(numMinted, 1);
 
+        // note: the same signed attestation can be used for multiple batches as long as it comes from the same relayer
+        // it is a tradeoff to avoid having to sign the recipients list -- the relayer is trusted for the duration
+        // of the validity period of the attestation
         vm.prank(relayer);
         numMinted = editionFactory.mintBatch(edition, recipients_2, signedAttestation);
         assertEq(numMinted, 2);
@@ -142,31 +145,5 @@ contract EditionFactoryTest is Test, ShowtimeVerifierFixture, EditionFactoryFixt
         // we also can't mint directly against the edition
         vm.expectRevert("UNAUTHORIZED_MINTER");
         IBatchMintable(edition).mintBatch(abi.encodePacked(address(this)));
-    }
-
-    function test_mintBatch_canNotReuseAttestationForDifferentRecipients() public {
-        EditionData memory editionData = DEFAULT_EDITION_DATA.withEditionImpl(batchImpl);
-
-        address edition = editionFactory.create(editionData, signed(signerKey, getCreatorAttestation(editionData)));
-
-        create(editionData, signed(signerKey, getCreatorAttestation(editionData)), "");
-
-        Attestation memory attestation = Attestation({
-            context: address(editionFactory),
-            beneficiary: edition,
-            nonce: 0,
-            validUntil: block.timestamp + 120
-        });
-
-        SignedAttestation memory signedAttestation = signed(signerKey, attestation);
-
-        bytes memory recipients_1 = abi.encodePacked(address(this));
-        bytes memory recipients_2 = abi.encodePacked(address(0x1), address(0x2));
-
-        editionFactory.mintBatch(edition, recipients_1, signedAttestation);
-
-        // reusing the same attestation for 2 different mints should NOT work!
-        vm.expectRevert();
-        editionFactory.mintBatch(edition, recipients_2, signedAttestation);
     }
 }
